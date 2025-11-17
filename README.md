@@ -113,14 +113,21 @@ python3 scripts/run_sweeps.py \
 ## Overview (flow chart)
 ```mermaid
 flowchart TD
-    A[Capture or choose commands\n(trace file or default set)]
-    B[Configure scenario\nSimulationConfig parameters]
-    C{Mode loop\nno_def / rolling / window / challenge}
-    D[Simulate legitimate traffic\ncounters, MACs, or nonce]
-    E[Schedule attacker\ninline or post, shared RNG seed]
-    F[Aggregate per-run stats\nlegitimate & attack rates]
+    A[Capture command sequence
+(trace file or default set)]
+    B[Configure scenario
+(SimulationConfig parameters)]
+    C{Mode loop
+(no_def / rolling / window / challenge)}
+    D[Simulate legitimate traffic
+(counters, MACs, or nonce)]
+    E[Schedule attacker
+(inline or post, shared RNG seed)]
+    F[Aggregate per-run stats
+(legitimate & attack rates)]
     G[(results/*.json)]
-    H[export_tables.py\nMarkdown tables]
+    H[export_tables.py
+-> Markdown tables]
     I[README / thesis findings]
 
     A --> B --> C --> D --> E --> F --> G --> H --> I

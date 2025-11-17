@@ -1,0 +1,12 @@
+# Sample command trace captured from a real operator session
+FWD
+FWD
+LEFT
+FWD
+RIGHT
+RIGHT
+BACK
+STOP
+FWD
+LEFT
+STOP

@@ -1,0 +1,62 @@
+[
+  {
+    "mode": "rolling",
+    "runs": 10,
+    "avg_legit_rate": 1.0,
+    "std_legit_rate": 0.0,
+    "avg_attack_rate": 0.0,
+    "std_attack_rate": 0.0,
+    "p_loss": 0.0,
+    "window_size": 0,
+    "num_legit": 20,
+    "num_replay": 100,
+    "attack_mode": "post",
+    "sweep_type": "p_loss",
+    "sweep_value": 0.0
+  },
+  {
+    "mode": "window",
+    "runs": 10,
+    "avg_legit_rate": 0.0,
+    "std_legit_rate": 0.0,
+    "avg_attack_rate": 0.0,
+    "std_attack_rate": 0.0,
+    "p_loss": 0.0,
+    "window_size": 0,
+    "num_legit": 20,
+    "num_replay": 100,
+    "attack_mode": "post",
+    "sweep_type": "p_loss",
+    "sweep_value": 0.0
+  },
+  {
+    "mode": "rolling",
+    "runs": 10,
+    "avg_legit_rate": 0.9349999999999999,
+    "std_legit_rate": 0.0634428877022476,
+    "avg_attack_rate": 0.002,
+    "std_attack_rate": 0.004,
+    "p_loss": 0.05,
+    "window_size": 0,
+    "num_legit": 20,
+    "num_replay": 100,
+    "attack_mode": "post",
+    "sweep_type": "p_loss",
+    "sweep_value": 0.05
+  },
+  {
+    "mode": "window",
+    "runs": 10,
+    "avg_legit_rate": 0.0,
+    "std_legit_rate": 0.0,
+    "avg_attack_rate": 0.0,
+    "std_attack_rate": 0.0,
+    "p_loss": 0.05,
+    "window_size": 0,
+    "num_legit": 20,
+    "num_replay": 100,
+    "attack_mode": "post",
+    "sweep_type": "p_loss",
+    "sweep_value": 0.05
+  }
+]

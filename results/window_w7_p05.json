@@ -1,0 +1,15 @@
+[
+  {
+    "mode": "window",
+    "runs": 300,
+    "avg_legit_rate": 0.9501666666666667,
+    "std_legit_rate": 0.05377396106749891,
+    "avg_attack_rate": 0.0003333333333333334,
+    "std_attack_rate": 0.0017950549357115015,
+    "p_loss": 0.05,
+    "window_size": 7,
+    "num_legit": 20,
+    "num_replay": 100,
+    "attack_mode": "post"
+  }
+]

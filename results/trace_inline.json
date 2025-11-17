@@ -1,0 +1,54 @@
+[
+  {
+    "mode": "no_def",
+    "runs": 300,
+    "avg_legit_rate": 1.0,
+    "std_legit_rate": 0.0,
+    "avg_attack_rate": 1.0,
+    "std_attack_rate": 0.0,
+    "p_loss": 0.0,
+    "window_size": 0,
+    "num_legit": 30,
+    "num_replay": 0,
+    "attack_mode": "inline"
+  },
+  {
+    "mode": "rolling",
+    "runs": 300,
+    "avg_legit_rate": 1.0,
+    "std_legit_rate": 0.0,
+    "avg_attack_rate": 0.0,
+    "std_attack_rate": 0.0,
+    "p_loss": 0.0,
+    "window_size": 0,
+    "num_legit": 30,
+    "num_replay": 0,
+    "attack_mode": "inline"
+  },
+  {
+    "mode": "window",
+    "runs": 300,
+    "avg_legit_rate": 1.0,
+    "std_legit_rate": 0.0,
+    "avg_attack_rate": 0.0,
+    "std_attack_rate": 0.0,
+    "p_loss": 0.0,
+    "window_size": 5,
+    "num_legit": 30,
+    "num_replay": 0,
+    "attack_mode": "inline"
+  },
+  {
+    "mode": "challenge",
+    "runs": 300,
+    "avg_legit_rate": 1.0,
+    "std_legit_rate": 0.0,
+    "avg_attack_rate": 0.0,
+    "std_attack_rate": 0.0,
+    "p_loss": 0.0,
+    "window_size": 0,
+    "num_legit": 30,
+    "num_replay": 0,
+    "attack_mode": "inline"
+  }
+]

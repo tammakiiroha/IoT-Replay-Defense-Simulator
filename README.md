@@ -13,7 +13,7 @@ This toolkit reproduces the replay-attack evaluation plan described in the proje
   ```
 
 ## Features
-- **Protocol variants**: no defense, rolling counter + MAC, rolling counter + acceptance window, and a nonce-based challenge–response baseline.
+- **Protocol variants**: no defense, rolling counter + MAC, rolling counter + acceptance window, and a nonce-based challenge-response baseline.
 - **Role models**: sender, lossy channel, receiver with persistent state, and an attacker that records and replays observed frames.
 - **Metrics**: per-run legitimate acceptance rate and attack success rate, plus aggregated averages and standard deviations across Monte Carlo runs.
 - **Command sources**: random commands from a default toy set or a trace file captured from a real controller.
@@ -42,7 +42,7 @@ python3 main.py --runs 200 --num-legit 20 --num-replay 100 --p-loss 0.05 --windo
 | `--attack-mode` | Replay scheduling strategy: `post` or `inline`. |
 | `--inline-attack-prob` | Inline replay probability per legitimate frame. |
 | `--inline-attack-burst` | Maximum inline replay attempts per legitimate frame. |
-| `--challenge-nonce-bits` | Nonce length (bits) used by the challenge–response mode. |
+| `--challenge-nonce-bits` | Nonce length (bits) used by the challenge-response mode. |
 | `--output-json` | Path to save aggregate metrics in JSON form. |
 
 ## Trace file format
@@ -84,21 +84,21 @@ python3 scripts/run_sweeps.py \
 ## Project structure
 ```
 .
-├── main.py
-├── sim/
-│   ├── attacker.py
-│   ├── channel.py
-│   ├── commands.py
-│   ├── experiment.py
-│   ├── receiver.py
-│   ├── security.py
-│   ├── sender.py
-│   └── types.py
-├── scripts/
-│   └── run_sweeps.py
-├── traces/
-│   └── sample_trace.txt
-└── README.md
+|-- main.py
+|-- sim/
+|   |-- attacker.py
+|   |-- channel.py
+|   |-- commands.py
+|   |-- experiment.py
+|   |-- receiver.py
+|   |-- security.py
+|   |-- sender.py
+|   \-- types.py
+|-- scripts/
+|   \-- run_sweeps.py
+|-- traces/
+|   \-- sample_trace.txt
+\-- README.md
 ```
 
 ## Using the results in the thesis
@@ -146,7 +146,7 @@ flowchart TD
 
 ## Key findings (tables)
 
-### Packet-loss sweep — legitimate acceptance
+### Packet-loss sweep -  legitimate acceptance
 | p_loss | no_def | rolling | window | challenge |
 | --- | --- | --- | --- | --- |
 | 0.00 | 100.00% | 100.00% | 100.00% | 100.00% |
@@ -155,7 +155,7 @@ flowchart TD
 | 0.10 | 89.70% | 89.70% | 89.70% | 89.57% |
 | 0.20 | 79.60% | 79.60% | 79.58% | 79.70% |
 
-### Packet-loss sweep — replay success
+### Packet-loss sweep -  replay success
 | p_loss | no_def | rolling | window | challenge |
 | --- | --- | --- | --- | --- |
 | 0.00 | 100.00% | 0.00% | 0.00% | 0.00% |
@@ -174,3 +174,26 @@ flowchart TD
 | 9 | 94.67% | 0.0467% |
 
 See `docs/metrics_tables.md` for the full Markdown tables.
+
+### Ideal channel baseline (post attack, runs = 500, p_loss = 0)
+| Mode | Legitimate (%) | Replay success (%) | Source |
+| --- | --- | --- | --- |
+| no_def | 100.00% | 100.00% | `results/ideal_p0.json` |
+| rolling | 100.00% | 0.00% | `results/ideal_p0.json` |
+| window (W=5) | 100.00% | 0.00% | `results/ideal_p0.json` |
+| challenge | 100.00% | 0.00% | `results/ideal_p0.json` |
+
+### Trace-driven inline scenario (real command trace, runs = 300, p_loss = 0)
+| Mode | Legitimate (%) | Replay success (%) | Source |
+| --- | --- | --- | --- |
+| no_def | 100.00% | 100.00% | `results/trace_inline.json` |
+| rolling | 100.00% | 0.00% | `results/trace_inline.json` |
+| window (W=5) | 100.00% | 0.00% | `results/trace_inline.json` |
+| challenge | 100.00% | 0.00% | `results/trace_inline.json` |
+
+## Observations and insights
+- Baseline gap: without defenses, every captured frame replays successfully even on an ideal channel, while rolling/window defenses instantly drop replay success to 0% with no usability penalty (table: Ideal channel baseline).
+- Packet-loss resilience: across `p_loss` from 0 to 0.2, rolling and window modes keep legitimate acceptance within 80-100% and hold replay success below 0.5%, whereas no_def degrades almost linearly with `p_loss` and mirrors that degradation in attack success (tables: Packet-loss sweep).
+- Window tuning: `W=1` is overly strict (legitimate 62%) because a single drop causes permanent desynchronization. The range `W=3..7` maintains ~95% usability while keeping replay success below 0.06%, showing the security-usability sweet spot (table: Window sweep at p_loss = 0.05).
+- Inline attacker realism: even when using a real command trace and inline injections, rolling/window/challenge remain at 0% replay success, confirming that the protections do not depend on synthetic traffic (table: Trace-driven inline scenario).
+- Challenge-response as upper bound: the challenge mode consistently matches rolling/window on legitimate acceptance but never allows replays, validating it as a security upper bound that can anchor "ideal" comparisons in the thesis.

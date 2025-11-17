@@ -173,4 +173,4 @@ flowchart TD
 | 7 | 95.02% | 0.0333% |
 | 9 | 94.67% | 0.0467% |
 
-详见 `docs/metrics_tables.md` 可获取完整 Markdown 表格。
+See `docs/metrics_tables.md` for the full Markdown tables.

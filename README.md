@@ -113,27 +113,17 @@ python3 scripts/run_sweeps.py \
 ## Overview (flow chart)
 ```mermaid
 flowchart TD
-    subgraph Capture
-        A1(Physical remote\nURH trace) --> A2(traces/sample_trace.txt)
-    end
-    subgraph Scenario setup
-        B1(Choose command set\n+ parameters) --> B2(SimulationConfig)
-    end
-    subgraph Protocol logic
-        C1(Sender\ncounter/MAC) --> C2(Channel\np_loss)
-        C2 --> C3(Receiver\nmode: no_def / rolling / window / challenge)
-        C1 --> C4(Attacker\nrecord & replay)
-        C4 -.-> C3
-    end
-    subgraph Experiment
-        B2 --> D1(main.py or run_sweeps.py)
-        D1 --> D2(legitimate & attack stats)
-    end
-    subgraph Reports
-        D2 --> E1(results/*.json)
-        E1 --> E2(export tables)
-        E2 --> E3(thesis tables / README)
-    end
+    A[Capture or choose commands\n(trace file or default set)]
+    B[Configure scenario\nSimulationConfig parameters]
+    C{Mode loop\nno_def / rolling / window / challenge}
+    D[Simulate legitimate traffic\ncounters, MACs, or nonce]
+    E[Schedule attacker\ninline or post, shared RNG seed]
+    F[Aggregate per-run stats\nlegitimate & attack rates]
+    G[(results/*.json)]
+    H[export_tables.py\nMarkdown tables]
+    I[README / thesis findings]
+
+    A --> B --> C --> D --> E --> F --> G --> H --> I
 ```
 
 ## Reproducing the datasets and tables
@@ -173,8 +163,6 @@ flowchart TD
 | 7 | 95.02% | 0.0333% |
 | 9 | 94.67% | 0.0467% |
 
-See `docs/metrics_tables.md` for the full Markdown tables.
-
 ### Ideal channel baseline (post attack, runs = 500, p_loss = 0)
 | Mode | Legitimate (%) | Replay success (%) | Source |
 | --- | --- | --- | --- |
@@ -190,6 +178,8 @@ See `docs/metrics_tables.md` for the full Markdown tables.
 | rolling | 100.00% | 0.00% | `results/trace_inline.json` |
 | window (W=5) | 100.00% | 0.00% | `results/trace_inline.json` |
 | challenge | 100.00% | 0.00% | `results/trace_inline.json` |
+
+See `docs/metrics_tables.md` for the full Markdown tables.
 
 ## Observations and insights
 - Baseline gap: without defenses, every captured frame replays successfully even on an ideal channel, while rolling/window defenses instantly drop replay success to 0% with no usability penalty (table: Ideal channel baseline).

@@ -107,8 +107,8 @@ python3 scripts/run_sweeps.py \
 3. Highlight trade-offs: compare `window` configurations across packet-loss rates, contrast inline vs post-run attack models, and use `challenge` as an upper-bound reference.
 
 ## Notes on attacker model and randomness
-- 默认假设攻击者监听比受信端更可靠（`attacker_record_loss=0`）；如需公平比较，可将其设置为与 `p_loss` 相同。
-- 同一次 Monte Carlo run 会对所有模式复用同一套随机命令序列与丢包抽签，确保横向对比公平。
+- By default the attacker is modeled with a perfect recorder (`attacker_record_loss=0`); set it equal to `p_loss` if you want the attacker to experience the same losses as the legitimate link.
+- Every Monte Carlo run reuses the same command sequence and packet-loss draws across all modes so that comparisons remain apples-to-apples.
 
 ## Overview (flow chart)
 ```mermaid

@@ -113,21 +113,14 @@ python3 scripts/run_sweeps.py \
 ## Overview (flow chart)
 ```mermaid
 flowchart TD
-    A[Capture command sequence
-(trace file or default set)]
-    B[Configure scenario
-(SimulationConfig parameters)]
-    C{Mode loop
-(no_def / rolling / window / challenge)}
-    D[Simulate legitimate traffic
-(counters, MACs, or nonce)]
-    E[Schedule attacker
-(inline or post, shared RNG seed)]
-    F[Aggregate per-run stats
-(legitimate & attack rates)]
+    A[Capture command sequence<br/>Trace file or default set]
+    B[Configure scenario<br/>SimulationConfig parameters]
+    C{Mode loop<br/>no_def / rolling / window / challenge}
+    D[Simulate legitimate traffic<br/>Counters, MACs, or nonce]
+    E[Schedule attacker<br/>Inline or post, shared RNG seed]
+    F[Aggregate per-run stats<br/>Legitimate & attack rates]
     G[(results/*.json)]
-    H[export_tables.py
--> Markdown tables]
+    H[export_tables.py<br/>Generate Markdown tables]
     I[README / thesis findings]
 
     A --> B --> C --> D --> E --> F --> G --> H --> I
@@ -170,6 +163,8 @@ flowchart TD
 | 7 | 95.02% | 0.0333% |
 | 9 | 94.67% | 0.0467% |
 
+See `docs/metrics_tables.md` for the full Markdown tables.
+
 ### Ideal channel baseline (post attack, runs = 500, p_loss = 0)
 | Mode | Legitimate (%) | Replay success (%) | Source |
 | --- | --- | --- | --- |
@@ -185,8 +180,6 @@ flowchart TD
 | rolling | 100.00% | 0.00% | `results/trace_inline.json` |
 | window (W=5) | 100.00% | 0.00% | `results/trace_inline.json` |
 | challenge | 100.00% | 0.00% | `results/trace_inline.json` |
-
-See `docs/metrics_tables.md` for the full Markdown tables.
 
 ## Observations and insights
 - Baseline gap: without defenses, every captured frame replays successfully even on an ideal channel, while rolling/window defenses instantly drop replay success to 0% with no usability penalty (table: Ideal channel baseline).

@@ -147,7 +147,7 @@ COLORS = {
     "text_muted": "#7f8c8d",
     "card_bg": "#ffffff",
     "border": "#dcdde1",
-    "shadow": "#00000020"
+    "shadow": "#e0e0e0"  # 浅灰色代替半透明阴影
 }
 
 # --- 字体配置 ---

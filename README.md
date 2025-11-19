@@ -48,7 +48,30 @@ This toolkit reproduces the replay-attack evaluation plan described in the proje
 
 ## Quick start
 
-### Option 1: Interactive Menu (Recommended for beginners)
+### Option 1: Graphical Interface (Easiest, recommended for demos)
+
+**🎨 Complete mouse operation, no typing needed!**
+
+```bash
+./run_gui.sh
+```
+
+Or:
+
+```bash
+python gui.py
+```
+
+Features:
+- 🖱️ **100% mouse operation** - Click buttons, drag sliders
+- 🎯 Quick scenario buttons (one-click run)
+- 🔧 Custom experiment with visual controls
+- 📊 Real-time output display
+- 🌏 Bilingual interface (EN/CN/JP)
+
+[📖 GUI User Guide](GUI_GUIDE.md)
+
+### Option 2: Interactive Menu (For those who prefer terminal)
 
 **No need to remember parameters!** Just input numbers:
 
@@ -71,7 +94,7 @@ Features:
 
 [📖 Interactive Menu Guide](INTERACTIVE_GUIDE.md)
 
-### Option 2: Command Line (For automation)
+### Option 3: Command Line (For automation)
 
 ```bash
 python3 main.py --runs 200 --num-legit 20 --num-replay 100 --p-loss 0.05 --window-size 5

@@ -14,7 +14,7 @@ This toolkit reproduces the replay-attack evaluation plan described in the proje
 
 ## Features
 - **Protocol variants**: no defense, rolling counter + MAC, rolling counter + acceptance window, and a nonce-based challenge-response baseline.
-- **Role models**: sender, lossy channel, receiver with persistent state, and an attacker that records and replays observed frames.
+- **Role models**: sender, lossy/reordering channel, receiver with persistent state, and an attacker that records and replays observed frames.
 - **Metrics**: per-run legitimate acceptance rate and attack success rate, plus aggregated averages and standard deviations across Monte Carlo runs.
 - **Command sources**: random commands from a default toy set or a trace file captured from a real controller.
 - **Attacker scheduling**: choose between post-run burst replay or inline injection during legitimate traffic.
@@ -33,8 +33,10 @@ python3 main.py --runs 200 --num-legit 20 --num-replay 100 --p-loss 0.05 --windo
 | `--num-legit` | Legitimate transmissions per run. |
 | `--num-replay` | Replay attempts per run. |
 | `--p-loss` | Packet-loss probability applied to both legitimate and injected frames. |
+| `--p-reorder` | Packet-reordering probability (simulates network jitter/delay). |
 | `--window-size` | Acceptance-window width when mode `window` is active. |
 | `--commands-file` | Path to a newline-delimited command trace captured from real hardware. |
+| `--target-commands` | Specific commands for attacker to replay (selective replay). |
 | `--mac-length` | Truncated MAC length (hex chars). |
 | `--shared-key` | Shared secret used by sender/receiver to derive MACs. |
 | `--attacker-loss` | Probability that the attacker fails to record a legitimate frame. |
@@ -65,6 +67,7 @@ python3 scripts/run_sweeps.py \
   --runs 300 \
   --modes no_def rolling window challenge \
   --p-loss-values 0 0.01 0.05 0.1 0.2 \
+  --p-reorder-values 0 0.1 0.3 0.5 0.7 \
   --window-values 1 3 5 7 9 \
   --window-size-base 5 \
   --attack-mode inline \
@@ -73,6 +76,7 @@ python3 scripts/run_sweeps.py \
   --commands-file traces/sample_trace.txt \
   --seed 123 \
   --p-loss-output results/p_loss_sweep.json \
+  --p-reorder-output results/p_reorder_sweep.json \
   --window-output results/window_sweep.json
 ```
 
@@ -95,16 +99,19 @@ python3 scripts/run_sweeps.py \
 |   |-- sender.py
 |   \-- types.py
 |-- scripts/
+|   |-- plot_results.py
 |   \-- run_sweeps.py
 |-- traces/
 |   \-- sample_trace.txt
+|-- tests/
+|   \-- test_receiver.py
 \-- README.md
 ```
 
 ## Using the results in the thesis
-1. Document the experimental parameters (`num_legit`, `num_replay`, `p_loss`, `window_size`, MAC length).
+1. Document the experimental parameters (`num_legit`, `num_replay`, `p_loss`, `p_reorder`, `window_size`, MAC length).
 2. Copy the table outputs or the JSON aggregates into your thesis tables.
-3. Highlight trade-offs: compare `window` configurations across packet-loss rates, contrast inline vs post-run attack models, and use `challenge` as an upper-bound reference.
+3. Highlight trade-offs: compare `window` configurations across packet-loss and reordering rates, contrast inline vs post-run attack models, and use `challenge` as an upper-bound reference.
 
 ## Notes on attacker model and randomness
 - By default the attacker is modeled with a perfect recorder (`attacker_record_loss=0`); set it equal to `p_loss` if you want the attacker to experience the same losses as the legitimate link.
@@ -120,7 +127,7 @@ flowchart TD
     E[Schedule attacker<br/>Inline or post, shared RNG seed]
     F[Aggregate per-run stats<br/>Legitimate & attack rates]
     G[(results/*.json)]
-    H[export_tables.py<br/>Generate Markdown tables]
+    H[plot_results.py<br/>Generate PNG/PDF figures]
     I[README / thesis findings]
 
     A --> B --> C --> D --> E --> F --> G --> H --> I
@@ -128,62 +135,57 @@ flowchart TD
 
 ## Reproducing the datasets and tables
 1. Generate datasets with `main.py` / `scripts/run_sweeps.py`.
-2. Export Markdown tables:
+2. Generate figures:
    ```bash
-   source .venv/bin/activate  # optional
-   python scripts/export_tables.py
+   python scripts/plot_results.py --formats png
    ```
 
 ## Key findings (tables)
 
-### Packet-loss sweep -  legitimate acceptance
-| p_loss | no_def | rolling | window | challenge |
-| --- | --- | --- | --- | --- |
-| 0.00 | 100.00% | 100.00% | 100.00% | 100.00% |
-| 0.01 | 99.05% | 99.05% | 99.05% | 98.98% |
-| 0.05 | 94.92% | 94.92% | 94.92% | 94.62% |
-| 0.10 | 89.70% | 89.70% | 89.70% | 89.57% |
-| 0.20 | 79.60% | 79.60% | 79.58% | 79.70% |
+### Packet-reorder sweep - legitimate acceptance (p_loss=0)
+*Window mode demonstrates superior robustness against channel reordering compared to Rolling Counter.*
 
-### Packet-loss sweep -  replay success
-| p_loss | no_def | rolling | window | challenge |
-| --- | --- | --- | --- | --- |
-| 0.00 | 100.00% | 0.00% | 0.00% | 0.00% |
-| 0.01 | 98.54% | 0.00% | 0.00% | 0.00% |
-| 0.05 | 94.61% | 0.03% | 0.03% | 0.00% |
-| 0.10 | 89.73% | 0.10% | 0.10% | 0.00% |
-| 0.20 | 80.15% | 0.47% | 0.50% | 0.00% |
+| p_reorder | Rolling (%) | Window (W=5) (%) |
+|-----------|-------------|------------------|
+| 0.0       | 100.00%     | 100.00%          |
+| 0.1       | 93.55%      | 100.00%          |
+| 0.3       | 84.47%      | 99.88%           |
+| 0.5       | 77.63%      | 99.88%           |
+| 0.7       | 78.33%      | 99.90%           |
 
-### Window sweep (p_loss = 0.05, post attack)
+### Packet-loss sweep - legitimate acceptance (p_reorder=0)
+*Both modes degrade linearly with pure packet loss, but perform similarly.*
+
+| p_loss | Rolling (%) | Window (W=5) (%) |
+|--------|-------------|------------------|
+| 0.00   | 100.00%     | 100.00%          |
+| 0.01   | 98.97%      | 98.97%           |
+| 0.05   | 94.88%      | 94.88%           |
+| 0.10   | 89.90%      | 89.90%           |
+| 0.20   | 79.53%      | 79.53%           |
+
+### Window sweep (Stress test: p_loss=0.05, p_reorder=0.3)
+*Comparing usability vs security trade-offs under harsh channel conditions.*
+
 | Window W | Legitimate (%) | Replay success (%) |
-| --- | --- | --- |
-| 1 | 62.32% | 2.8467% |
-| 3 | 94.88% | 0.0533% |
-| 5 | 95.07% | 0.0567% |
-| 7 | 95.02% | 0.0333% |
-| 9 | 94.67% | 0.0467% |
-
-See `docs/metrics_tables.md` for the full Markdown tables.
+| -------- | -------------- | ------------------ |
+| 1        | 27.65%         | 4.51%              |
+| 3        | 95.10%         | 0.22%              |
+| 5        | 95.08%         | 0.30%              |
+| 10       | 95.22%         | 0.49%              |
 
 ### Ideal channel baseline (post attack, runs = 500, p_loss = 0)
-| Mode | Legitimate (%) | Replay success (%) | Source |
-| --- | --- | --- | --- |
-| no_def | 100.00% | 100.00% | `results/ideal_p0.json` |
-| rolling | 100.00% | 0.00% | `results/ideal_p0.json` |
-| window (W=5) | 100.00% | 0.00% | `results/ideal_p0.json` |
-| challenge | 100.00% | 0.00% | `results/ideal_p0.json` |
+*Reference baseline from `results/ideal_p0.json`*
 
-### Trace-driven inline scenario (real command trace, runs = 300, p_loss = 0)
-| Mode | Legitimate (%) | Replay success (%) | Source |
-| --- | --- | --- | --- |
-| no_def | 100.00% | 100.00% | `results/trace_inline.json` |
-| rolling | 100.00% | 0.00% | `results/trace_inline.json` |
-| window (W=5) | 100.00% | 0.00% | `results/trace_inline.json` |
-| challenge | 100.00% | 0.00% | `results/trace_inline.json` |
+| Mode         | Legitimate (%) | Replay success (%) |
+| ------------ | -------------- | ------------------ |
+| no_def       | 100.00%        | 100.00%            |
+| rolling      | 100.00%        | 0.00%              |
+| window (W=5) | 100.00%        | 0.00%              |
+| challenge    | 100.00%        | 0.00%              |
 
 ## Observations and insights
-- Baseline gap: without defenses, every captured frame replays successfully even on an ideal channel, while rolling/window defenses instantly drop replay success to 0% with no usability penalty (table: Ideal channel baseline).
-- Packet-loss resilience: across `p_loss` from 0 to 0.2, rolling and window modes keep legitimate acceptance within 80-100% and hold replay success below 0.5%, whereas no_def degrades almost linearly with `p_loss` and mirrors that degradation in attack success (tables: Packet-loss sweep).
-- Window tuning: `W=1` is overly strict (legitimate 62%) because a single drop causes permanent desynchronization. The range `W=3..7` maintains ~95% usability while keeping replay success below 0.06%, showing the security-usability sweet spot (table: Window sweep at p_loss = 0.05).
-- Inline attacker realism: even when using a real command trace and inline injections, rolling/window/challenge remain at 0% replay success, confirming that the protections do not depend on synthetic traffic (table: Trace-driven inline scenario).
-- Challenge-response as upper bound: the challenge mode consistently matches rolling/window on legitimate acceptance but never allows replays, validating it as a security upper bound that can anchor "ideal" comparisons in the thesis.
+- **Robustness to Reordering**: The Rolling Counter mechanism is highly sensitive to packet reordering. Even a moderate reordering probability (0.3) causes the legitimate acceptance rate to drop to ~84%. In contrast, the Window (W=5) mechanism maintains near-perfect usability (>99.8%) even under severe reordering (0.7).
+- **Window Tuning**: `W=1` acts as a strict counter and fails catastrophically under unstable conditions (27.6% acceptance). Increasing the window to `W=3..5` restores usability to ~95% while keeping the attack success rate extremely low (<0.3%).
+- **Security Trade-off**: While the Window mode theoretically opens a small replay window, the experimental results show that in practice (even with 200 runs), the attack success rate remains negligible compared to the massive usability gains.
+- **Conclusion**: For real-world wireless control systems where packet loss and reordering are common, a Sliding Window mechanism (W=5) provides the best balance between security and user experience.

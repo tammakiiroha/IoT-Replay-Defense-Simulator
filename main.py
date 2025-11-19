@@ -17,10 +17,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--num-legit", type=int, default=20, help="Legitimate transmissions per run")
     parser.add_argument("--num-replay", type=int, default=100, help="Replay attempts per run")
     parser.add_argument("--p-loss", type=float, default=0.0, help="Packet loss probability")
+    parser.add_argument("--p-reorder", type=float, default=0.0, help="Packet reordering probability")
     parser.add_argument("--window-size", type=int, default=5, help="Window size for the window mode")
     parser.add_argument("--mac-length", type=int, default=8, help="Truncated MAC length (hex chars)")
     parser.add_argument("--seed", type=int, default=None, help="Global RNG seed")
     parser.add_argument("--commands-file", type=str, help="Optional path to a command trace")
+    parser.add_argument("--target-commands", nargs="+", help="Specific commands for attacker to replay (selective replay)")
     parser.add_argument("--shared-key", type=str, default="sim_shared_key", help="Shared secret key")
     parser.add_argument("--attacker-loss", type=float, default=0.0, help="Attacker recording loss probability")
     parser.add_argument("--output-json", type=str, help="Optional path to dump aggregate stats")
@@ -59,9 +61,11 @@ def main() -> None:
         num_legit=args.num_legit,
         num_replay=args.num_replay,
         p_loss=args.p_loss,
+        p_reorder=args.p_reorder,
         window_size=args.window_size,
         command_sequence=command_sequence,
         command_set=DEFAULT_COMMANDS,
+        target_commands=args.target_commands,
         rng_seed=args.seed,
         mac_length=args.mac_length,
         shared_key=args.shared_key,
@@ -92,6 +96,7 @@ def _print_table(stats) -> None:
         "Runs",
         "Attack",
         "p_loss",
+        "p_reorder",
         "Window",
         "Avg Legit",
         "Std Legit",
@@ -106,6 +111,7 @@ def _print_table(stats) -> None:
                 str(entry.runs),
                 entry.attack_mode.value,
                 f"{entry.p_loss:.2f}",
+                f"{entry.p_reorder:.2f}",
                 str(entry.window_size),
                 _format_rate(entry.avg_legit_rate),
                 _format_rate(entry.std_legit_rate),
@@ -113,7 +119,11 @@ def _print_table(stats) -> None:
                 _format_rate(entry.std_attack_rate),
             )
         )
-
+    
+    # Wait, I missed adding p_reorder to AggregateStats in types.py!
+    # I should fix that or just not print it.
+    # I'll fix it in types.py first.
+    
     col_widths = [max(len(col), max(len(row[i]) for row in rows)) for i, col in enumerate(header)]
 
     def _print_line(values):

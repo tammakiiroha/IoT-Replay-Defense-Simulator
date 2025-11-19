@@ -7,7 +7,7 @@ import statistics
 from typing import Iterable, List, Optional, Sequence
 
 from .attacker import Attacker
-from .channel import should_drop
+from .channel import Channel
 from .receiver import Receiver
 from .sender import Sender
 from .types import (
@@ -16,6 +16,7 @@ from .types import (
     Mode,
     SimulationConfig,
     SimulationRunResult,
+    Frame,
 )
 
 
@@ -52,36 +53,78 @@ def simulate_one_run(
         mac_length=config.mac_length,
         window_size=config.window_size or 1,
     )
-    attacker = Attacker(record_loss=config.attacker_record_loss)
+    attacker = Attacker(
+        record_loss=config.attacker_record_loss,
+        target_commands=config.target_commands
+    )
+    channel = Channel(p_loss=config.p_loss, p_reorder=config.p_reorder, rng=local_rng)
 
     legit_sent = 0
     legit_accepted = 0
     attack_attempts = 0
     attack_success = 0
 
+    def process_arrived(frames: List[Frame]):
+        nonlocal legit_accepted, attack_success
+        for f in frames:
+            result = receiver.process(f)
+            if result.accepted:
+                if f.is_attack:
+                    attack_success += 1
+                else:
+                    legit_accepted += 1
+
     for i in range(config.num_legit):
         command = _choose_command(config, i, local_rng)
         nonce = None
         if config.mode is Mode.CHALLENGE:
             nonce = receiver.issue_nonce(local_rng, bits=config.challenge_nonce_bits)
+        
+        # 1. Legitimate Transmission
         frame = sender.next_frame(command, nonce=nonce)
         legit_sent += 1
-        if not should_drop(config.p_loss, local_rng):
-            result = receiver.process(frame)
-            if result.accepted:
-                legit_accepted += 1
-
-        if config.attack_mode is AttackMode.INLINE:
-            attempts, successes = _execute_inline_attacks(attacker, receiver, config, local_rng)
-            attack_attempts += attempts
-            attack_success += successes
-
+        
+        # Attacker observes BEFORE channel effects (assuming close proximity to sender)
         attacker.observe(frame, local_rng)
 
+        # Send through channel
+        arrived = channel.send(frame)
+        process_arrived(arrived)
+
+        # 2. Inline Attacks
+        if config.attack_mode is AttackMode.INLINE:
+            for _ in range(max(1, config.inline_attack_burst)):
+                if local_rng.random() >= config.inline_attack_probability:
+                    break
+                attack_frame = attacker.pick_frame(local_rng)
+                if attack_frame is None:
+                    break
+                
+                attack_attempts += 1
+                attack_frame.is_attack = True
+                arrived_attack = channel.send(attack_frame)
+                process_arrived(arrived_attack)
+
+    # 3. Post-Run Attacks
     if config.attack_mode is AttackMode.POST_RUN:
-        post_attempts, post_success = _execute_post_run_attacks(attacker, receiver, config, local_rng)
-        attack_attempts += post_attempts
-        attack_success += post_success
+        # Flush channel first? No, keep it running.
+        # But usually post-run implies legitimate traffic has stopped.
+        # We should probably flush the channel of legitimate frames before starting post-run?
+        # Or just let them mix. Let's let them mix, but usually channel is empty by now if no delay.
+        
+        for _ in range(config.num_replay):
+            attack_frame = attacker.pick_frame(local_rng)
+            if attack_frame is None:
+                break
+            
+            attack_attempts += 1
+            attack_frame.is_attack = True
+            arrived_attack = channel.send(attack_frame)
+            process_arrived(arrived_attack)
+
+    # Flush any remaining frames in the channel
+    remaining = channel.flush()
+    process_arrived(remaining)
 
     return SimulationRunResult(
         legit_sent=legit_sent,
@@ -91,6 +134,7 @@ def simulate_one_run(
         mode=config.mode,
         metadata={
             "p_loss": config.p_loss,
+            "p_reorder": config.p_reorder,
             "window_size": config.window_size,
             "attack_mode": config.attack_mode.value,
         },
@@ -136,6 +180,7 @@ def run_many_experiments(
                 avg_attack_rate=_mean(buckets["attack"]),
                 std_attack_rate=_std(buckets["attack"]),
                 p_loss=config.p_loss,
+                p_reorder=config.p_reorder,
                 window_size=window_value,
                 num_legit=config.num_legit,
                 num_replay=config.num_replay,
@@ -144,52 +189,6 @@ def run_many_experiments(
         )
 
     return aggregates
-
-
-def _execute_inline_attacks(
-    attacker: Attacker,
-    receiver: Receiver,
-    config: SimulationConfig,
-    rng: random.Random,
-) -> tuple[int, int]:
-    attempts = 0
-    successes = 0
-
-    for _ in range(max(1, config.inline_attack_burst)):
-        if rng.random() >= config.inline_attack_probability:
-            break
-        frame = attacker.pick_frame(rng)
-        if frame is None:
-            break
-        attempts += 1
-        if should_drop(config.p_loss, rng):
-            continue
-        result = receiver.process(frame)
-        if result.accepted:
-            successes += 1
-
-    return attempts, successes
-
-
-def _execute_post_run_attacks(
-    attacker: Attacker,
-    receiver: Receiver,
-    config: SimulationConfig,
-    rng: random.Random,
-) -> tuple[int, int]:
-    attempts = 0
-    successes = 0
-    for _ in range(config.num_replay):
-        frame = attacker.pick_frame(rng)
-        if frame is None:
-            break
-        attempts += 1
-        if should_drop(config.p_loss, rng):
-            continue
-        result = receiver.process(frame)
-        if result.accepted:
-            successes += 1
-    return attempts, successes
 
 
 def _mean(values: Iterable[float]) -> float:

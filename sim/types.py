@@ -30,6 +30,7 @@ class Frame:
     counter: Optional[int] = None
     mac: Optional[str] = None
     nonce: Optional[str] = None
+    is_attack: bool = False  # Metadata to track source (not transmitted over air, but useful for sim)
 
     def clone(self) -> "Frame":
         return Frame(
@@ -37,6 +38,7 @@ class Frame:
             counter=self.counter,
             mac=self.mac,
             nonce=self.nonce,
+            is_attack=self.is_attack,
         )
 
 
@@ -46,6 +48,8 @@ class ReceiverState:
 
     last_counter: int = -1
     expected_nonce: Optional[str] = None
+    # Bitmask for sliding window: bit 0 is last_counter, bit 1 is last_counter-1, etc.
+    received_mask: int = 0
 
 
 @dataclass
@@ -57,9 +61,11 @@ class SimulationConfig:
     num_legit: int = 20
     num_replay: int = 100
     p_loss: float = 0.0
+    p_reorder: float = 0.0  # Probability of packet reordering
     window_size: int = 0
     command_sequence: Optional[Sequence[str]] = None
     command_set: Optional[Sequence[str]] = None
+    target_commands: Optional[Sequence[str]] = None  # For selective replay
     rng_seed: Optional[int] = None
     mac_length: int = 8
     shared_key: str = "sim_shared_key"
@@ -113,6 +119,7 @@ class AggregateStats:
     avg_attack_rate: float
     std_attack_rate: float
     p_loss: float
+    p_reorder: float
     window_size: int
     num_legit: int
     num_replay: int
@@ -127,6 +134,7 @@ class AggregateStats:
             "avg_attack_rate": self.avg_attack_rate,
             "std_attack_rate": self.std_attack_rate,
             "p_loss": self.p_loss,
+            "p_reorder": self.p_reorder,
             "window_size": self.window_size,
             "num_legit": self.num_legit,
             "num_replay": self.num_replay,

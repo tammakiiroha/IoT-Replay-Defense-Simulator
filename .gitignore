@@ -1,7 +1,20 @@
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.env
+*.py[cod]
+*$py.class
+
+# Virtual Environment
 .venv/
-docs/simulation_manual.md
+venv/
+env/
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
+
+# Results and Figures (Optional: keep if you want to showcase them on GitHub)
+# results/
+# figures/
+# But usually we ignore intermediate data
+# data/

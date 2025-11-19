@@ -26,6 +26,8 @@ def parse_args() -> argparse.Namespace:
                         help="Modes to include in the sweep outputs")
     parser.add_argument("--p-loss-values", type=float, nargs="*", default=[0.0, 0.01, 0.05, 0.1, 0.2],
                         help="Packet-loss probabilities to evaluate")
+    parser.add_argument("--p-reorder-values", type=float, nargs="*", default=[0.0, 0.1, 0.3, 0.5, 0.7],
+                        help="Packet-reorder probabilities to evaluate")
     parser.add_argument("--window-values", type=int, nargs="*", default=[1, 3, 5, 10],
                         help="Window sizes to evaluate (applies to window mode)")
     parser.add_argument("--window-size-base", type=int, default=5,
@@ -38,6 +40,8 @@ def parse_args() -> argparse.Namespace:
                         help="Max inline replay attempts per legitimate frame")
     parser.add_argument("--p-loss-output", type=str, default="results/p_loss_sweep.json",
                         help="Where to write the p_loss sweep JSON")
+    parser.add_argument("--p-reorder-output", type=str, default="results/p_reorder_sweep.json",
+                        help="Where to write the p_reorder sweep JSON")
     parser.add_argument("--window-output", type=str, default="results/window_sweep.json",
                         help="Where to write the window sweep JSON")
     parser.add_argument("--commands-file", type=str, help="Optional command trace used for all sweeps")
@@ -73,12 +77,15 @@ def main() -> None:
     requested_modes = _parse_modes(args.modes)
 
     p_loss_records = _sweep_p_loss(base_config, requested_modes, args.p_loss_values, args.runs, args.seed)
+    p_reorder_records = _sweep_p_reorder(base_config, requested_modes, args.p_reorder_values, args.runs, args.seed)
     window_records = _sweep_window(base_config, requested_modes, args.window_values, args.runs, args.seed)
 
     _write_json(Path(args.p_loss_output), p_loss_records)
+    _write_json(Path(args.p_reorder_output), p_reorder_records)
     _write_json(Path(args.window_output), window_records)
 
     print(f"Saved p_loss sweep: {args.p_loss_output}")
+    print(f"Saved p_reorder sweep: {args.p_reorder_output}")
     print(f"Saved window sweep: {args.window_output}")
 
 
@@ -111,6 +118,26 @@ def _sweep_p_loss(
     return records
 
 
+def _sweep_p_reorder(
+    base_config: SimulationConfig,
+    modes: List[Mode],
+    p_reorder_values: Iterable[float],
+    runs: int,
+    seed: int | None,
+) -> List[dict]:
+    records: List[dict] = []
+    # For reorder sweep, we might want a small non-zero p_loss or just pure reorder.
+    # Let's assume pure reorder for now, or keep base_config's p_loss (default 0).
+    for value in p_reorder_values:
+        config = dataclasses.replace(base_config, p_reorder=value)
+        stats = run_many_experiments(config, modes=modes, runs=runs, seed=seed)
+        for entry in stats:
+            record = entry.as_dict()
+            record.update({"sweep_type": "p_reorder", "sweep_value": value})
+            records.append(record)
+    return records
+
+
 def _sweep_window(
     base_config: SimulationConfig,
     modes: List[Mode],
@@ -119,8 +146,19 @@ def _sweep_window(
     seed: int | None,
 ) -> List[dict]:
     records: List[dict] = []
+    # To show a meaningful tradeoff, we need a challenging environment.
+    # If p_loss=0 and p_reorder=0, any window size > 0 works perfectly.
+    # Let's inject some chaos:
+    stress_p_loss = 0.05
+    stress_p_reorder = 0.3
+    
     for value in window_values:
-        config = dataclasses.replace(base_config, window_size=value)
+        config = dataclasses.replace(
+            base_config, 
+            window_size=value,
+            p_loss=stress_p_loss,
+            p_reorder=stress_p_reorder
+        )
         stats = run_many_experiments(config, modes=modes, runs=runs, seed=seed)
         for entry in stats:
             record = entry.as_dict()

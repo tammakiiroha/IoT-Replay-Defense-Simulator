@@ -58,20 +58,44 @@ def verify_with_window(
     if not constant_time_compare(expected_mac, frame.mac):
         return VerificationResult(False, "mac_mismatch", state)
 
+    # Initial state
     if state.last_counter < 0:
         state.last_counter = frame.counter
+        state.received_mask = 1  # Mark this counter as received (bit 0)
         return VerificationResult(True, "window_accept_initial", state)
 
-    if frame.counter <= state.last_counter:
-        return VerificationResult(False, "counter_replay", state)
+    diff = frame.counter - state.last_counter
 
-    upper_bound = state.last_counter + window_size
-    if frame.counter > upper_bound:
-        return VerificationResult(False, "counter_out_of_window", state)
-
-    if frame.counter > state.last_counter:
+    # Case 1: New highest counter (Advance window)
+    if diff > 0:
+        # Check lookahead limit (optional, but preserves original behavior of preventing huge jumps)
+        # We use window_size as the lookahead limit as well.
+        if diff > window_size:
+            return VerificationResult(False, "counter_out_of_window", state)
+        
+        # Shift mask to the left by diff
+        state.received_mask <<= diff
+        # Set bit 0 (the new last_counter)
+        state.received_mask |= 1
+        # Update last_counter
         state.last_counter = frame.counter
-    return VerificationResult(True, "window_accept", state)
+        return VerificationResult(True, "window_accept_new", state)
+
+    # Case 2: Old or current counter (Check replay window)
+    else:
+        offset = -diff  # Positive distance from last_counter
+        
+        # Check if it fell off the left edge of the window
+        if offset >= window_size:
+            return VerificationResult(False, "counter_too_old", state)
+        
+        # Check if already received
+        if (state.received_mask >> offset) & 1:
+            return VerificationResult(False, "counter_replay", state)
+        
+        # Mark as received
+        state.received_mask |= (1 << offset)
+        return VerificationResult(True, "window_accept_old", state)
 
 
 def verify_challenge_response(

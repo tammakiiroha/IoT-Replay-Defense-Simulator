@@ -311,18 +311,25 @@ def plot_window_tradeoff(data: List[Dict], width: float, save_kwargs: dict) -> N
     attack = percent_series(subset, "avg_attack_rate")
     attack_std = percent_series(subset, "std_attack_rate")
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(width, width * 0.45), sharex=True, layout="constrained")
+    # Adjusted figsize to reduce bottom whitespace
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(width, width * 0.42), sharex=True, layout="constrained")
 
     ax1.bar(xs, legit, yerr=legit_std, capsize=4, color=STYLE_MAP["window"]["color"], edgecolor="#222", alpha=0.8, width=0.6)
     ax1.set_ylabel("Legitimate acceptance [%]")
     ax1.set_xlabel("Window size W")
     ax1.set_xticks(xs)
     ax1.set_xticklabels(x_labels)
-    ax1.set_ylim(80, 102)
+    # Adjusted y-axis to show all data including W=1 (27.6%)
+    ax1.set_ylim(0, 105)
     ax1.set_title("Usability")
     
+    # Only show labels for bars above 50% to avoid clutter
     for x, y in zip(xs, legit):
-        ax1.text(x, y + 0.5, f"{y:.1f}%", ha="center", va="bottom", fontsize=9, fontweight="bold")
+        if y > 50:
+            ax1.text(x, y + 1, f"{y:.1f}%", ha="center", va="bottom", fontsize=9, fontweight="bold")
+        else:
+            # For low values, show label inside the bar or just above
+            ax1.text(x, y + 2, f"{y:.1f}%", ha="center", va="bottom", fontsize=9, fontweight="bold", color="red")
         
     apply_axes_style(ax1)
 
@@ -331,15 +338,15 @@ def plot_window_tradeoff(data: List[Dict], width: float, save_kwargs: dict) -> N
     ax2.set_xlabel("Window size W")
     ax2.set_xticks(xs)
     ax2.set_xticklabels(x_labels)
-    ax2.set_ylim(-0.05, max(attack) + 0.2)
+    ax2.set_ylim(0, max(attack) * 1.3)  # Adjusted to provide proper headroom
     ax2.set_title("Security")
     
     for x, y in zip(xs, attack):
-        ax2.text(x, y + 0.02, f"{y:.3f}%", ha="center", va="bottom", fontsize=9, fontweight="bold")
+        ax2.text(x, y + max(attack) * 0.05, f"{y:.2f}%", ha="center", va="bottom", fontsize=9, fontweight="bold")
         
     apply_axes_style(ax2)
 
-    fig.suptitle("Window size vs usability & security (p_loss=0.05, p_reorder=0.3)")
+    fig.suptitle("Window size vs usability & security (p_loss=0.05, p_reorder=0.3)", fontsize=11)
     save_figure(fig, stem="window_tradeoff", **save_kwargs)
 
 

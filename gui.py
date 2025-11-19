@@ -59,11 +59,10 @@ class ModernButton(tk.Frame):
         # 布局容器
         self.pack_propagate(False)
         
-        # 内容标签（图标+文字）
-        full_text = f"{icon}  {text}" if icon else text
+        # 内容标签（图标+文字） - 移除Emoji图标支持，直接用文字
         self.label = tk.Label(
             self, 
-            text=full_text, 
+            text=text, 
             bg=color, 
             fg="white", 
             font=FONTS["h3"],
@@ -98,7 +97,7 @@ class CardFrame(tk.Frame):
         
         # 标题栏
         header = tk.Frame(self, bg=COLORS["card_bg"])
-        header.pack(fill=tk.X, marginBottom=10)
+        header.pack(fill=tk.X, pady=(0, 10))
         
         if icon:
             tk.Label(header, text=icon, font=FONTS["icon"], bg=COLORS["card_bg"]).pack(side=tk.LEFT, padx=(0, 10))
@@ -172,8 +171,8 @@ class SimulationGUI:
         # Logo区
         logo_frame = tk.Frame(sidebar, bg=COLORS["bg_dark"], height=100)
         logo_frame.pack(fill=tk.X, pady=20)
-        tk.Label(logo_frame, text="🛡️", font=("Arial", 48), bg=COLORS["bg_dark"], fg="white").pack()
-        tk.Label(logo_frame, text="ReplaySim", font=("Arial", 20, "bold"), bg=COLORS["bg_dark"], fg="white").pack(pady=5)
+        tk.Label(logo_frame, text="[ Replay ]", font=("Arial", 24, "bold"), bg=COLORS["bg_dark"], fg="white").pack()
+        tk.Label(logo_frame, text="Simulation Toolkit", font=("Arial", 12), bg=COLORS["bg_dark"], fg="white").pack(pady=5)
         tk.Label(logo_frame, text="v1.0", font=("Arial", 10), bg=COLORS["bg_dark"], fg="#95a5a6").pack()
 
         # 侧边栏菜单
@@ -213,14 +212,14 @@ class SimulationGUI:
         """侧边栏快捷菜单"""
         
         menu_items = [
-            ("🚀 快速测试", "Quick Test (30s)", "quick", COLORS["success"]),
-            ("📊 基线对比", "Baseline (2m)", "baseline", COLORS["accent"]),
-            ("📉 丢包测试", "Packet Loss", "packet_loss", COLORS["warning"]),
-            ("🔀 乱序测试", "Reordering", "reorder", "#9b59b6"),
-            ("⚡ 恶劣网络", "Harsh Network", "harsh", COLORS["danger"]),
+            ("Quick Test", "30s run", "quick", COLORS["success"]),
+            ("Baseline", "Compare all modes", "baseline", COLORS["accent"]),
+            ("Packet Loss", "10% loss test", "packet_loss", COLORS["warning"]),
+            ("Reordering", "30% reorder test", "reorder", "#9b59b6"),
+            ("Harsh Network", "Loss + Reorder", "harsh", COLORS["danger"]),
         ]
         
-        tk.Label(parent, text="SCENARIOS / 场景", font=("Arial", 10, "bold"), bg=COLORS["bg_dark"], fg="#7f8c8d", anchor="w").pack(fill=tk.X, padx=20, pady=(30, 10))
+        tk.Label(parent, text="SCENARIOS", font=("Arial", 10, "bold"), bg=COLORS["bg_dark"], fg="#7f8c8d", anchor="w").pack(fill=tk.X, padx=20, pady=(30, 10))
         
         for title, sub, cmd, color in menu_items:
             btn_frame = tk.Frame(parent, bg=COLORS["bg_dark"], cursor="hand2")
@@ -268,11 +267,11 @@ class SimulationGUI:
 
     def create_config_panel(self, parent):
         """自定义实验配置面板"""
-        card = CardFrame(parent, "Custom Experiment / 自定义实验", "🔧")
+        card = CardFrame(parent, "Custom Experiment", "")
         card.pack(fill=tk.BOTH, expand=True)
         
         # 1. 防御机制
-        tk.Label(card, text="Defense Mechanisms / 防御机制", font=FONTS["h3"], bg=COLORS["card_bg"]).pack(anchor="w", pady=(0, 10))
+        tk.Label(card, text="Defense Mechanisms", font=FONTS["h3"], bg=COLORS["card_bg"]).pack(anchor="w", pady=(0, 10))
         
         self.defense_var = tk.StringVar(value="all")
         defense_frame = tk.Frame(card, bg=COLORS["card_bg"])
@@ -318,7 +317,7 @@ class SimulationGUI:
         frame.pack(fill=tk.X)
         
         header = tk.Frame(frame, bg=COLORS["card_bg"])
-        header.pack(fill=tk.X, marginBottom=5)
+        header.pack(fill=tk.X, pady=(0, 5))
         
         tk.Label(header, text=title, font=FONTS["body"], bg=COLORS["card_bg"], fg="#7f8c8d").pack(side=tk.LEFT)
         
@@ -332,7 +331,7 @@ class SimulationGUI:
             else:
                 value_label.config(text=f"{int(val)}")
         
-        variable.trace("w", update_label)
+        variable.trace_add("write", update_label)
         update_label() # init
         
         scale = ttk.Scale(frame, from_=min_val, to=max_val, variable=variable, orient="horizontal")
@@ -352,7 +351,7 @@ class SimulationGUI:
 
     def create_output_panel(self, parent):
         """右侧输出面板"""
-        card = CardFrame(parent, "Live Output / 实时输出", "📟")
+        card = CardFrame(parent, "Live Output", "")
         card.pack(fill=tk.BOTH, expand=True)
         
         # 文本框容器（带边框）

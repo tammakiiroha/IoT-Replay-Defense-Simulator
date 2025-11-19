@@ -9,6 +9,8 @@
 
 [English](README.md) | **日本語** | [中文](README.zh.md)
 
+> **技術プレゼンテーション**: [English](PRESENTATION.en.md) | [日本語](PRESENTATION.md) | [中文](PRESENTATION.zh.md)
+
 このツールキットは、記録再生攻撃者の下で複数の受信機構成をモデル化し、セキュリティ（攻撃成功率）とユーザビリティ（正規受理率）の両方の指標を報告します。
 
 ## 動作環境

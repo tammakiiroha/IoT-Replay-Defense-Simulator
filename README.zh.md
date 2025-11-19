@@ -9,6 +9,8 @@
 
 [English](README.md) | [日本語](README.ja.md) | **中文**
 
+> **技术演示文档**: [English](PRESENTATION.en.md) | [日本語](PRESENTATION.md) | [中文](PRESENTATION.zh.md)
+
 该工具包在记录-重放攻击者模型下对多种接收器配置进行建模，并报告安全性（攻击成功率）和可用性（合法接受率）两方面的指标。
 
 ## 运行环境

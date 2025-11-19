@@ -9,6 +9,8 @@
 
 **English** | [日本語](README.ja.md) | [中文](README.zh.md)
 
+> **Technical Presentation**: [English](PRESENTATION.en.md) | [日本語](PRESENTATION.md) | [中文](PRESENTATION.zh.md)
+
 This toolkit reproduces the replay-attack evaluation plan described in the project brief. It models multiple receiver configurations under a record-and-replay adversary and reports both security (attack success) and usability (legitimate acceptance) metrics.
 
 ## Requirements

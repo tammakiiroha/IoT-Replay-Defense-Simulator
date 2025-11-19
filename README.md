@@ -47,6 +47,32 @@ This toolkit reproduces the replay-attack evaluation plan described in the proje
 - **Outputs**: human-readable tables on stdout, JSON dumps for downstream analysis, and automation helpers for parameter sweeps.
 
 ## Quick start
+
+### Option 1: Interactive Menu (Recommended for beginners)
+
+**No need to remember parameters!** Just input numbers:
+
+```bash
+./run.sh
+```
+
+Or:
+
+```bash
+python interactive.py
+```
+
+Features:
+- 🎯 Quick demo scenarios
+- 🔧 Custom experiment with step-by-step guidance
+- 📊 Batch experiments
+- 📈 Data visualization
+- 🌏 Multi-language support (EN/JP/CN)
+
+[📖 Interactive Menu Guide](INTERACTIVE_GUIDE.md)
+
+### Option 2: Command Line (For automation)
+
 ```bash
 python3 main.py --runs 200 --num-legit 20 --num-replay 100 --p-loss 0.05 --window-size 5
 ```

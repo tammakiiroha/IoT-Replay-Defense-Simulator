@@ -158,6 +158,23 @@ python -m pytest tests/ -v
 - デフォルトでは、攻撃者は完全な記録者としてモデル化されます（`attacker_record_loss=0`）。正規リンクと同じ損失を攻撃者に経験させたい場合は、`p_loss` と等しく設定してください
 - すべてのモンテカルロ試行は、すべてのモードで同じコマンドシーケンスとパケット損失ドローを再利用するため、比較が公平になります
 
+## システム概要（フローチャート）
+
+```mermaid
+flowchart TD
+    A[コマンドシーケンスの取得<br/>トレースファイルまたはデフォルトセット]
+    B[シナリオの設定<br/>SimulationConfig パラメータ]
+    C{モードループ<br/>no_def / rolling / window / challenge}
+    D[正規トラフィックのシミュレート<br/>カウンタ、MAC、またはノンス]
+    E[攻撃者のスケジューリング<br/>インラインまたはポスト、共有 RNG シード]
+    F[実行ごとの統計集計<br/>正規受理率と攻撃成功率]
+    G[(results/*.json)]
+    H[plot_results.py<br/>PNG/PDF 図の生成]
+    I[README / 論文の知見]
+
+    A --> B --> C --> D --> E --> F --> G --> H --> I
+```
+
 ## データセットとテーブルの再現
 
 1. `main.py` / `scripts/run_sweeps.py` でデータセットを生成

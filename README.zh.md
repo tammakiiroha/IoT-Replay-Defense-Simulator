@@ -158,6 +158,23 @@ python -m pytest tests/ -v
 - 默认情况下，攻击者被建模为完美记录器（`attacker_record_loss=0`）；如果希望攻击者经历与合法链路相同的损失，请将其设置为等于 `p_loss`
 - 每次蒙特卡洛运行在所有模式中重用相同的命令序列和数据包丢失抽样，以确保比较的公平性
 
+## 系统概览（流程图）
+
+```mermaid
+flowchart TD
+    A[捕获命令序列<br/>轨迹文件或默认集]
+    B[配置场景<br/>SimulationConfig 参数]
+    C{模式循环<br/>no_def / rolling / window / challenge}
+    D[模拟合法流量<br/>计数器、MAC 或随机数]
+    E[调度攻击者<br/>内联或后运行，共享随机种子]
+    F[聚合每次运行统计<br/>合法接受率和攻击成功率]
+    G[(results/*.json)]
+    H[plot_results.py<br/>生成 PNG/PDF 图表]
+    I[README / 论文结论]
+
+    A --> B --> C --> D --> E --> F --> G --> H --> I
+```
+
 ## 重现数据集和表格
 
 1. 使用 `main.py` / `scripts/run_sweeps.py` 生成数据集

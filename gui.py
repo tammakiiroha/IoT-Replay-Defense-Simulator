@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Graphical User Interface for Replay Attack Simulation
-图形界面 - 完全鼠标操作，无需输入
+图形界面 - 美化版 (Modern UI)
 """
 
 import tkinter as tk
@@ -10,13 +10,119 @@ import subprocess
 import threading
 import queue
 import sys
+import platform
 
+# --- 颜色配置 ---
+COLORS = {
+    "bg_dark": "#2c3e50",       # 深色背景（侧边栏）
+    "bg_light": "#ecf0f1",      # 浅色背景（内容区）
+    "accent": "#3498db",        # 强调色（蓝色）
+    "accent_hover": "#2980b9",  # 强调色悬停
+    "success": "#2ecc71",       # 成功色（绿色）
+    "success_hover": "#27ae60", # 成功色悬停
+    "warning": "#e67e22",       # 警告色（橙色）
+    "danger": "#e74c3c",        # 危险色（红色）
+    "text_light": "#ffffff",    # 浅色文本
+    "text_dark": "#2c3e50",     # 深色文本
+    "card_bg": "#ffffff",       # 卡片背景
+    "border": "#bdc3c7"         # 边框颜色
+}
+
+# --- 字体配置 ---
+if platform.system() == "Darwin":  # macOS
+    FONTS = {
+        "h1": ("Helvetica Neue", 24, "bold"),
+        "h2": ("Helvetica Neue", 16, "bold"),
+        "h3": ("Helvetica Neue", 14, "bold"),
+        "body": ("Helvetica Neue", 13),
+        "mono": ("Menlo", 12),
+        "icon": ("Apple Color Emoji", 16)
+    }
+else:  # Windows/Linux
+    FONTS = {
+        "h1": ("Segoe UI", 20, "bold"),
+        "h2": ("Segoe UI", 14, "bold"),
+        "h3": ("Segoe UI", 12, "bold"),
+        "body": ("Segoe UI", 11),
+        "mono": ("Consolas", 10),
+        "icon": ("Segoe UI Emoji", 14)
+    }
+
+class ModernButton(tk.Frame):
+    """自定义现代风格按钮"""
+    def __init__(self, parent, text, command, color=COLORS["accent"], hover_color=COLORS["accent_hover"], icon="", **kwargs):
+        super().__init__(parent, bg=color, cursor="hand2", **kwargs)
+        self.command = command
+        self.color = color
+        self.hover_color = hover_color
+        
+        # 布局容器
+        self.pack_propagate(False)
+        
+        # 内容标签（图标+文字）
+        full_text = f"{icon}  {text}" if icon else text
+        self.label = tk.Label(
+            self, 
+            text=full_text, 
+            bg=color, 
+            fg="white", 
+            font=FONTS["h3"],
+            cursor="hand2"
+        )
+        self.label.place(relx=0.5, rely=0.5, anchor="center")
+        
+        # 绑定事件
+        self.bind("<Enter>", self.on_enter)
+        self.bind("<Leave>", self.on_leave)
+        self.bind("<Button-1>", self.on_click)
+        self.label.bind("<Enter>", self.on_enter)
+        self.label.bind("<Leave>", self.on_leave)
+        self.label.bind("<Button-1>", self.on_click)
+
+    def on_enter(self, event):
+        self.configure(bg=self.hover_color)
+        self.label.configure(bg=self.hover_color)
+
+    def on_leave(self, event):
+        self.configure(bg=self.color)
+        self.label.configure(bg=self.color)
+
+    def on_click(self, event):
+        if self.command:
+            self.command()
+
+class CardFrame(tk.Frame):
+    """卡片样式容器"""
+    def __init__(self, parent, title, icon="", **kwargs):
+        super().__init__(parent, bg=COLORS["card_bg"], padx=15, pady=15, **kwargs)
+        
+        # 标题栏
+        header = tk.Frame(self, bg=COLORS["card_bg"])
+        header.pack(fill=tk.X, marginBottom=10)
+        
+        if icon:
+            tk.Label(header, text=icon, font=FONTS["icon"], bg=COLORS["card_bg"]).pack(side=tk.LEFT, padx=(0, 10))
+            
+        tk.Label(
+            header, 
+            text=title, 
+            font=FONTS["h2"], 
+            fg=COLORS["text_dark"], 
+            bg=COLORS["card_bg"]
+        ).pack(side=tk.LEFT)
+        
+        # 分割线
+        ttk.Separator(self, orient="horizontal").pack(fill=tk.X, pady=(0, 15))
 
 class SimulationGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Replay Attack Simulation - 重放攻击仿真")
-        self.root.geometry("1200x800")
+        self.root.title("Replay Attack Simulation Toolkit")
+        self.root.geometry("1280x850")
+        self.root.configure(bg=COLORS["bg_light"])
+        
+        # 设置样式
+        self.setup_style()
         
         # 输出队列
         self.output_queue = queue.Queue()
@@ -28,274 +134,268 @@ class SimulationGUI:
         # 定期检查输出
         self.check_output()
     
+    def setup_style(self):
+        """配置ttk样式"""
+        style = ttk.Style()
+        style.theme_use('clam')
+        
+        # 配置通用背景
+        style.configure(".", background=COLORS["bg_light"])
+        
+        # 配置滚动条
+        style.configure("Vertical.TScrollbar", 
+                       gripcount=0,
+                       background=COLORS["bg_dark"], 
+                       darkcolor=COLORS["bg_dark"], 
+                       lightcolor=COLORS["bg_dark"],
+                       troughcolor=COLORS["bg_light"], 
+                       bordercolor=COLORS["bg_light"], 
+                       arrowcolor="white")
+                       
+        # 配置单选按钮
+        style.configure("TRadiobutton", 
+                       background=COLORS["card_bg"], 
+                       font=FONTS["body"],
+                       foreground=COLORS["text_dark"])
+                       
+        # 配置水平分割线
+        style.configure("TSeparator", background=COLORS["border"])
+
     def create_widgets(self):
-        """创建所有界面元素"""
+        """创建主界面结构"""
         
-        # 标题
-        title_frame = tk.Frame(self.root, bg="#2c3e50", height=80)
-        title_frame.pack(fill=tk.X)
-        title_frame.pack_propagate(False)
+        # === 侧边栏 (Sidebar) ===
+        sidebar = tk.Frame(self.root, bg=COLORS["bg_dark"], width=280)
+        sidebar.pack(side=tk.LEFT, fill=tk.Y)
+        sidebar.pack_propagate(False)
         
-        title = tk.Label(
-            title_frame,
-            text="🛡️ Replay Attack Simulation Toolkit\nリプレイ攻撃シミュレーションツールキット",
-            font=("Arial", 18, "bold"),
-            bg="#2c3e50",
-            fg="white"
-        )
-        title.pack(pady=15)
+        # Logo区
+        logo_frame = tk.Frame(sidebar, bg=COLORS["bg_dark"], height=100)
+        logo_frame.pack(fill=tk.X, pady=20)
+        tk.Label(logo_frame, text="🛡️", font=("Arial", 48), bg=COLORS["bg_dark"], fg="white").pack()
+        tk.Label(logo_frame, text="ReplaySim", font=("Arial", 20, "bold"), bg=COLORS["bg_dark"], fg="white").pack(pady=5)
+        tk.Label(logo_frame, text="v1.0", font=("Arial", 10), bg=COLORS["bg_dark"], fg="#95a5a6").pack()
+
+        # 侧边栏菜单
+        self.create_sidebar_menu(sidebar)
         
-        # 主容器
-        main_container = tk.PanedWindow(self.root, orient=tk.HORIZONTAL)
-        main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        # === 主内容区 (Main Content) ===
+        main_area = tk.Frame(self.root, bg=COLORS["bg_light"])
+        main_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=20, pady=20)
         
-        # 左侧：控制面板
-        left_frame = tk.Frame(main_container, width=500)
-        main_container.add(left_frame)
+        # 标题栏
+        header_frame = tk.Frame(main_area, bg=COLORS["bg_light"], height=50)
+        header_frame.pack(fill=tk.X, pady=(0, 20))
+        tk.Label(
+            header_frame, 
+            text="Dashboard / 控制面板", 
+            font=FONTS["h1"], 
+            bg=COLORS["bg_light"], 
+            fg=COLORS["text_dark"]
+        ).pack(side=tk.LEFT)
         
-        # 右侧：输出窗口
-        right_frame = tk.Frame(main_container)
-        main_container.add(right_frame)
+        # 内容网格
+        content_grid = tk.Frame(main_area, bg=COLORS["bg_light"])
+        content_grid.pack(fill=tk.BOTH, expand=True)
         
-        self.create_control_panel(left_frame)
-        self.create_output_panel(right_frame)
-    
-    def create_control_panel(self, parent):
-        """创建左侧控制面板"""
+        # 左列：配置
+        left_col = tk.Frame(content_grid, bg=COLORS["bg_light"])
+        left_col.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
         
-        # 使用滚动框架
-        canvas = tk.Canvas(parent)
-        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
-        scrollable_frame = tk.Frame(canvas)
+        # 右列：输出
+        right_col = tk.Frame(content_grid, bg=COLORS["bg_light"])
+        right_col.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(10, 0))
         
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
+        self.create_config_panel(left_col)
+        self.create_output_panel(right_col)
+
+    def create_sidebar_menu(self, parent):
+        """侧边栏快捷菜单"""
         
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-        
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-        
-        # 快速场景按钮
-        scenario_frame = tk.LabelFrame(
-            scrollable_frame,
-            text="🎯 快速场景 Quick Scenarios",
-            font=("Arial", 12, "bold"),
-            padx=10,
-            pady=10
-        )
-        scenario_frame.pack(fill=tk.X, padx=10, pady=10)
-        
-        scenarios = [
-            ("🎬 快速测试 (30秒)", "quick", "#27ae60"),
-            ("📊 基线对比 (2分钟)", "baseline", "#3498db"),
-            ("📉 丢包测试", "packet_loss", "#e67e22"),
-            ("🔀 乱序测试", "reorder", "#9b59b6"),
-            ("⚡ 恶劣网络", "harsh", "#e74c3c"),
-            ("🎯 选择性攻击", "selective", "#16a085"),
+        menu_items = [
+            ("🚀 快速测试", "Quick Test (30s)", "quick", COLORS["success"]),
+            ("📊 基线对比", "Baseline (2m)", "baseline", COLORS["accent"]),
+            ("📉 丢包测试", "Packet Loss", "packet_loss", COLORS["warning"]),
+            ("🔀 乱序测试", "Reordering", "reorder", "#9b59b6"),
+            ("⚡ 恶劣网络", "Harsh Network", "harsh", COLORS["danger"]),
         ]
         
-        for text, scenario, color in scenarios:
-            btn = tk.Button(
-                scenario_frame,
-                text=text,
-                font=("Arial", 11),
-                bg=color,
-                fg="white",
-                activebackground=color,
-                activeforeground="white",
-                cursor="hand2",
-                command=lambda s=scenario: self.run_scenario(s),
-                height=2,
-                relief=tk.RAISED,
-                bd=3
-            )
-            btn.pack(fill=tk.X, pady=5)
+        tk.Label(parent, text="SCENARIOS / 场景", font=("Arial", 10, "bold"), bg=COLORS["bg_dark"], fg="#7f8c8d", anchor="w").pack(fill=tk.X, padx=20, pady=(30, 10))
         
-        # 自定义实验
-        custom_frame = tk.LabelFrame(
-            scrollable_frame,
-            text="🔧 自定义实验 Custom Experiment",
-            font=("Arial", 12, "bold"),
-            padx=10,
-            pady=10
-        )
-        custom_frame.pack(fill=tk.X, padx=10, pady=10)
+        for title, sub, cmd, color in menu_items:
+            btn_frame = tk.Frame(parent, bg=COLORS["bg_dark"], cursor="hand2")
+            btn_frame.pack(fill=tk.X, padx=10, pady=2)
+            
+            # 左侧色条
+            tk.Frame(btn_frame, bg=color, width=4).pack(side=tk.LEFT, fill=tk.Y)
+            
+            # 文字容器
+            text_frame = tk.Frame(btn_frame, bg=COLORS["bg_dark"], padx=10, pady=8)
+            text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            
+            tk.Label(text_frame, text=title, font=FONTS["h3"], bg=COLORS["bg_dark"], fg="white", anchor="w").pack(fill=tk.X)
+            tk.Label(text_frame, text=sub, font=("Arial", 10), bg=COLORS["bg_dark"], fg="#95a5a6", anchor="w").pack(fill=tk.X)
+            
+            # 绑定点击事件
+            for w in [btn_frame, text_frame] + text_frame.winfo_children():
+                w.bind("<Button-1>", lambda e, s=cmd: self.run_scenario(s))
+                w.bind("<Enter>", lambda e, f=btn_frame: f.configure(bg="#34495e"))
+                w.bind("<Leave>", lambda e, f=btn_frame: f.configure(bg=COLORS["bg_dark"]))
+
+        # 底部按钮
+        bottom_frame = tk.Frame(parent, bg=COLORS["bg_dark"], pady=20)
+        bottom_frame.pack(side=tk.BOTTOM, fill=tk.X)
         
-        # 防御机制
-        tk.Label(custom_frame, text="防御机制 Defense:", font=("Arial", 10, "bold")).pack(anchor=tk.W)
+        ModernButton(
+            bottom_frame, 
+            text="Generate Plots", 
+            command=self.generate_plots,
+            color="#34495e",
+            hover_color="#2c3e50",
+            icon="📈",
+            height=40
+        ).pack(fill=tk.X, padx=20, pady=5)
+        
+        ModernButton(
+            bottom_frame, 
+            text="Export Tables", 
+            command=self.export_tables,
+            color="#34495e",
+            hover_color="#2c3e50",
+            icon="📋",
+            height=40
+        ).pack(fill=tk.X, padx=20, pady=5)
+
+    def create_config_panel(self, parent):
+        """自定义实验配置面板"""
+        card = CardFrame(parent, "Custom Experiment / 自定义实验", "🔧")
+        card.pack(fill=tk.BOTH, expand=True)
+        
+        # 1. 防御机制
+        tk.Label(card, text="Defense Mechanisms / 防御机制", font=FONTS["h3"], bg=COLORS["card_bg"]).pack(anchor="w", pady=(0, 10))
+        
         self.defense_var = tk.StringVar(value="all")
+        defense_frame = tk.Frame(card, bg=COLORS["card_bg"])
+        defense_frame.pack(fill=tk.X, pady=(0, 20))
+        
         defenses = [
-            ("全部对比 All", "all"),
-            ("无防御 No Defense", "no_def"),
-            ("滚动计数器 Rolling", "rolling"),
-            ("滑动窗口 Window", "window"),
-            ("挑战响应 Challenge", "challenge")
+            ("All / 全部对比", "all"),
+            ("No Def / 无防御", "no_def"),
+            ("Rolling / 滚动计数", "rolling"),
+            ("Window / 滑动窗口", "window"),
+            ("Challenge / 挑战响应", "challenge")
         ]
-        for text, value in defenses:
-            tk.Radiobutton(
-                custom_frame,
-                text=text,
-                variable=self.defense_var,
-                value=value,
-                font=("Arial", 10)
-            ).pack(anchor=tk.W, padx=20)
+        
+        for text, val in defenses:
+            ttk.Radiobutton(defense_frame, text=text, variable=self.defense_var, value=val).pack(anchor="w", pady=2)
+
+        # 2. 运行参数
+        params_frame = tk.Frame(card, bg=COLORS["card_bg"])
+        params_frame.pack(fill=tk.X)
         
         # 运行次数
-        tk.Label(custom_frame, text="\n运行次数 Runs:", font=("Arial", 10, "bold")).pack(anchor=tk.W)
-        self.runs_var = tk.IntVar(value=50)
-        runs_frame = tk.Frame(custom_frame)
-        runs_frame.pack(fill=tk.X, pady=5)
-        
-        tk.Scale(
-            runs_frame,
-            from_=10,
-            to=200,
-            orient=tk.HORIZONTAL,
-            variable=self.runs_var,
-            length=300,
-            label="次数"
-        ).pack(side=tk.LEFT, fill=tk.X, expand=True)
-        
-        tk.Label(runs_frame, textvariable=self.runs_var, font=("Arial", 12, "bold")).pack(side=tk.LEFT, padx=10)
-        
+        self.create_slider(params_frame, "Runs / 运行次数", self.runs_var_init(50), 10, 200, 10)
         # 丢包率
-        tk.Label(custom_frame, text="\n丢包率 Packet Loss:", font=("Arial", 10, "bold")).pack(anchor=tk.W)
-        self.ploss_var = tk.DoubleVar(value=0.0)
-        ploss_frame = tk.Frame(custom_frame)
-        ploss_frame.pack(fill=tk.X, pady=5)
-        
-        tk.Scale(
-            ploss_frame,
-            from_=0.0,
-            to=0.5,
-            resolution=0.01,
-            orient=tk.HORIZONTAL,
-            variable=self.ploss_var,
-            length=300,
-            label="概率"
-        ).pack(side=tk.LEFT, fill=tk.X, expand=True)
-        
-        tk.Label(ploss_frame, textvariable=self.ploss_var, font=("Arial", 12, "bold")).pack(side=tk.LEFT, padx=10)
-        
+        self.create_slider(params_frame, "Packet Loss / 丢包率", self.ploss_var_init(0.0), 0.0, 0.5, 0.01, True)
         # 乱序率
-        tk.Label(custom_frame, text="\n乱序率 Reorder Rate:", font=("Arial", 10, "bold")).pack(anchor=tk.W)
-        self.preorder_var = tk.DoubleVar(value=0.0)
-        preorder_frame = tk.Frame(custom_frame)
-        preorder_frame.pack(fill=tk.X, pady=5)
-        
-        tk.Scale(
-            preorder_frame,
-            from_=0.0,
-            to=0.5,
-            resolution=0.01,
-            orient=tk.HORIZONTAL,
-            variable=self.preorder_var,
-            length=300,
-            label="概率"
-        ).pack(side=tk.LEFT, fill=tk.X, expand=True)
-        
-        tk.Label(preorder_frame, textvariable=self.preorder_var, font=("Arial", 12, "bold")).pack(side=tk.LEFT, padx=10)
-        
-        # 运行按钮
-        tk.Button(
-            custom_frame,
-            text="▶️ 运行自定义实验 Run Custom Experiment",
-            font=("Arial", 12, "bold"),
-            bg="#2ecc71",
-            fg="white",
-            activebackground="#27ae60",
-            activeforeground="white",
-            cursor="hand2",
+        self.create_slider(params_frame, "Reorder Rate / 乱序率", self.preorder_var_init(0.0), 0.0, 0.5, 0.01, True)
+
+        # 3. 运行按钮
+        tk.Frame(card, bg=COLORS["card_bg"], height=20).pack() # Spacer
+        ModernButton(
+            card, 
+            text="START SIMULATION / 开始仿真", 
             command=self.run_custom,
-            height=2,
-            relief=tk.RAISED,
-            bd=3
-        ).pack(fill=tk.X, pady=15)
+            color=COLORS["success"],
+            hover_color=COLORS["success_hover"],
+            icon="▶️",
+            height=50
+        ).pack(fill=tk.X, pady=10)
+
+    def create_slider(self, parent, title, variable, min_val, max_val, res, is_float=False):
+        """创建美化的滑动条"""
+        frame = tk.Frame(parent, bg=COLORS["card_bg"], pady=10)
+        frame.pack(fill=tk.X)
         
-        # 其他功能
-        other_frame = tk.LabelFrame(
-            scrollable_frame,
-            text="📈 其他功能 Other Functions",
-            font=("Arial", 12, "bold"),
-            padx=10,
-            pady=10
-        )
-        other_frame.pack(fill=tk.X, padx=10, pady=10)
+        header = tk.Frame(frame, bg=COLORS["card_bg"])
+        header.pack(fill=tk.X, marginBottom=5)
         
-        tk.Button(
-            other_frame,
-            text="📊 生成图表 Generate Plots",
-            font=("Arial", 11),
-            bg="#3498db",
-            fg="white",
-            cursor="hand2",
-            command=self.generate_plots,
-            height=2
-        ).pack(fill=tk.X, pady=5)
+        tk.Label(header, text=title, font=FONTS["body"], bg=COLORS["card_bg"], fg="#7f8c8d").pack(side=tk.LEFT)
         
-        tk.Button(
-            other_frame,
-            text="📋 导出表格 Export Tables",
-            font=("Arial", 11),
-            bg="#9b59b6",
-            fg="white",
-            cursor="hand2",
-            command=self.export_tables,
-            height=2
-        ).pack(fill=tk.X, pady=5)
+        value_label = tk.Label(header, font=FONTS["h3"], bg=COLORS["card_bg"], fg=COLORS["accent"])
+        value_label.pack(side=tk.RIGHT)
         
-        tk.Button(
-            other_frame,
-            text="🗑️ 清空输出 Clear Output",
-            font=("Arial", 11),
-            bg="#95a5a6",
-            fg="white",
-            cursor="hand2",
-            command=self.clear_output,
-            height=2
-        ).pack(fill=tk.X, pady=5)
-    
+        def update_label(*args):
+            val = variable.get()
+            if is_float:
+                value_label.config(text=f"{val:.2f}")
+            else:
+                value_label.config(text=f"{int(val)}")
+        
+        variable.trace("w", update_label)
+        update_label() # init
+        
+        scale = ttk.Scale(frame, from_=min_val, to=max_val, variable=variable, orient="horizontal")
+        scale.pack(fill=tk.X)
+
+    def runs_var_init(self, val):
+        self.runs_var = tk.IntVar(value=val)
+        return self.runs_var
+        
+    def ploss_var_init(self, val):
+        self.ploss_var = tk.DoubleVar(value=val)
+        return self.ploss_var
+        
+    def preorder_var_init(self, val):
+        self.preorder_var = tk.DoubleVar(value=val)
+        return self.preorder_var
+
     def create_output_panel(self, parent):
-        """创建右侧输出面板"""
+        """右侧输出面板"""
+        card = CardFrame(parent, "Live Output / 实时输出", "📟")
+        card.pack(fill=tk.BOTH, expand=True)
         
-        output_label = tk.Label(
-            parent,
-            text="📟 实时输出 Live Output",
-            font=("Arial", 12, "bold"),
-            bg="#ecf0f1",
-            fg="#2c3e50"
-        )
-        output_label.pack(fill=tk.X, pady=(0, 5))
+        # 文本框容器（带边框）
+        text_container = tk.Frame(card, bg="#2c3e50", bd=1, relief="flat")
+        text_container.pack(fill=tk.BOTH, expand=True)
         
         self.output_text = scrolledtext.ScrolledText(
-            parent,
+            text_container,
             wrap=tk.WORD,
-            font=("Courier", 10),
+            font=FONTS["mono"],
             bg="#2c3e50",
             fg="#ecf0f1",
-            insertbackground="white"
+            insertbackground="white",
+            padx=10,
+            pady=10,
+            borderwidth=0,
+            highlightthickness=0
         )
         self.output_text.pack(fill=tk.BOTH, expand=True)
         
-        # 状态栏
-        self.status_var = tk.StringVar(value="就绪 Ready")
-        status_bar = tk.Label(
-            parent,
-            textvariable=self.status_var,
-            font=("Arial", 10),
-            bg="#34495e",
-            fg="white",
-            anchor=tk.W,
-            padx=10
-        )
-        status_bar.pack(fill=tk.X, side=tk.BOTTOM)
+        # 底部工具栏
+        toolbar = tk.Frame(card, bg=COLORS["card_bg"], height=40, pady=10)
+        toolbar.pack(fill=tk.X)
+        
+        # 状态指示
+        self.status_label = tk.Label(toolbar, text="● Ready", font=FONTS["body"], fg=COLORS["success"], bg=COLORS["card_bg"])
+        self.status_label.pack(side=tk.LEFT)
+        
+        # 清空按钮
+        ModernButton(
+            toolbar,
+            text="Clear Output",
+            command=self.clear_output,
+            color="#95a5a6",
+            hover_color="#7f8c8d",
+            icon="🗑️",
+            height=30,
+            width=120
+        ).pack(side=tk.RIGHT)
+
+    # --- 逻辑功能部分 (保持原有逻辑，适配新UI) ---
     
     def run_scenario(self, scenario):
-        """运行预设场景"""
         scenarios = {
             "quick": ("快速测试", "--modes window --runs 30 --num-legit 10 --num-replay 50 --p-loss 0.05"),
             "baseline": ("基线对比", "--modes no_def rolling window challenge --runs 100 --num-legit 20 --num-replay 100 --p-loss 0.0 --p-reorder 0.0"),
@@ -304,12 +404,10 @@ class SimulationGUI:
             "harsh": ("恶劣网络", "--modes window challenge --runs 100 --num-legit 20 --num-replay 100 --p-loss 0.15 --p-reorder 0.3"),
             "selective": ("选择性攻击", "--modes rolling window challenge --runs 100 --num-legit 20 --num-replay 100 --target-commands UNLOCK --p-loss 0.0 --p-reorder 0.0"),
         }
-        
         name, cmd = scenarios[scenario]
         self.run_command(cmd, f"场景: {name}")
-    
+
     def run_custom(self):
-        """运行自定义实验"""
         defense_map = {
             "all": "no_def rolling window challenge",
             "no_def": "no_def",
@@ -317,31 +415,25 @@ class SimulationGUI:
             "window": "window",
             "challenge": "challenge"
         }
-        
         modes = defense_map[self.defense_var.get()]
-        runs = self.runs_var.get()
-        p_loss = self.ploss_var.get()
-        p_reorder = self.preorder_var.get()
-        
-        cmd = f"--modes {modes} --runs {runs} --num-legit 20 --num-replay 100 --p-loss {p_loss} --p-reorder {p_reorder}"
+        cmd = f"--modes {modes} --runs {self.runs_var.get()} --num-legit 20 --num-replay 100 --p-loss {self.ploss_var.get()} --p-reorder {self.preorder_var.get()}"
         self.run_command(cmd, "自定义实验")
-    
+
     def run_command(self, args, description):
-        """在后台运行命令"""
         if self.running:
-            messagebox.showwarning("警告", "已有实验正在运行！\nExperiment is already running!")
+            messagebox.showwarning("Busy", "Experiment is running! / 实验正在进行中")
             return
         
         self.running = True
-        self.status_var.set(f"运行中: {description} Running...")
-        self.output_text.insert(tk.END, f"\n{'='*80}\n")
-        self.output_text.insert(tk.END, f"▶️ 开始运行: {description}\n")
-        self.output_text.insert(tk.END, f"{'='*80}\n\n")
+        self.set_status(True, f"Running: {description}...")
+        
+        self.output_text.insert(tk.END, f"\n{'='*60}\n")
+        self.output_text.insert(tk.END, f"▶️ START: {description}\n")
+        self.output_text.insert(tk.END, f"{'='*60}\n\n")
         self.output_text.see(tk.END)
         
         def run_in_thread():
             try:
-                # 激活虚拟环境并运行
                 cmd = f"source .venv/bin/activate && python main.py {args}"
                 process = subprocess.Popen(
                     cmd,
@@ -352,84 +444,55 @@ class SimulationGUI:
                     bufsize=1,
                     executable='/bin/bash'
                 )
-                
                 for line in process.stdout:
                     self.output_queue.put(line)
-                
                 process.wait()
-                
-                if process.returncode == 0:
-                    self.output_queue.put("\n✅ 实验完成！Experiment completed!\n")
-                else:
-                    self.output_queue.put(f"\n❌ 错误: 退出码 {process.returncode}\n")
-            
+                self.output_queue.put("\n✅ DONE / 完成\n")
             except Exception as e:
-                self.output_queue.put(f"\n❌ 错误: {str(e)}\n")
-            
+                self.output_queue.put(f"\n❌ ERROR: {str(e)}\n")
             finally:
                 self.running = False
-                self.status_var.set("就绪 Ready")
+                self.set_status(False)
         
-        thread = threading.Thread(target=run_in_thread, daemon=True)
-        thread.start()
-    
+        threading.Thread(target=run_in_thread, daemon=True).start()
+
     def generate_plots(self):
-        """生成图表"""
-        self.status_var.set("生成图表中... Generating plots...")
-        self.output_text.insert(tk.END, "\n📊 开始生成图表...\n")
-        self.output_text.see(tk.END)
-        
+        self.set_status(True, "Generating plots...")
+        self.output_text.insert(tk.END, "\n📊 Generating plots...\n")
         def run():
-            try:
-                result = subprocess.run(
-                    "source .venv/bin/activate && python scripts/plot_results.py",
-                    shell=True,
-                    capture_output=True,
-                    text=True,
-                    executable='/bin/bash'
-                )
-                
-                self.output_queue.put(result.stdout)
-                self.output_queue.put("\n✅ 图表生成完成！Plots generated!\n")
-            except Exception as e:
-                self.output_queue.put(f"\n❌ 错误: {str(e)}\n")
-            
-            self.status_var.set("就绪 Ready")
-        
+            subprocess.run("source .venv/bin/activate && python scripts/plot_results.py", shell=True, executable='/bin/bash')
+            self.output_queue.put("✅ Plots generated in figures/\n")
+            self.running = False
+            self.set_status(False)
+        self.running = True
         threading.Thread(target=run, daemon=True).start()
-    
+
     def export_tables(self):
-        """导出表格"""
-        self.status_var.set("导出表格中... Exporting tables...")
-        self.output_text.insert(tk.END, "\n📋 开始导出表格...\n")
-        self.output_text.see(tk.END)
-        
+        self.set_status(True, "Exporting tables...")
+        self.output_text.insert(tk.END, "\n📋 Exporting tables...\n")
         def run():
-            try:
-                result = subprocess.run(
-                    "source .venv/bin/activate && python scripts/export_tables.py",
-                    shell=True,
-                    capture_output=True,
-                    text=True,
-                    executable='/bin/bash'
-                )
-                
-                self.output_queue.put(result.stdout)
-                self.output_queue.put("\n✅ 表格导出完成！Tables exported!\n")
-            except Exception as e:
-                self.output_queue.put(f"\n❌ 错误: {str(e)}\n")
-            
-            self.status_var.set("就绪 Ready")
-        
+            subprocess.run("source .venv/bin/activate && python scripts/export_tables.py", shell=True, executable='/bin/bash')
+            self.output_queue.put("✅ Tables exported to docs/\n")
+            self.running = False
+            self.set_status(False)
+        self.running = True
         threading.Thread(target=run, daemon=True).start()
-    
+
     def clear_output(self):
-        """清空输出"""
         self.output_text.delete(1.0, tk.END)
-        self.output_text.insert(tk.END, "输出已清空 Output cleared\n")
-    
+
+    def set_status(self, is_running, text=None):
+        if text:
+            self.status_label.config(text=f"● {text}")
+        else:
+            self.status_label.config(text="● Ready")
+            
+        if is_running:
+            self.status_label.config(fg=COLORS["warning"])
+        else:
+            self.status_label.config(fg=COLORS["success"])
+
     def check_output(self):
-        """定期检查并显示输出"""
         try:
             while True:
                 line = self.output_queue.get_nowait()
@@ -437,16 +500,12 @@ class SimulationGUI:
                 self.output_text.see(tk.END)
         except queue.Empty:
             pass
-        
         self.root.after(100, self.check_output)
-
 
 def main():
     root = tk.Tk()
     app = SimulationGUI(root)
     root.mainloop()
 
-
 if __name__ == "__main__":
     main()
-

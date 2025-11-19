@@ -261,23 +261,15 @@ _`results/ideal_p0.json` からの参照ベースライン_
 
 ## 参考文献
 
-本プロジェクトの防御メカニズムは、確立された学術研究と業界標準に基づいています：
+本プロジェクトは以下の標準および研究に基づいています：
 
-### 主要参考文献
+[1] Perrig, A., et al. (2002). SPINS: Security Protocols for Sensor Networks. *Wireless Networks*, 8(5), 521-534.
 
-1. **Perrig, A., et al.** (2002). "SPINS: Security Protocols for Sensor Networks." *Wireless Networks*, 8(5), 521-534. DOI: [10.1023/A:1016598314198](https://doi.org/10.1023/A:1016598314198)
-   - リソース制約環境におけるリプレイ攻撃防御の基礎
+[2] Kent, S., & Seo, K. (2005). Security Architecture for the Internet Protocol. RFC 4301, IETF.
 
-2. **Kent, S., & Seo, K.** (2005). "Security Architecture for the Internet Protocol." *RFC 4301*, IETF.
-   - IPsec のアンチリプレイウィンドウメカニズム（本プロジェクトのスライディングウィンドウ実装の基礎）
+[3] Bellare, M., et al. (1996). Keying Hash Functions for Message Authentication. *CRYPTO'96*, Springer.
 
-3. **Bellare, M., Canetti, R., & Krawczyk, H.** (1996). "Keying Hash Functions for Message Authentication." *CRYPTO'96*, Springer.
-   - HMAC ベースのメッセージ認証の理論的基礎
-
-4. **Needham, R. M., & Schroeder, M. D.** (1978). "Using Encryption for Authentication in Large Networks of Computers." *CACM*, 21(12), 993-999.
-   - チャレンジ・レスポンス認証に関する古典的論文
-
-完全な参考文献リストについては、[PRESENTATION.md](PRESENTATION.md#付録-c-参考文献) をご覧ください。
+[4] Needham, R. M., & Schroeder, M. D. (1978). Using Encryption for Authentication in Large Networks. *CACM*, 21(12), 993-999.
 
 ## ライセンス
 

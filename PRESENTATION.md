@@ -974,66 +974,19 @@ Replay-simulation/
 
 ## 付録 C: 参考文献
 
-### 主要引用文献（Primary References）
+[1] Perrig, A., Szewczyk, R., Tygar, J. D., Wen, V., & Culler, D. E. (2002). SPINS: Security Protocols for Sensor Networks. *Wireless Networks*, 8(5), 521-534.
 
-1. **Replay Attack and Defense Mechanisms**:
-   - Perrig, A., Szewczyk, R., Tygar, J. D., Wen, V., & Culler, D. E. (2002). "SPINS: Security Protocols for Sensor Networks." *Wireless Networks*, 8(5), 521-534. DOI: 10.1023/A:1016598314198
-   - 📌 *核心引用*：SPINS协议是传感器网络中防重放攻击的经典方案，提出了μTESLA和SNEP协议
+[2] Kent, S., & Seo, K. (2005). Security Architecture for the Internet Protocol. RFC 4301, Internet Engineering Task Force.
 
-2. **Anti-Replay Window Protocol (IPsec Standard)**:
-   - Kent, S., & Atkinson, R. (1998). "Security Architecture for the Internet Protocol." *RFC 2401*, Internet Engineering Task Force (IETF).
-   - Kent, S., & Seo, K. (2005). "Security Architecture for the Internet Protocol." *RFC 4301*, IETF. (Updated version)
-   - 📌 *标准文档*：IPsec中的滑动窗口防重放机制，是本项目Sliding Window实现的理论基础
+[3] Bellare, M., Canetti, R., & Krawczyk, H. (1996). Keying Hash Functions for Message Authentication. In *Advances in Cryptology—CRYPTO'96*, pp. 1-15. Springer.
 
-3. **Message Authentication Codes (MAC)**:
-   - Bellare, M., Canetti, R., & Krawczyk, H. (1996). "Keying Hash Functions for Message Authentication." In *Advances in Cryptology—CRYPTO'96* (pp. 1-15). Springer, Berlin, Heidelberg. DOI: 10.1007/3-540-68697-5_1
-   - 📌 *密码学基础*：HMAC的理论基础，本项目使用HMAC-SHA256进行消息认证
+[4] Needham, R. M., & Schroeder, M. D. (1978). Using Encryption for Authentication in Large Networks of Computers. *Communications of the ACM*, 21(12), 993-999.
 
-4. **Challenge-Response Authentication**:
-   - Needham, R. M., & Schroeder, M. D. (1978). "Using Encryption for Authentication in Large Networks of Computers." *Communications of the ACM*, 21(12), 993-999. DOI: 10.1145/359657.359659
-   - 📌 *经典论文*：Challenge-Response认证协议的基础理论
+[5] Tanenbaum, A. S., & Wetherall, D. J. (2011). *Computer Networks* (5th ed.). Prentice Hall.
 
-### 补充文献（Supporting References）
+[6] Syverson, P. (1994). A Taxonomy of Replay Attacks. In *Proceedings of Computer Security Foundations Workshop VII*, pp. 187-191. IEEE.
 
-5. **Network Protocol and Sliding Window**:
-   - Tanenbaum, A. S., & Wetherall, D. J. (2011). *Computer Networks* (5th ed.). Boston: Prentice Hall/Pearson.
-   - 📌 *教科书*：滑动窗口协议在可靠数据传输中的应用（第3章）
-
-6. **Monte Carlo Simulation Methods**:
-   - Kroese, D. P., Brereton, T., Taimre, T., & Botev, Z. I. (2014). "Why the Monte Carlo method is so important today." *WIREs Computational Statistics*, 6(6), 386-392. DOI: 10.1002/wics.1314
-   - 📌 *方法论*：蒙特卡洛仿真在系统评估中的应用
-
-7. **Wireless Channel Modeling**:
-   - IEEE Standards Association. (2020). "IEEE Standard for Information Technology—Telecommunications and Information Exchange between Systems—Local and Metropolitan Area Networks—Specific Requirements Part 11: Wireless LAN Medium Access Control (MAC) and Physical Layer (PHY) Specifications." *IEEE Std 802.11-2020*.
-   - 📌 *标准文档*：无线信道模型，包括丢包和延迟特性
-
-8. **Nonce and Timestamp-based Authentication**:
-   - Syverson, P. (1994). "A Taxonomy of Replay Attacks [Cryptographic Protocols]." In *Proceedings of The Computer Security Foundations Workshop VII* (pp. 187-191). IEEE. DOI: 10.1109/CSFW.1994.315935
-   - 📌 *分类研究*：重放攻击的系统性分类和防御方法
-
-### 相关开源项目（Related Open Source Projects）
-
-9. **Scapy - Packet Manipulation**:
-   - Biondi, P., & the Scapy Community. (2023). *Scapy: Packet crafting for Python* [Software]. Available at: https://scapy.net/
-   - 📌 *工具参考*：网络包构造和分析工具
-
-10. **TLS 1.3 Anti-Replay Mechanism**:
-    - Rescorla, E. (2018). "The Transport Layer Security (TLS) Protocol Version 1.3." *RFC 8446*, IETF. DOI: 10.17487/RFC8446
-    - 📌 *现代标准*：TLS 1.3中的0-RTT重放防护机制
-
-### 引用格式说明
-
-本文献列表遵循以下标准：
-- ✅ **学术期刊论文**：包含DOI，可验证
-- ✅ **IETF RFC文档**：互联网标准，权威可靠
-- ✅ **经典教科书**：被广泛采用的教材
-- ✅ **IEEE标准**：行业标准文档
-
-### 文献获取建议
-
-- **学术数据库**：Google Scholar, IEEE Xplore, ACM Digital Library
-- **RFC文档**：https://www.rfc-editor.org/
-- **开源项目**：GitHub, GitLab
+[7] Rescorla, E. (2018). The Transport Layer Security (TLS) Protocol Version 1.3. RFC 8446, IETF.
 
 ---
 

@@ -261,23 +261,15 @@ _来自 `results/ideal_p0.json` 的参考基线_
 
 ## 参考文献
 
-本项目的防御机制基于已建立的学术研究和行业标准：
+本项目基于以下标准和研究：
 
-### 核心参考文献
+[1] Perrig, A., et al. (2002). SPINS: Security Protocols for Sensor Networks. *Wireless Networks*, 8(5), 521-534.
 
-1. **Perrig, A., et al.** (2002). "SPINS: Security Protocols for Sensor Networks." *Wireless Networks*, 8(5), 521-534. DOI: [10.1023/A:1016598314198](https://doi.org/10.1023/A:1016598314198)
-   - 资源受限环境中重放攻击防御的基础
+[2] Kent, S., & Seo, K. (2005). Security Architecture for the Internet Protocol. RFC 4301, IETF.
 
-2. **Kent, S., & Seo, K.** (2005). "Security Architecture for the Internet Protocol." *RFC 4301*, IETF.
-   - IPsec 防重放窗口机制（本项目滑动窗口实现的基础）
+[3] Bellare, M., et al. (1996). Keying Hash Functions for Message Authentication. *CRYPTO'96*, Springer.
 
-3. **Bellare, M., Canetti, R., & Krawczyk, H.** (1996). "Keying Hash Functions for Message Authentication." *CRYPTO'96*, Springer.
-   - 基于 HMAC 的消息认证的理论基础
-
-4. **Needham, R. M., & Schroeder, M. D.** (1978). "Using Encryption for Authentication in Large Networks of Computers." *CACM*, 21(12), 993-999.
-   - 关于挑战-响应认证的经典论文
-
-完整的参考文献列表请参阅 [PRESENTATION.md](PRESENTATION.md#付録-c-参考文献)。
+[4] Needham, R. M., & Schroeder, M. D. (1978). Using Encryption for Authentication in Large Networks. *CACM*, 21(12), 993-999.
 
 ## 许可证
 

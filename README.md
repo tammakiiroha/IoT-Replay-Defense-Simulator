@@ -1,5 +1,14 @@
 # Replay Attack Simulation Toolkit
 
+[![English](https://img.shields.io/badge/lang-English-blue.svg)](README.md)
+[![日本語](https://img.shields.io/badge/lang-日本語-red.svg)](README.ja.md)
+[![中文](https://img.shields.io/badge/lang-中文-green.svg)](README.zh.md)
+[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
+
+**English** | [日本語](README.ja.md) | [中文](README.zh.md)
+
 This toolkit reproduces the replay-attack evaluation plan described in the project brief. It models multiple receiver configurations under a record-and-replay adversary and reports both security (attack success) and usability (legitimate acceptance) metrics.
 
 ## Requirements
@@ -61,23 +70,45 @@ STOP
 
 Sample file: `traces/sample_trace.txt` can be used directly with `--commands-file`.
 
-## Parameter sweeps
+## Running the complete experimental pipeline
+
+### Step 1: Setup environment
+```bash
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### Step 2: Run parameter sweeps
 ```bash
 python3 scripts/run_sweeps.py \
   --runs 300 \
   --modes no_def rolling window challenge \
   --p-loss-values 0 0.01 0.05 0.1 0.2 \
   --p-reorder-values 0 0.1 0.3 0.5 0.7 \
-  --window-values 1 3 5 7 9 \
+  --window-values 1 3 5 10 \
   --window-size-base 5 \
-  --attack-mode inline \
-  --inline-attack-prob 0.4 \
-  --inline-attack-burst 2 \
+  --attack-mode post \
   --commands-file traces/sample_trace.txt \
   --seed 123 \
   --p-loss-output results/p_loss_sweep.json \
   --p-reorder-output results/p_reorder_sweep.json \
   --window-output results/window_sweep.json
+```
+
+### Step 3: Generate figures
+```bash
+python3 scripts/plot_results.py --formats png
+```
+
+### Step 4: Export tables to documentation
+```bash
+python3 scripts/export_tables.py
+```
+
+### Step 5: Run tests (optional)
+```bash
+python -m pytest tests/ -v
 ```
 
 ## Extending experiments
@@ -189,3 +220,28 @@ flowchart TD
 - **Window Tuning**: `W=1` acts as a strict counter and fails catastrophically under unstable conditions (27.6% acceptance). Increasing the window to `W=3..5` restores usability to ~95% while keeping the attack success rate extremely low (<0.3%).
 - **Security Trade-off**: While the Window mode theoretically opens a small replay window, the experimental results show that in practice (even with 200 runs), the attack success rate remains negligible compared to the massive usability gains.
 - **Conclusion**: For real-world wireless control systems where packet loss and reordering are common, a Sliding Window mechanism (W=5) provides the best balance between security and user experience.
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style guidelines, and how to submit changes.
+
+## Citation
+
+If you use this simulation toolkit in your research or thesis, please cite:
+
+```bibtex
+@software{replay_simulation_2025,
+  author = {Romeitou},
+  title = {Replay Attack Simulation Toolkit},
+  year = {2025},
+  publisher = {GitHub},
+  url = {https://github.com/tammakiiroha/Replay-simulation}
+}
+```
+
+Or in plain text:
+> Romeitou. (2025). Replay Attack Simulation Toolkit. GitHub. https://github.com/tammakiiroha/Replay-simulation
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

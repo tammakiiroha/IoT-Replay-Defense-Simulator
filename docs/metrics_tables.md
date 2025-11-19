@@ -1,51 +1,59 @@
 # Aggregated metrics tables
 
+This document contains the experimental results referenced in the main README.
 
-### Packet-loss sweep - legitimate acceptance
+## Packet-reorder sweep - legitimate acceptance (p_loss=0)
 
-| p_loss | no_def | rolling | window | challenge |
-| --- | --- | --- | --- | --- |
-| 0.00 | 100.00% | 100.00% | 100.00% | 100.00% |
-| 0.01 | 99.05% | 99.05% | 99.05% | 98.98% |
-| 0.05 | 94.92% | 94.92% | 94.92% | 94.62% |
-| 0.10 | 89.70% | 89.70% | 89.70% | 89.57% |
-| 0.20 | 79.60% | 79.60% | 79.58% | 79.70% |
+| p_reorder | Rolling (%) | Window (W=5) (%) |
+| --- | --- | --- |
+| 0.0 | 100.00% | 100.00% |
+| 0.1 | 93.55% | 100.00% |
+| 0.3 | 84.47% | 99.88% |
+| 0.5 | 77.62% | 99.88% |
+| 0.7 | 78.33% | 99.90% |
 
-### Packet-loss sweep - replay success
+**Source**: `results/p_reorder_sweep.json`
 
-| p_loss | no_def | rolling | window | challenge |
-| --- | --- | --- | --- | --- |
-| 0.00 | 100.00% | 0.00% | 0.00% | 0.00% |
-| 0.01 | 98.54% | 0.00% | 0.00% | 0.00% |
-| 0.05 | 94.61% | 0.03% | 0.03% | 0.00% |
-| 0.10 | 89.73% | 0.10% | 0.10% | 0.00% |
-| 0.20 | 80.15% | 0.47% | 0.50% | 0.00% |
+## Packet-loss sweep - legitimate acceptance (p_reorder=0)
 
+| p_loss | Rolling (%) | Window (W=5) (%) |
+| --- | --- | --- |
+| 0.00 | 100.00% | 100.00% |
+| 0.01 | 98.97% | 98.97% |
+| 0.05 | 94.88% | 94.88% |
+| 0.10 | 89.90% | 89.90% |
+| 0.20 | 79.53% | 79.53% |
 
-### Window sweep (p_loss = 0.05, post attack)
+**Source**: `results/p_loss_sweep.json`
+
+## Window sweep (Stress test: p_loss=0.05, p_reorder=0.3)
 
 | Window W | Legitimate (%) | Replay success (%) |
 | --- | --- | --- |
-| 1 | 62.32% | 2.8467% |
-| 3 | 94.88% | 0.0533% |
-| 5 | 95.07% | 0.0567% |
-| 7 | 95.02% | 0.0333% |
-| 9 | 94.67% | 0.0467% |
+| 1 | 27.65% | 4.51% |
+| 3 | 95.10% | 0.22% |
+| 5 | 95.08% | 0.30% |
+| 10 | 95.22% | 0.48% |
 
-### Ideal channel baseline (post attack, runs = 500, p_loss = 0)
+**Source**: `results/window_sweep.json`
 
-| Mode | Legitimate (%) | Replay success (%) | Source |
-| --- | --- | --- | --- |
-| no_def | 100.00% | 100.00% | `results/ideal_p0.json` |
-| rolling | 100.00% | 0.00% | `results/ideal_p0.json` |
-| window (W=5) | 100.00% | 0.00% | `results/ideal_p0.json` |
-| challenge | 100.00% | 0.00% | `results/ideal_p0.json` |
+## Ideal channel baseline (post attack, runs = 500, p_loss = 0)
 
-### Trace-driven inline scenario (real command trace, runs = 300, p_loss = 0)
+| Mode | Legitimate (%) | Replay success (%) |
+| --- | --- | --- |
+| no_def | 100.00% | 100.00% |
+| rolling | 100.00% | 0.00% |
+| window | 100.00% | 0.00% |
+| challenge | 100.00% | 0.00% |
 
-| Mode | Legitimate (%) | Replay success (%) | Source |
-| --- | --- | --- | --- |
-| no_def | 100.00% | 100.00% | `results/trace_inline.json` |
-| rolling | 100.00% | 0.00% | `results/trace_inline.json` |
-| window (W=5) | 100.00% | 0.00% | `results/trace_inline.json` |
-| challenge | 100.00% | 0.00% | `results/trace_inline.json` |
+**Source**: `results/ideal_p0.json`
+## Trace-driven inline scenario (real command trace, runs = 300, p_loss = 0)
+
+| Mode | Legitimate (%) | Replay success (%) |
+| --- | --- | --- |
+| no_def | 100.00% | 100.00% |
+| rolling | 100.00% | 0.00% |
+| window | 100.00% | 0.00% |
+| challenge | 100.00% | 0.00% |
+
+**Source**: `results/trace_inline.json`

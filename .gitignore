@@ -2,19 +2,38 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
 
 # Virtual Environment
 .venv/
 venv/
 env/
+ENV/
 
 # IDEs
 .vscode/
 .idea/
 .DS_Store
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
 
 # Results and Figures (Optional: keep if you want to showcase them on GitHub)
 # results/
 # figures/
 # But usually we ignore intermediate data
 # data/
+
+# Jupyter Notebooks (if you add any)
+.ipynb_checkpoints/
+*.ipynb
+
+# Build artifacts
+*.egg-info/
+dist/
+build/

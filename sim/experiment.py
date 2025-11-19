@@ -4,6 +4,8 @@ from __future__ import annotations
 import dataclasses
 import random
 import statistics
+import sys
+import time
 from typing import Iterable, List, Optional, Sequence
 
 from .attacker import Attacker
@@ -146,8 +148,9 @@ def run_many_experiments(
     modes: Sequence[Mode],
     runs: int,
     seed: Optional[int] = None,
+    show_progress: bool = True,
 ) -> List[AggregateStats]:
-    """Run multiple Monte Carlo trials for each requested mode."""
+    """Run multiple Monte Carlo trials for each requested mode with visual progress."""
 
     master_rng = random.Random(seed)
     per_mode_stats = {
@@ -159,13 +162,57 @@ def run_many_experiments(
         for mode in modes
     }
 
-    for _ in range(runs):
-        scenario_seed = master_rng.randint(0, 2**31 - 1)
-        for mode, buckets in per_mode_stats.items():
+    if show_progress:
+        print("\n" + "="*80)
+        print("🚀 STARTING MONTE CARLO SIMULATION")
+        print("="*80 + "\n")
+
+    for mode in modes:
+        buckets = per_mode_stats[mode]
+        
+        if show_progress:
+            print(f"\n{'='*80}")
+            print(f"🛡️  TESTING DEFENSE MODE: {mode.value.upper()}")
+            print(f"{'='*80}\n")
+        
+        # Reset RNG for consistent run
+        mode_rng = random.Random(seed)
+        
+        for run_idx in range(runs):
+            scenario_seed = mode_rng.randint(0, 2**31 - 1)
             scenario_rng = random.Random(scenario_seed)
             result = simulate_one_run(buckets["config"], rng=scenario_rng)
             buckets["legit"].append(result.legit_accept_rate)
             buckets["attack"].append(result.attack_success_rate)
+            
+            # Show progress
+            if show_progress and ((run_idx + 1) % 10 == 0 or run_idx == runs - 1):
+                bar_length = 50
+                filled = int(bar_length * (run_idx + 1) / runs)
+                bar = "█" * filled + "░" * (bar_length - filled)
+                
+                sys.stdout.write(f"\r   Progress: [{bar}] {run_idx + 1}/{runs} runs")
+                sys.stdout.flush()
+                
+                # Show interim results
+                if (run_idx + 1) % 50 == 0 or run_idx == runs - 1:
+                    avg_legit = _mean(buckets["legit"])
+                    avg_attack = _mean(buckets["attack"])
+                    print(f"\n   ├─ Legit Accept: {avg_legit*100:.1f}% | Attack Success: {avg_attack*100:.1f}%")
+        
+        if show_progress:
+            print()  # New line after progress bar
+            
+            # Show final stats for this mode
+            avg_legit = _mean(buckets["legit"])
+            avg_attack = _mean(buckets["attack"])
+            std_legit = _std(buckets["legit"])
+            std_attack = _std(buckets["attack"])
+            
+            print(f"\n   ✓ Mode '{mode.value}' completed:")
+            print(f"     ├─ Legitimate Acceptance: {avg_legit*100:.2f}% ± {std_legit*100:.2f}%")
+            print(f"     └─ Attack Success Rate: {avg_attack*100:.2f}% ± {std_attack*100:.2f}%")
+            time.sleep(0.2)
 
     aggregates: List[AggregateStats] = []
     for mode, buckets in per_mode_stats.items():
@@ -187,6 +234,11 @@ def run_many_experiments(
                 attack_mode=config.attack_mode,
             )
         )
+
+    if show_progress:
+        print("\n" + "="*80)
+        print("SIMULATION COMPLETE - FINAL RESULTS")
+        print("="*80 + "\n")
 
     return aggregates
 

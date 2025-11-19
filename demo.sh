@@ -27,7 +27,6 @@ echo "DEMO 1: Baseline Comparison (No Packet Loss)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 python main.py \
-    --demo \
     --modes no_def rolling window challenge \
     --runs 100 \
     --num-legit 20 \
@@ -44,7 +43,6 @@ echo "DEMO 2: Network Stress Test (10% Packet Loss)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 python main.py \
-    --demo \
     --modes rolling window challenge \
     --runs 100 \
     --num-legit 20 \
@@ -61,7 +59,6 @@ echo "DEMO 3: Packet Reordering Test (30% Reorder Rate)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 python main.py \
-    --demo \
     --modes rolling window challenge \
     --runs 100 \
     --num-legit 20 \
@@ -78,7 +75,6 @@ echo "DEMO 4: Selective Replay Attack (Targeting 'UNLOCK' command)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 python main.py \
-    --demo \
     --modes rolling window challenge \
     --runs 100 \
     --num-legit 20 \

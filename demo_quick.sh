@@ -24,7 +24,6 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 python main.py \
-    --demo \
     --modes no_def rolling window challenge \
     --runs 50 \
     --num-legit 20 \

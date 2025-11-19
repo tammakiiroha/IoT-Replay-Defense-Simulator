@@ -6,6 +6,19 @@
 
 ---
 
+## ✨ 重要更新！
+
+**所有运行现在默认都有酷炫的视觉效果！**
+
+- ✅ 无需 `--demo` 参数
+- ✅ 自动显示进度条和统计
+- ✅ 专业的ASCII标题
+- ✅ 实时进度更新
+
+如果你想要安静模式（无视觉效果），使用 `--quiet` 参数。
+
+---
+
 ## ⚡ 快速演示（推荐用于答辩）
 
 ### 方案 A：使用自动演示脚本
@@ -34,7 +47,6 @@
 
 ```bash
 python main.py \
-    --demo \
     --modes no_def rolling window challenge \
     --runs 100 \
     --num-legit 20 \
@@ -42,6 +54,8 @@ python main.py \
     --p-loss 0.0 \
     --p-reorder 0.0
 ```
+
+**注意：** 不再需要 `--demo` 参数，视觉效果现在是默认的！
 
 **演示重点：**
 - 展示无防御（no_def）下攻击成功率100%
@@ -63,7 +77,6 @@ challenge  → 攻击成功率: 0%
 
 ```bash
 python main.py \
-    --demo \
     --modes rolling window challenge \
     --runs 100 \
     --num-legit 20 \
@@ -90,7 +103,6 @@ challenge  → 正规接受率: ~90% （良好）
 
 ```bash
 python main.py \
-    --demo \
     --modes rolling window \
     --runs 100 \
     --num-legit 20 \
@@ -115,7 +127,6 @@ window   → 正规接受率: ~98% （完美处理乱序）
 
 ```bash
 python main.py \
-    --demo \
     --modes rolling window challenge \
     --runs 100 \
     --num-legit 20 \
@@ -233,32 +244,35 @@ challenge  100   post    0.00    0.00       5        100.00%     0.00%        0.
 
 ```bash
 # 快速演示（10秒）
-python main.py --demo --modes window --runs 20
+python main.py --modes window --runs 20
 
 # 标准演示（30秒）
-python main.py --demo --modes window --runs 50
+python main.py --modes window --runs 50
 
 # 详细演示（1分钟）
-python main.py --demo --modes window --runs 100
+python main.py --modes window --runs 100
+
+# 安静模式（无视觉效果）
+python main.py --quiet --modes window --runs 100
 ```
 
 ### 调整网络参数（展示不同场景）
 
 ```bash
 # 理想网络
-python main.py --demo --modes window --runs 50 --p-loss 0.0 --p-reorder 0.0
+python main.py --modes window --runs 50 --p-loss 0.0 --p-reorder 0.0
 
 # 轻微丢包
-python main.py --demo --modes window --runs 50 --p-loss 0.05 --p-reorder 0.0
+python main.py --modes window --runs 50 --p-loss 0.05 --p-reorder 0.0
 
 # 高丢包率
-python main.py --demo --modes window --runs 50 --p-loss 0.2 --p-reorder 0.0
+python main.py --modes window --runs 50 --p-loss 0.2 --p-reorder 0.0
 
 # 高乱序率
-python main.py --demo --modes window --runs 50 --p-loss 0.0 --p-reorder 0.3
+python main.py --modes window --runs 50 --p-loss 0.0 --p-reorder 0.3
 
 # 恶劣网络（同时丢包+乱序）
-python main.py --demo --modes window --runs 50 --p-loss 0.1 --p-reorder 0.2
+python main.py --modes window --runs 50 --p-loss 0.1 --p-reorder 0.2
 ```
 
 ---
@@ -293,12 +307,13 @@ python main.py --demo --modes window --runs 50 --p-loss 0.1 --p-reorder 0.2
 
 ---
 
-## 🚀 无演示模式（标准输出）
+## 🔇 安静模式（无视觉效果）
 
-如果不需要演示效果，可以去掉 `--demo` 参数：
+如果不需要视觉效果（例如批量实验或自动化脚本），使用 `--quiet` 参数：
 
 ```bash
 python main.py \
+    --quiet \
     --modes window rolling challenge \
     --runs 200 \
     --num-legit 20 \
@@ -310,6 +325,7 @@ python main.py \
 - 批量实验
 - 数据收集
 - 自动化脚本
+- 重定向输出到文件
 
 ---
 
@@ -319,7 +335,7 @@ python main.py \
 A: 不会。每10次运行更新一次，保证流畅。
 
 ### Q2: 可以跳过初始化动画吗？
-A: 可以，但不推荐。这3秒的动画让观众准备好观看演示。
+A: 可以使用 `--quiet` 参数完全跳过所有视觉效果。
 
 ### Q3: 如何让演示更快？
 A: 减少 `--runs` 参数，例如从100减到30。
@@ -329,6 +345,12 @@ A: 可以，添加 `--output-json results/demo.json` 参数。
 
 ### Q5: 演示时屏幕字太小怎么办？
 A: 增大终端字体：`Cmd/Ctrl + +`
+
+### Q6: 视觉效果是默认的吗？
+A: **是的！** 所有运行现在默认都有视觉效果。使用 `--quiet` 可以禁用。
+
+### Q7: `--demo` 参数还存在吗？
+A: 不再需要！视觉效果现在是默认的。旧的 `--demo` 参数已被移除。
 
 ---
 

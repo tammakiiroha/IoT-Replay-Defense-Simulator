@@ -242,6 +242,26 @@ If you use this simulation toolkit in your research or thesis, please cite:
 Or in plain text:
 > Romeitou. (2025). Replay Attack Simulation Toolkit. GitHub. https://github.com/tammakiiroha/Replay-simulation
 
+## References
+
+This project's defense mechanisms are based on established academic research and industry standards:
+
+### Core References
+
+1. **Perrig, A., et al.** (2002). "SPINS: Security Protocols for Sensor Networks." *Wireless Networks*, 8(5), 521-534. DOI: [10.1023/A:1016598314198](https://doi.org/10.1023/A:1016598314198)
+   - Foundation for replay attack defense in resource-constrained environments
+
+2. **Kent, S., & Seo, K.** (2005). "Security Architecture for the Internet Protocol." *RFC 4301*, IETF.
+   - IPsec anti-replay window mechanism (basis for our sliding window implementation)
+
+3. **Bellare, M., Canetti, R., & Krawczyk, H.** (1996). "Keying Hash Functions for Message Authentication." *CRYPTO'96*, Springer.
+   - Theoretical foundation for HMAC-based message authentication
+
+4. **Needham, R. M., & Schroeder, M. D.** (1978). "Using Encryption for Authentication in Large Networks of Computers." *CACM*, 21(12), 993-999.
+   - Classic paper on challenge-response authentication
+
+For a complete list of references, see [PRESENTATION.md](PRESENTATION.md#付録-c-参考文献).
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

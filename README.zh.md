@@ -9,7 +9,22 @@
 
 [English](README.md) | [日本語](README.ja.md) | **中文**
 
-> **技术演示文档**: [English](PRESENTATION.en.md) | [日本語](PRESENTATION.md) | [中文](PRESENTATION.zh.md)
+---
+
+> 📚 **需要更详细的信息？** 本README提供快速概览。如需深入的技术解释、实现细节和完整的实验分析，请参阅我们的综合演示文档：
+> 
+> **详细技术演示文档**（1000+行）：
+> - 📄 [English Version](PRESENTATION.en.md) - Complete technical documentation
+> - 📄 [日本語版](PRESENTATION.md) - 詳細な技術ドキュメント
+> - 📄 [中文版](PRESENTATION.zh.md) - 完整技术文档
+>
+> 这些文档包含：
+> - 带代码示例的详细防御机制实现
+> - 完整的实验方法论和统计分析
+> - 带图表的深入结果解读
+> - 技术术语表和问答部分
+
+---
 
 该工具包在记录-重放攻击者模型下对多种接收器配置进行建模，并报告安全性（攻击成功率）和可用性（合法接受率）两方面的指标。
 

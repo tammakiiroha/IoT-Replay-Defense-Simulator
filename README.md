@@ -9,7 +9,22 @@
 
 **English** | [日本語](README.ja.md) | [中文](README.zh.md)
 
-> **Technical Presentation**: [English](PRESENTATION.en.md) | [日本語](PRESENTATION.md) | [中文](PRESENTATION.zh.md)
+---
+
+> 📚 **Need more details?** This README provides a quick overview. For in-depth technical explanations, implementation details, and complete experimental analysis, please refer to our comprehensive presentation documents:
+> 
+> **Detailed Technical Presentation** (1000+ lines):
+> - 📄 [English Version](PRESENTATION.en.md) - Complete technical documentation
+> - 📄 [日本語版](PRESENTATION.md) - 詳細な技術ドキュメント
+> - 📄 [中文版](PRESENTATION.zh.md) - 完整技术文档
+>
+> These documents include:
+> - Detailed defense mechanism implementations with code examples
+> - Complete experimental methodology and statistical analysis
+> - In-depth result interpretation with figures
+> - Technical glossary and Q&A sections
+
+---
 
 This toolkit reproduces the replay-attack evaluation plan described in the project brief. It models multiple receiver configurations under a record-and-replay adversary and reports both security (attack success) and usability (legitimate acceptance) metrics.
 

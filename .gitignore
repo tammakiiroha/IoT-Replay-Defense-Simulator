@@ -25,9 +25,12 @@ htmlcov/
 
 # Results and Figures (Optional: keep if you want to showcase them on GitHub)
 # results/
-# figures/
 # But usually we ignore intermediate data
 # data/
+
+# Figure formats (keep PNG for GitHub, ignore others)
+figures/*.pdf
+figures/*.pgf
 
 # Jupyter Notebooks (if you add any)
 .ipynb_checkpoints/

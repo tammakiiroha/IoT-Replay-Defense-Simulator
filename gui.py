@@ -54,6 +54,11 @@ TRANSLATIONS = {
         "language": "Language",
         "params": "Parameters",
         "desc": "Description",
+        "stop_sim": "Stop",
+        "save_output": "Save Output",
+        "confirm_stop": "Are you sure you want to stop the running experiment?",
+        "no_results": "No results directory found. Please run experiments first.",
+        "saved": "Output saved to",
     },
     "zh": {
         "title": "重放攻击防御评估",
@@ -95,6 +100,11 @@ TRANSLATIONS = {
         "language": "语言",
         "params": "参数",
         "desc": "描述",
+        "stop_sim": "停止",
+        "save_output": "保存输出",
+        "confirm_stop": "确定要停止正在运行的实验吗？",
+        "no_results": "未找到结果目录。请先运行实验。",
+        "saved": "输出已保存到",
     },
     "ja": {
         "title": "リプレイ攻撃防御評価",
@@ -136,6 +146,11 @@ TRANSLATIONS = {
         "language": "言語",
         "params": "パラメータ",
         "desc": "説明",
+        "stop_sim": "停止",
+        "save_output": "出力を保存",
+        "confirm_stop": "実行中の実験を停止してもよろしいですか？",
+        "no_results": "結果ディレクトリが見つかりません。まず実験を実行してください。",
+        "saved": "出力を保存しました：",
     }
 }
 
@@ -288,6 +303,7 @@ class SimulationGUI:
         self.current_lang = tk.StringVar(value="en")
         self.output_queue = queue.Queue()
         self.running = False
+        self.current_process = None  # 跟踪当前运行的进程
         
         self.setup_style()
         self.create_widgets()
@@ -606,14 +622,34 @@ class SimulationGUI:
         )
         self.status_label.pack(side=tk.LEFT)
         
+        # 停止按钮（初始隐藏）
+        self.stop_button = AcademicButton(
+            toolbar,
+            text=self.t("stop_sim"),
+            command=self.stop_experiment,
+            style="secondary",
+            height=32,
+            width=80
+        )
+        
+        # 保存输出按钮
+        AcademicButton(
+            toolbar,
+            text=self.t("save_output"),
+            command=self.save_output,
+            style="secondary",
+            height=32,
+            width=120
+        ).pack(side=tk.RIGHT, padx=(0, 5))
+        
         AcademicButton(
             toolbar,
             text=self.t("clear_output"),
             command=self.clear_output,
             style="secondary",
             height=32,
-            width=120
-        ).pack(side=tk.RIGHT)
+            width=100
+        ).pack(side=tk.RIGHT, padx=(0, 5))
     
     def switch_language(self, lang_code):
         """切换语言"""
@@ -654,6 +690,7 @@ class SimulationGUI:
         
         self.running = True
         self.set_status(True, f"{self.t('status_running')}: {description}")
+        self.stop_button.pack(side=tk.RIGHT, padx=(0, 5))  # 显示停止按钮
         
         self.output_text.insert(tk.END, f"\n{'='*70}\n▶ EXPERIMENT: {description}\n{'='*70}\n\n")
         self.output_text.see(tk.END)
@@ -661,54 +698,156 @@ class SimulationGUI:
         def run_thread():
             try:
                 cmd = f"source .venv/bin/activate && python main.py {args}"
-                proc = subprocess.Popen(
+                self.current_process = subprocess.Popen(
                     cmd,
                     shell=True,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
                     bufsize=1,
-                    executable='/bin/bash'
+                    executable='/bin/bash',
+                    preexec_fn=None if platform.system() == "Windows" else lambda: None
                 )
-                for line in proc.stdout:
+                for line in self.current_process.stdout:
+                    if not self.running:  # 检查是否被停止
+                        break
                     self.output_queue.put(line)
-                proc.wait()
-                self.output_queue.put(f"\n✓ {self.t('done')}\n")
+                
+                returncode = self.current_process.wait()
+                if returncode == 0:
+                    self.output_queue.put(f"\n✓ {self.t('done')}\n")
+                elif returncode == -15 or returncode == -9:  # SIGTERM or SIGKILL
+                    self.output_queue.put(f"\n⚠ Experiment stopped by user\n")
+                else:
+                    self.output_queue.put(f"\n✗ Process exited with code {returncode}\n")
             except Exception as e:
                 self.output_queue.put(f"\n✗ {self.t('error')}: {e}\n")
             finally:
+                self.current_process = None
                 self.running = False
                 self.set_status(False)
+                self.stop_button.pack_forget()  # 隐藏停止按钮
         
         threading.Thread(target=run_thread, daemon=True).start()
     
     def generate_plots(self):
-        self.set_status(True, self.t("generate_plots"))
-        def run():
-            subprocess.run(
-                "source .venv/bin/activate && python scripts/plot_results.py",
-                shell=True,
-                executable='/bin/bash'
-            )
-            self.output_queue.put(f"✓ {self.t('generate_plots')} {self.t('done')}\n")
-            self.running = False
-            self.set_status(False)
+        if self.running:
+            messagebox.showwarning("Busy", self.t("busy_msg"))
+            return
+        
+        # 检查results目录是否存在
+        import os
+        if not os.path.exists("results") or not os.listdir("results"):
+            messagebox.showwarning("Warning", self.t("no_results"))
+            return
+        
         self.running = True
+        self.set_status(True, self.t("generate_plots"))
+        
+        def run():
+            try:
+                result = subprocess.run(
+                    "source .venv/bin/activate && python scripts/plot_results.py",
+                    shell=True,
+                    executable='/bin/bash',
+                    capture_output=True,
+                    text=True
+                )
+                if result.returncode == 0:
+                    self.output_queue.put(f"✓ {self.t('generate_plots')} {self.t('done')}\n")
+                else:
+                    self.output_queue.put(f"✗ Error: {result.stderr}\n")
+            except Exception as e:
+                self.output_queue.put(f"✗ {self.t('error')}: {e}\n")
+            finally:
+                self.running = False
+                self.set_status(False)
+        
         threading.Thread(target=run, daemon=True).start()
     
     def export_tables(self):
-        self.set_status(True, self.t("export_tables"))
-        def run():
-            subprocess.run(
-                "source .venv/bin/activate && python scripts/export_tables.py",
-                shell=True,
-                executable='/bin/bash'
-            )
-            self.output_queue.put(f"✓ {self.t('export_tables')} {self.t('done')}\n")
-            self.running = False
-            self.set_status(False)
+        if self.running:
+            messagebox.showwarning("Busy", self.t("busy_msg"))
+            return
+        
+        # 检查results目录是否存在
+        import os
+        if not os.path.exists("results") or not os.listdir("results"):
+            messagebox.showwarning("Warning", self.t("no_results"))
+            return
+        
         self.running = True
+        self.set_status(True, self.t("export_tables"))
+        
+        def run():
+            try:
+                result = subprocess.run(
+                    "source .venv/bin/activate && python scripts/export_tables.py",
+                    shell=True,
+                    executable='/bin/bash',
+                    capture_output=True,
+                    text=True
+                )
+                if result.returncode == 0:
+                    self.output_queue.put(f"✓ {self.t('export_tables')} {self.t('done')}\n")
+                else:
+                    self.output_queue.put(f"✗ Error: {result.stderr}\n")
+            except Exception as e:
+                self.output_queue.put(f"✗ {self.t('error')}: {e}\n")
+            finally:
+                self.running = False
+                self.set_status(False)
+        
         threading.Thread(target=run, daemon=True).start()
+    
+    def stop_experiment(self):
+        """停止当前运行的实验"""
+        if not self.running or not self.current_process:
+            return
+        
+        if messagebox.askyesno("Confirm", self.t("confirm_stop")):
+            try:
+                import signal
+                import os
+                if platform.system() != "Windows":
+                    # Unix系统：发送SIGTERM信号给整个进程组
+                    os.killpg(os.getpgid(self.current_process.pid), signal.SIGTERM)
+                else:
+                    # Windows系统：终止进程
+                    self.current_process.terminate()
+                
+                self.running = False
+                self.output_queue.put("\n⚠ Stopping experiment...\n")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to stop: {e}")
+    
+    def save_output(self):
+        """保存输出到文件"""
+        from tkinter import filedialog
+        from datetime import datetime
+        
+        content = self.output_text.get(1.0, tk.END).strip()
+        if not content:
+            messagebox.showinfo("Info", "No output to save")
+            return
+        
+        # 生成默认文件名
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        default_name = f"simulation_output_{timestamp}.txt"
+        
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".txt",
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
+            initialfile=default_name
+        )
+        
+        if filepath:
+            try:
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                messagebox.showinfo("Success", f"{self.t('saved')}\n{filepath}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to save: {e}")
     
     def clear_output(self):
         self.output_text.delete(1.0, tk.END)

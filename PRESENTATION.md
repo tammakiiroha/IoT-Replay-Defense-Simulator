@@ -386,604 +386,67 @@ $$
 
 ## 6. 技術実装の詳細
 
-### 6.1 コード実装ロードマップ（完全に再現可能）
+### 6.1 コード実装ロードマップ
 
-本セクションでは、**完全なコードパス**を提供し、誰でも実験結果を検証・再現できるようにします。
+本節では、実験結果の検証と再現のためのコアコードパスを提供します。
 
-#### コアモジュール概要
+#### コアモジュール構造
 
 ```
 sim/
-├── types.py           # データ構造定義（Frame, ReceiverState, SimulationConfig）
-├── sender.py          # 送信側ロジック（フレーム生成、カウンタ、MAC）
-├── receiver.py        # 受信側ロジック（4種類の防御機構の検証）
-├── security.py        # 暗号プリミティブ（HMAC-SHA256）
-├── channel.py         # チャネルモデル（パケット損失、順序入れ替えシミュレーション）
-├── attacker.py        # 攻撃者モデル（記録、リプレイ）
-├── experiment.py      # モンテカルロ実験制御
-└── commands.py        # コマンドセット定義
+├── types.py        # データ構造（Frame, ReceiverState, Config）
+├── sender.py       # 送信側（フレーム生成、カウンタ、MAC）
+├── receiver.py     # 受信側（4種類の防御メカニズム）
+├── security.py     # 暗号学（HMAC-SHA256）
+├── channel.py      # チャネルシミュレーション（損失、並び替え）
+├── attacker.py     # 攻撃者（記録、リプレイ）
+└── experiment.py   # モンテカルロ実験制御
 ```
 
-#### 主要実装クイックリファレンス
+#### 主要実装位置
 
-| 機能モジュール | ファイルパス | 主要行 | 説明 |
-|--------------|------------|--------|------|
-| **データ構造** | | | |
-| Frame定義 | [`sim/types.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L25-L42) | 25-42 | フレーム構造（command, counter, mac, nonce） |
-| ReceiverState | [`sim/types.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L45-L52) | 45-52 | 受信側状態（last_counter, received_mask） |
-| SimulationConfig | [`sim/types.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L56-L83) | 56-83 | シミュレーション設定パラメータ |
-| **防御機構** | | | |
-| 無防御 | [`sim/receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L18-L19) | 18-19 | ベースライン、全フレーム受理 |
-| ローリングカウンタ | [`sim/receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L22-L40) | 22-40 | 厳密な単調増加チェック |
-| スライディングウィンドウ | [`sim/receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98) | 43-98 | ビットマスクウィンドウ機構 |
-| チャレンジレスポンス | [`sim/receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L101-L122) | 101-122 | Nonce検証 |
-| **暗号技術** | | | |
-| HMAC-SHA256 | [`sim/security.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L9-L19) | 9-19 | MAC計算 |
-| 定数時間比較 | [`sim/security.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L22-L27) | 22-27 | タイミング攻撃を防ぐ |
-| **送信側** | | | |
-| フレーム生成 | [`sim/sender.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/sender.py#L17-L29) | 17-29 | モード別フレーム生成 |
-| カウンタ増分 | [`sim/sender.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/sender.py#L27) | 27 | tx_counter += 1 |
-| **チャネルシミュレーション** | | | |
-| パケット損失 | [`sim/channel.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L30) | 28-30 | 確率的フレーム破棄 |
-| 順序入れ替え | [`sim/channel.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L32-L37) | 32-37 | 優先度キューの遅延 |
-| **攻撃者** | | | |
-| フレーム記録 | [`sim/attacker.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L30-L34) | 30-34 | 盗聴と保存 |
-| 選択的リプレイ | [`sim/attacker.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L36-L54) | 36-54 | ターゲットコマンドのリプレイ |
-| **実験制御** | | | |
-| 単一実行 | [`sim/experiment.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L77-L150) | 77-150 | simulate_one_run |
-| モンテカルロ | [`sim/experiment.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L153-L201) | 153-201 | run_many_experiments |
+| モジュール | ファイル | 行番号 | 説明 |
+|-----------|---------|--------|------|
+| **防御メカニズム** |
+| 防御なし | [`receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L18-L19) | 18-19 | ベースライン |
+| ローリングカウンタ | [`receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L22-L40) | 22-40 | 厳密な順序 |
+| スライディングウィンドウ | [`receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98) | 43-98 | ビットマスク |
+| チャレンジ-レスポンス | [`receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L101-L122) | 101-122 | Nonce検証 |
+| **暗号学** |
+| HMAC-SHA256 | [`security.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L9-L19) | 9-19 | MAC計算 |
+| **チャネルシミュレーション** |
+| パケット損失 | [`channel.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L30) | 28-30 | 確率的破棄 |
+| 並び替え | [`channel.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L32-L37) | 32-37 | 遅延キュー |
+| **実験制御** |
+| 単一実行 | [`experiment.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L77-L150) | 77-150 | simulate_one_run |
+| モンテカルロ | [`experiment.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L153-L201) | 153-201 | run_many_experiments |
 
-#### 主要アルゴリズム実装詳細
+#### コアアルゴリズム例
 
-**1. スライディングウィンドウのビットマスク操作**（[`sim/receiver.py` 第43-98行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98)）
-
-コアアイデア：整数の二進数ビットを使って、ウィンドウ内の受信状態を追跡
+**スライディングウィンドウビットマスク** ([`receiver.py` 43-98行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98))
 
 ```python
-# ケース1：新しい最大カウンタ（ウィンドウ前進）
+# ウィンドウ前進
 if diff > 0:
-    state.received_mask <<= diff  # diff ビット左シフト
-    state.received_mask |= 1       # 現在のフレームをマーク
+    state.received_mask <<= diff  # 左シフト
+    state.received_mask |= 1       # 現在をマーク
     state.last_counter = frame.counter
 
-# ケース2：古いカウンタ（ウィンドウ内の順序入れ替えフレーム）
+# ウィンドウ内の順不同フレーム
 else:
     offset = -diff
-    if (state.received_mask >> offset) & 1:  # 既に受信済みかチェック
+    if (state.received_mask >> offset) & 1:  # リプレイチェック
         return False, "counter_replay"
-    state.received_mask |= (1 << offset)     # 受信済みとしてマーク
+    state.received_mask |= (1 << offset)     # 受信済みマーク
 ```
 
-**実装位置**：
-- ウィンドウ前進：[第70-82行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L70-L82)
-- リプレイ検出：[第84-98行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L84-L98)
+**検証手順**:
 
-**2. HMAC-SHA256計算**（[`sim/security.py` 第9-19行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L9-L19)）
+1. **コアコード確認**: `cat sim/receiver.py`
+2. **簡単なテスト実行**: `python main.py --runs 10 --modes window`
+3. **完全なテスト実行**: `python3 -m pytest tests/`
 
-```python
-def compute_mac(token, command, key, mac_length=8):
-    message = f"{token}|{command}".encode("utf-8")
-    mac = hmac.new(key.encode("utf-8"), message, hashlib.sha256).hexdigest()
-    return mac[:mac_length]  # 指定長に切り詰め
-```
-
-**この実装の理由**：
-- `|` 区切り文字を使って文字列結合攻撃を防ぐ
-- MACを切り詰めて帯域を節約（実用では8-16バイト）
-- SHA256が256ビットのハッシュ強度を提供
-
-**3. チャネル順序入れ替えシミュレーション**（[`sim/channel.py` 第28-50行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L50)）
-
-```python
-def send(self, frame):
-    # 1. パケット損失
-    if self.rng.random() < self.p_loss:
-        return []
-    
-    # 2. 順序入れ替え（ランダム遅延）
-    if self.rng.random() < self.p_reorder:
-        delay = self.rng.randint(1, 3)  # 1-3ティック遅延
-    else:
-        delay = 0
-    
-    # 3. 優先度キュースケジューリング
-    delivery_tick = self.current_tick + delay
-    heapq.heappush(self.pq, (delivery_tick, frame))
-```
-
-**実装位置**：
-- パケット損失ロジック：[第28-30行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L30)
-- 順序入れ替えロジック：[第32-37行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L32-L37)
-- キュー管理：[第39-50行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L39-L50)
-
-#### 実装の検証方法
-
-**ステップ1：データ構造を確認**
-
-```bash
-# コアデータ構造を表示
-cat sim/types.py
-```
-
-重点：
-- [`Frame` 第25-42行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L25-L42)：フレームの構成を理解
-- [`ReceiverState` 第45-52行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L45-L52)：状態の永続化を理解
-- [`SimulationConfig` 第56-83行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L56-L83)：設定パラメータを理解
-
-**ステップ2：防御機構を追跡**
-
-```bash
-# 4つの防御機構の実装を表示
-cat sim/receiver.py
-```
-
-順番に読む：
-1. [第18-19行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L18-L19)：無防御ベースライン
-2. [第22-40行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L22-L40)：ローリングカウンタ
-3. [第43-98行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98)：スライディングウィンドウ（重点）
-4. [第101-122行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L101-L122)：チャレンジレスポンス
-
-**ステップ3：攻撃モデルを理解**
-
-```bash
-# 攻撃者の動作を表示
-cat sim/attacker.py
-```
-
-主要メソッド：
-- [`observe` 第30-34行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L30-L34)：フレーム盗聴
-- [`replay_frames` 第36-54行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L36-L54)：リプレイフレーム生成
-
-**ステップ4：実験を実行**
-
-```bash
-# 最もシンプルな検証
-python main.py --runs 10 --modes window --p-reorder 0.3
-```
-
-**ステップ5：ステップ実行デバッグ**
-
-重要な場所にブレークポイントを追加：
-- [`sim/receiver.py` 第77行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L77)：ウィンドウスライド
-- [`sim/receiver.py` 第94行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L94)：リプレイ検出
-- [`sim/channel.py` 第32行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L32)：順序入れ替え判定
-
-#### コードレビューチェックリスト
-
-レビュアーは以下の重要ポイントを検証できます：
-
-**セキュリティ検証**：
-- [ ] MACがHMAC-SHA256を使用（[`sim/security.py` 第16行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L16)）
-- [ ] 定数時間比較がタイミング攻撃を防ぐ（[`sim/security.py` 第27行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L27)）
-- [ ] カウンタが厳密に増加（[`sim/receiver.py` 第36行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L36)）
-- [ ] ビットマスクが正しくリプレイを検出（[`sim/receiver.py` 第93行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L93)）
-- [ ] Nonceが一度だけ使用される（[`sim/receiver.py` 第121行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L121)）
-
-**正確性検証**：
-- [ ] ウィンドウ前進ロジック（[`sim/receiver.py` 第77行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L77)）
-- [ ] 順序入れ替えフレーム受理ロジック（[`sim/receiver.py` 第97行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L97)）
-- [ ] パケット損失シミュレーション（[`sim/channel.py` 第29行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L29)）
-- [ ] 順序入れ替えシミュレーション（[`sim/channel.py` 第33-35行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L33-L35)）
-
-**再現性検証**：
-- [ ] 乱数シード管理（[`sim/experiment.py` 第85行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L85)）
-- [ ] すべてのモードが同じシードを使用（[`sim/experiment.py` 第88-93行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L88-L93)）
-
-#### 論文図表との対応
-
-| 論文図表 | 生成コード | データファイル |
-|---------|-----------|--------------|
-| 図1：順序入れ替え影響 | [`scripts/plot_results.py` 第45-80行](https://github.com/tammakiiroha/Replay-simulation/blob/main/scripts/plot_results.py#L45-L80) | `results/p_reorder_sweep.json` |
-| 図2：ウィンドウトレードオフ | [`scripts/plot_results.py` 第82-115行](https://github.com/tammakiiroha/Replay-simulation/blob/main/scripts/plot_results.py#L82-L115) | `results/window_sweep.json` |
-| 図3：パケット損失影響 | [`scripts/plot_results.py` 第117-150行](https://github.com/tammakiiroha/Replay-simulation/blob/main/scripts/plot_results.py#L117-L150) | `results/p_loss_sweep.json` |
-| 表1：防御比較 | [`scripts/export_tables.py` 第20-55行](https://github.com/tammakiiroha/Replay-simulation/blob/main/scripts/export_tables.py#L20-L55) | `results/ideal_p0.json` |
-
-**図表を再現**：
-```bash
-# 1. 実験を再実行
-python scripts/run_sweeps.py --runs 200
-
-# 2. 図表を生成
-python scripts/plot_results.py --formats png
-
-# 3. 表をエクスポート
-python scripts/export_tables.py
-```
-
-#### 実装と標準の対応関係
-
-本節では、各防御機構と実験パラメータが国際標準および学術文献に厳密に従っていることを明示し、**実装が現実世界の攻撃と防御を正しく再現していること**を証明します。
-
-##### 1. スライディングウィンドウ ↔ RFC 6479（IPsec アンチリプレイアルゴリズム）
-
-**標準要件**（RFC 6479 第3.3節）：
-
-```
-The anti-replay window is a sliding window that tracks the sequence
-numbers that have been received. The window has a fixed size W.
-A bitmap is used to indicate which packets within the window have
-been received.
-```
-
-**我々の実装**（[`sim/receiver.py` 第43-98行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98)）：
-
-```python
-# RFC 6479 第3.3節：ビットマスクで受信状態を記録
-state.received_mask  # ← ビットマップ
-
-# RFC 6479 第3.4節：シーケンス番号がウィンドウ内かチェック
-diff = frame.counter - state.last_counter
-if diff > window_size:  # ウィンドウ範囲外
-    return False, "counter_out_of_window"
-
-# RFC 6479 第3.5節：既に受信済みかチェック（リプレイ防止）
-if (state.received_mask >> offset) & 1:
-    return False, "counter_replay"
-```
-
-**パラメータ選択の根拠**：
-- **RFC 6479 推奨ウィンドウサイズ**：32-64（第4節、高速ネットワーク用）
-- **我々のウィンドウサイズ**：5（デフォルト）
-- **理由**：IoTデバイスはリソース制約がある（メモリ、処理能力）
-- **実験検証**：W=5で98%のユーザビリティを達成（本論文第5.2節実験データ）
-
-**正確性の証明**：
-- ✅ ビットマスク操作はRFC 6479第3.3節に厳密に従う
-- ✅ ウィンドウスライドアルゴリズムは標準と一致
-- ✅ リプレイ検出ロジックは標準要件を満たす
-- ✅ [コードを見る](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98)でRFC文書と行ごとに対照可能
-
-##### 2. HMAC-SHA256 ↔ RFC 2104（HMAC標準）
-
-**標準要件**（RFC 2104 第2節）：
-
-```
-HMAC(K, m) = H((K ⊕ opad) || H((K ⊕ ipad) || m))
-where:
-  H is a cryptographic hash function (SHA-256)
-  K is the secret key
-  m is the message to be authenticated
-```
-
-**我々の実装**（[`sim/security.py` 第9-19行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L9-L19)）：
-
-```python
-import hmac
-import hashlib
-
-def compute_mac(token, command, key, mac_length=8):
-    message = f"{token}|{command}".encode("utf-8")
-    # Python標準ライブラリのhmacモジュール使用（FIPS 140-2認証済み）
-    mac = hmac.new(key.encode("utf-8"), message, hashlib.sha256).hexdigest()
-    return mac[:mac_length]
-```
-
-**正確性の証明**：
-- ✅ Python標準ライブラリ `hmac.new()` 使用、**FIPS 140-2**認証済み
-- ✅ ハッシュ関数は**SHA-256**（256ビットセキュリティ強度）
-- ✅ **自分で暗号を実装しない**（セキュリティベストプラクティスに従う）
-- ✅ MAC長は設定可能（デフォルト8バイト、セキュリティと帯域のバランス）
-
-**なぜ自分で実装しないか**：
-- RFC 2104警告：「実装者は既存の暗号ライブラリを使用すべき」
-- 自己実装はサイドチャネル攻撃を招きやすい
-- Python `hmac`ライブラリはグローバルにセキュリティ監査済み
-
-##### 3. 攻撃者モデル ↔ Dolev-Yao脅威モデル
-
-**標準脅威モデル**（Dolev & Yao, 1983）：
-
-攻撃者の能力：
-- ✓ ネットワーク通信の盗聴
-- ✓ メッセージの傍受
-- ✓ メッセージの遅延
-- ✓ メッセージのリプレイ
-
-攻撃者の制限：
-- ✗ 暗号プリミティブを破れない
-- ✗ 鍵を推測できない
-
-**我々の実装**（[`sim/attacker.py` 第30-54行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L30-L54)）：
-
-```python
-class Attacker:
-    def observe(self, frame):
-        # ✓ 盗聴：通過するすべてのフレームを記録
-        if self.rng.random() >= self.record_loss:
-            self.recorded.append(frame)
-    
-    def replay_frames(self, target_commands, num_replay):
-        # ✓ リプレイ：記録されたフレームを選択してリプレイ
-        # ✗ MACを破ろうとしない
-        # ✗ フレームを偽造しようとしない
-        return [frame for frame in self.recorded 
-                if frame.command in target_commands]
-```
-
-**正確性の証明**：
-- ✅ Dolev-Yaoモデルの攻撃者能力仮定に厳密に従う
-- ✅ MACを破ろうとしない（モデル制限を満たす）
-- ✅ 盗聴したフレームのみリプレイ（現実的な攻撃シナリオ）
-- ✅ 脅威モデルは学術標準を満たし、結果は比較可能
-
-##### 4. チャネルモデル ↔ 実際の無線ネットワーク特性
-
-**パラメータ設定が重要な理由**：
-
-チャネルパラメータ（パケット損失率、順序入れ替え確率）は以下を直接決定します：
-- ✓ 実験が現実世界の無線ネットワークの多様性を合理的に反映するか
-- ✓ 防御メカニズムの可用性評価が包括的であるか
-- ✓ 最終的な結論が実用的な参考価値を持つか
-
-**パラメータ設計の考慮事項**：
-
-実験を現実的かつ異なる防御メカニズムの体系的な比較に適したものにするため、本研究ではシミュレーションでパラメータ化されたパケット損失/順序入れ替えモデルを採用しています。各パラメータ範囲の設計原則は以下の通りです。
-
-**パラメータ範囲の文献背景と設計根拠**：
-
-本研究は、IEEE 802.15.4 / LoRaWAN / BLE などの短距離無線ネットワークに関する信頼性研究文献を参考に、その定性的結論を総合して以下のシミュレーションパラメータ範囲を設計しました：
-
-**関連背景文献**：
-
-- **IEEE 802.15.4 / Zigbee**：Baronti et al. (2007) による無線センサーネットワークの調査では、室内工業環境に環境ノイズ、衝突、マルチパス伝播などの要因があり、リンク品質の変動を引き起こすことが示されています。
-
-- **LoRaWAN**：Haxhibeqiri et al. (2018) の調査は、さまざまな展開シナリオでの性能研究を要約し、都市環境における建物の遮蔽や距離などの要因がパケット配信成功率に影響することを指摘しています。
-
-- **BLE**：Gomez et al. (2012) の評価では、室内短距離BLE通信が2.4GHz帯域でWiFi、電子レンジなどの干渉を受けるとリンク信頼性が低下することが示されています。
-
-- **産業シナリオ**：Sha et al. (2017) の実証研究では、金属機器や電磁干渉などの要因が実際の工場展開における産業無線センサー-アクチュエーターネットワークのネットワーク信頼性に大きく影響することが示されています。
-
-**重要な注意事項**：上記の文献は、無線ネットワーク信頼性の問題に関する定性的記述と典型的な影響要因を提供していますが、**本研究で使用される具体的な数値範囲（例：「パケット損失率5-30%」）はシミュレーション実験用に設計されたパラメータ範囲**であり、異なるネットワーク条件下での防御メカニズムの性能を体系的に評価するために使用され、これらの論文からの特定の測定結果を直接引用したものではありません。
-
-**我々の実験パラメータ設定**（[`sim/channel.py` 第28-50行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L50)）：
-
-```python
-# パラメータスイープ範囲（体系的評価のために設計されたシミュレーションパラメータ）
-p_loss_values = [0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30]
-#                └─┘  └──────────────────────────────────┘
-#                理想  良好から不良までのネットワーク条件をカバー
-#                チャネル 防御メカニズム性能の包括的評価に使用
-
-p_reorder_values = [0.0, 0.10, 0.20, 0.30]
-#                   └─┘  └──────────────┘
-#                   順序  マルチホップネットワークの遅延ジッターを考慮
-#                   なし  
-
-# チャネルシミュレーション実装
-class Channel:
-    def send(self, frame):
-        # パケット損失シミュレーション（ベルヌーイ過程に基づく確率モデル）
-        if self.rng.random() < self.p_loss:
-            return []  # フレームをドロップ
-        
-        # 順序入れ替えシミュレーション（優先度キュー + ランダム遅延）
-        if self.rng.random() < self.p_reorder:
-            delay = self.rng.randint(1, 3)  # 1-3ティック遅延
-        else:
-            delay = 0
-```
-
-**パラメータ範囲の設計原則**：
-
-**パケット損失率範囲 [0%, 30%]：**
-
-- **0%**：理想的チャネルベースライン、「チャネルエラーなし」条件下での異なる防御メカニズムの理論上限性能を比較するために使用。
-- **5-15%**：文献で説明されている良好な室内環境（短距離、遮蔽なし）での一般的な軽度のパケット損失状況を表します。
-- **15-30%**：マルチパスフェージング、電磁干渉、ノード密度による産業シナリオでのリンク品質低下をカバーし、ストレステストの上限として使用されます。
-
-**この範囲を選択する理由**：
-- 異なる防御メカニズムの理論性能を比較するためのベースラインとして理想的チャネル（0%）を含む
-- 5-15% は典型的なIoTアプリケーションシナリオをカバー
-- 15-30% はより悪いネットワーク条件下での防御メカニズムの堅牢性を評価
-- 30%を超える極端なケースはテストしない。その時点でネットワークは本質的に使用不可能になり、実用的意義を失うため
-
-**順序入れ替え確率範囲 [0%, 30%]：**
-
-- **0%**：シングルホップ、非常に小さいバッファの理想的ケース、ほとんど順序入れ替えなし。
-- **10-20%**：マルチホップ転送、バッファキュー、MAC再送信によって導入される遅延ジッターを考慮し、マルチホップネットワークで一定の割合で発生する可能性があります。
-- **20-30%**：深刻な順序入れ替え下での防御メカニズムの堅牢性を検証するためのストレステストシナリオ。
-
-**遅延ジッター 1-3ティック：**
-
-各ティック = 50ms（典型的なIoT通信サイクル）と仮定
-- 1ティック (50ms)：シングルホップ遅延
-- 2ティック (100ms)：2ホップネットワーク遅延
-- 3ティック (150ms)：3ホップネットワーク遅延
-
-これらの遅延値は、マルチホップネットワークでの順序入れ替え現象をシミュレートするために使用されます。
-
-**実験パラメータ設計の合理性**：
-
-✅ **包括的カバレッジ**：
-- パラメータ範囲 [0%, 30%] は理想的から不良までの完全なネットワーク条件をカバー
-- 理想的チャネルベースライン（0%）とストレステストシナリオ（30%）を含む
-
-✅ **適切な評価粒度**：
-- パケット損失率5%刻みは、性能傾向の変化を観察するのに十分細かい
-- 異なる条件下での防御メカニズムの性能を体系的に評価
-
-✅ **実用的参考価値**：
-- パラメータ設計は、無線IoTネットワーク信頼性に関する文献からの定性的記述を包括的に考慮
-- 良好から不良までの典型的なアプリケーションシナリオをカバー
-
-**実験パラメータ設定の意義**：
-
-**例：スライディングウィンドウ可用性評価**
-
-| パケット損失 | 実験結果 | 説明 |
-|------------|---------|------|
-| 0% | 100% 可用性 | 理想的チャネルベースライン |
-| 10% | 98% 可用性 | 典型的な室内シナリオ |
-| 20% | 95% 可用性 | 不良ネットワーク条件 |
-| 30% | 92% 可用性 | ストレステストシナリオ |
-
-体系的なパラメータスイープにより、以下が可能になります：
-- ✅ 異なるネットワーク条件下での防御メカニズムの性能を包括的に評価
-- ✅ 防御メカニズムの適用範囲と性能境界を特定
-- ✅ 実際の展開のための参考基準を提供
-
-**パラメータ設定の透明性**：
-
-本研究は明示的に述べています：
-1. ✅ **パラメータの性質**：これらはシミュレーション実験のパラメータ範囲であり、特定の論文からの直接的な測定結果ではありません
-2. ✅ **設計根拠**：無線ネットワーク信頼性の問題に関する文献からの定性的記述を総合
-3. ✅ **実験目的**：パラメータ化モデリングにより、異なる防御メカニズムの性能トレードオフを体系的に評価
-4. ✅ **結果の解釈**：実験結論は「パラメータ化モデル下での比較結果」として理解されるべきで、実用的アプリケーションのための参考を提供
-
-したがって、本研究の実験設計は**透明で合理的**であり、結論は**参考価値**があります。
-
-##### 5. チャレンジレスポンス ↔ 暗号プロトコル標準
-
-**標準プロトコル**（TLS 1.3 Handshake, RFC 8446）：
-
-```
-Client → Server:  ClientHello + random nonce
-Server → Client:  ServerHello + response based on nonce
-```
-
-**我々の実装**（[`sim/receiver.py` 第101-122行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L101-L122) + [`sim/sender.py` 第22-24行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/sender.py#L22-L24)）：
-
-```python
-# 受信側がチャレンジ（Nonce）を生成
-def issue_nonce(self):
-    self.expected_nonce = secrets.randbits(self.nonce_bits)
-    return self.expected_nonce
-
-# 送信側がチャレンジに応答
-def next_frame(self, command):
-    nonce = self.receiver.issue_nonce()  # チャレンジを取得
-    mac = compute_mac(nonce, command, self.shared_key)  # 応答を計算
-    return Frame(command, counter=0, mac=mac, nonce=nonce)
-
-# 受信側が応答を検証
-def verify_challenge_response(self, frame, state):
-    if frame.nonce != state.expected_nonce:
-        return False, "nonce_mismatch"
-    # MACを検証
-    expected_mac = compute_mac(frame.nonce, frame.command, ...)
-    if not constant_time_compare(frame.mac, expected_mac):
-        return False, "mac_mismatch"
-    # 新しいnonceを生成（一度だけ使用）
-    state.expected_nonce = secrets.randbits(...)
-    return True
-```
-
-**正確性の証明**：
-- ✅ Nonceは `secrets.randbits()` を使用（暗号学的に安全な乱数生成器）
-- ✅ 各Nonceは一度だけ使用（リプレイ防止）
-- ✅ HMAC-SHA256と組み合わせてメッセージ認証を提供
-- ✅ プロトコルフローは標準チャレンジレスポンスパターンを満たす
-
-##### 6. 実験方法 ↔ モンテカルロシミュレーション標準
-
-**標準方法**（Metropolis & Ulam, 1949; Rubinstein & Kroese, 2016）：
-
-モンテカルロシミュレーション要件：
-1. 大量の独立した試行（Large number of independent trials）
-2. 明確なランダム性の源（Well-defined randomness source）
-3. 統計的有意性検証（Statistical significance testing）
-
-**我々の実装**（[`sim/experiment.py` 第153-201行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L153-L201)）：
-
-```python
-def run_many_experiments(config, num_runs, rng_seed=None):
-    # 1. 決定論的乱数生成器（再現可能）
-    rng = random.Random(rng_seed) if rng_seed else random.Random()
-    
-    # 2. 大量の独立実験
-    results = []
-    for run_idx in range(num_runs):
-        seed_for_run = rng.randint(0, 2**31 - 1)
-        result = simulate_one_run(config, seed_for_run)
-        results.append(result)
-    
-    # 3. 統計分析（平均、標準偏差）
-    avg_legit = np.mean([r['legit_acceptance'] for r in results])
-    std_legit = np.std([r['legit_acceptance'] for r in results])
-    avg_attack = np.mean([r['attack_success'] for r in results])
-    std_attack = np.std([r['attack_success'] for r in results])
-    
-    return {
-        'avg_legit': avg_legit,
-        'std_legit': std_legit,
-        'avg_attack': avg_attack,
-        'std_attack': std_attack,
-        'num_runs': num_runs
-    }
-```
-
-**実験パラメータ設定**：
-- **実行回数**：200回（設定ごと）
-- **信頼水準**：95%（標準偏差が不確実性推定を提供）
-- **ランダムシード**：指定可能（完全な再現性を保証）
-
-**正確性の証明**：
-- ✅ 大サンプルサイズ（200回）で統計的有意性を保証
-- ✅ 独立実験（各回で異なるランダムシードを使用）
-- ✅ 平均と標準偏差を報告（科学実験標準を満たす）
-- ✅ 完全に再現可能（固定シードで同一結果を生成）
-
-##### 実装正確性のまとめ
-
-| コンポーネント | 準拠標準/文献 | コード位置 | 検証方法 |
-|--------------|-------------|-----------|---------|
-| スライディングウィンドウ | RFC 6479 | [`receiver.py#L43-98`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98) | RFC逐行対照 + 実験検証 |
-| HMAC | RFC 2104 | [`security.py#L16`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L16) | FIPS認証ライブラリ使用 |
-| 攻撃者 | Dolev-Yao | [`attacker.py#L30-54`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L30-L54) | 標準脅威モデルに従う |
-| チャネル | パラメータ化モデリング | [`channel.py#L28-50`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L50) | ベルヌーイ過程+優先度キュー |
-| チャレンジレスポンス | RFC 8446 | [`receiver.py#L101-122`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L101-L122) | 標準プロトコルフロー |
-| 実験方法 | モンテカルロ標準 | [`experiment.py#L153-201`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L153-L201) | 200回独立実験 |
-
-**主要結論**：
-
-上記の詳細な対応関係により、以下を証明：
-
-1. ✅ **実装の正確性**：各コンポーネントが国際標準または学術文献に厳密に従う
-2. ✅ **実験の信頼性**：パラメータ設定は実際のネットワーク測定データに基づく
-3. ✅ **結果の妥当性**：実験方法はモンテカルロシミュレーション標準を満たす
-4. ✅ **完全な検証可能性**：すべてのコードはオープンソース、クリックして表示・独立検証可能
-
-したがって、本論文の実験データと結論は**十分な信頼性と実用的指導価値**を持つ。
-
----
-
-### 6.2 チャネルモデル
-
-**問題**：現実の無線通信は完璧ではない
-- パケットが失われる（p_loss）
-- パケットが順序入れ替えられる（p_reorder）
-
-**実装**：優先度キューを使った遅延シミュレーション
-
-```python
-class Channel:
-    def __init__(self, p_loss, p_reorder, rng):
-        self.p_loss = p_loss
-        self.p_reorder = p_reorder
-        self.pq = []  # 優先度キュー（ヒープ）
-        self.current_tick = 0
-    
-    def send(self, frame):
-        # 1. パケット損失
-        if self.rng.random() < self.p_loss:
-            return []  # フレームを破棄
-        
-        # 2. 順序入れ替え（確率的に遅延）
-        if self.rng.random() < self.p_reorder:
-            delay = self.rng.randint(1, 3)  # 1-3 ティック遅延
-        else:
-            delay = 0
-        
-        delivery_tick = self.current_tick + delay
-        heapq.heappush(self.pq, (delivery_tick, frame))
-        
-        # 3. 現在のティックで配信すべきフレームを返す
-        return self._deliver_due_frames()
-```
-
-**なぜこれが重要か**：
-- Rolling Counter は順序入れ替えに弱い
-- Window はこの問題を解決するために設計された
+詳細なコードレビューチェックリストと検証手順については、[`CONTRIBUTING.md`](https://github.com/tammakiiroha/Replay-simulation/blob/main/CONTRIBUTING.md)を参照してください。
 
 ---
 
@@ -1623,85 +1086,6 @@ for mode in [no_def, rolling, window, challenge]:
 ---
 
 
-## 9. 専門用語集
-
-### A-F
-
-**Acceptance Rate（受理率）**
-- フレームが受信側で承認される割合
-- 正規受理率（ユーザビリティ）と攻撃成功率（セキュリティ）の2種類
-
-**Attack Mode（攻撃モード）**
-- Post: 正規通信後に一括リプレイ
-- Inline: 正規通信中に混ぜてリプレイ
-
-**Bitmask（ビットマスク）**
-- スライディングウィンドウで受信済みカウンタを記録する整数
-- 例：0b10101 → bit 0, 2, 4 が受信済み
-
-**Challenge-Response（チャレンジレスポンス）**
-- 受信側が問題（nonce）を送り、送信側が答えを返す認証方式
-
-**Counter（カウンタ）**
-- フレームごとに増加する整数（0, 1, 2, 3, ...）
-- リプレイ検出に使用
-
-**Frame（フレーム）**
-- 無線通信の最小単位
-- 構成: `{command, counter, mac, nonce}`
-
-### G-M
-
-**HMAC（Hash-based Message Authentication Code）**
-- 共有鍵を使ったメッセージ認証コード
-- 本プロジェクトでは HMAC-SHA256 を使用
-
-**Inline Attack（インライン攻撃）**
-- 正規通信と同時にリプレイを実行する攻撃
-
-**Legitimate Traffic（正規トラフィック）**
-- 正当なユーザーからの通信
-
-**MAC (Message Authentication Code)**
-- メッセージの完全性と真正性を保証する短いコード
-- 攻撃者は有効なMACを偽造できない
-
-**Monte Carlo Simulation（モンテカルロシミュレーション）**
-- 乱数を使った統計的シミュレーション
-- 本プロジェクトでは 200-500 回の試行で信頼区間を計算
-
-### N-Z
-
-**Nonce（ノンス）**
-- "Number used ONCE" の略
-- 一度だけ使用されるランダムな値
-- リプレイ防止に使用
-
-**Packet Loss（パケット損失）**
-- 無線通信でフレームが失われる現象
-- p_loss: 損失確率（0.0 = 損失なし、0.2 = 20%損失）
-
-**Packet Reordering（パケット順序入れ替え）**
-- フレームが送信順と異なる順序で到着する現象
-- p_reorder: 順序入れ替え確率
-
-**Replay Attack（リプレイ攻撃）**
-- 過去に傍受したフレームを再送信する攻撃
-
-**Rolling Counter（ローリングカウンタ）**
-- 単調増加するカウンタで古いフレームを拒否する方式
-
-**Sliding Window（スライディングウィンドウ）**
-- カウンタの範囲を許容し、順序入れ替えに対応する方式
-- ビットマスクで受信済みカウンタを記録
-
-**Seed（シード）**
-- 乱数生成器の初期値
-- 同じシードで実験を再現可能
-
----
-
-## 10. デモンストレーション
 
 ### 10.1 クイックデモ（5分）
 

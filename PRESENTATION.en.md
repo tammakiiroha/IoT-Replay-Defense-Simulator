@@ -386,564 +386,67 @@ Attack success rate = 2/100 = 2%
 
 ## 6. Technical Implementation Details
 
-### 6.1 Code Implementation Roadmap (Fully Reproducible)
+### 6.1 Code Implementation Roadmap
 
-This section provides **complete code paths** so anyone can verify and reproduce our experimental results.
+This section provides core code paths for verification and reproduction of experimental results.
 
-#### Core Module Overview
+#### Core Module Structure
 
 ```
 sim/
-├── types.py           # Data structure definitions (Frame, ReceiverState, SimulationConfig)
-├── sender.py          # Sender logic (frame generation, counter, MAC)
-├── receiver.py        # Receiver logic (verification for 4 defense mechanisms)
-├── security.py        # Cryptographic primitives (HMAC-SHA256)
-├── channel.py         # Channel model (packet loss, reordering simulation)
-├── attacker.py        # Attacker model (record, replay)
-├── experiment.py      # Monte Carlo experiment control
-└── commands.py        # Command set definitions
+├── types.py        # Data structures (Frame, ReceiverState, Config)
+├── sender.py       # Sender (frame generation, counter, MAC)
+├── receiver.py     # Receiver (4 defense mechanisms)
+├── security.py     # Cryptography (HMAC-SHA256)
+├── channel.py      # Channel simulation (loss, reordering)
+├── attacker.py     # Attacker (record, replay)
+└── experiment.py   # Monte Carlo experiment control
 ```
 
-#### Key Implementation Quick Reference
+#### Key Implementation Locations
 
-| Feature Module | File Path | Key Lines | Description |
-|---------------|-----------|-----------|-------------|
-| **Data Structures** | | | |
-| Frame definition | [`sim/types.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L25-L42) | 25-42 | Frame structure (command, counter, mac, nonce) |
-| ReceiverState | [`sim/types.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L45-L52) | 45-52 | Receiver state (last_counter, received_mask) |
-| SimulationConfig | [`sim/types.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L56-L83) | 56-83 | Simulation configuration parameters |
-| **Defense Mechanisms** | | | |
-| No Defense | [`sim/receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L18-L19) | 18-19 | Baseline, accepts all frames |
-| Rolling Counter | [`sim/receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L22-L40) | 22-40 | Strict monotonic increase check |
-| Sliding Window | [`sim/receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98) | 43-98 | Bitmask window mechanism |
-| Challenge-Response | [`sim/receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L101-L122) | 101-122 | Nonce verification |
-| **Cryptography** | | | |
-| HMAC-SHA256 | [`sim/security.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L9-L19) | 9-19 | MAC computation |
-| Constant-time compare | [`sim/security.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L22-L27) | 22-27 | Prevents timing attacks |
-| **Sender** | | | |
-| Frame generation | [`sim/sender.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/sender.py#L17-L29) | 17-29 | Generate frames by mode |
-| Counter increment | [`sim/sender.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/sender.py#L27) | 27 | tx_counter += 1 |
-| **Channel Simulation** | | | |
-| Packet loss | [`sim/channel.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L30) | 28-30 | Probabilistic frame drop |
-| Reordering | [`sim/channel.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L32-L37) | 32-37 | Priority queue delay |
-| **Attacker** | | | |
-| Frame recording | [`sim/attacker.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L30-L34) | 30-34 | Eavesdrop and save frames |
-| Selective replay | [`sim/attacker.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L36-L54) | 36-54 | Replay target commands |
-| **Experiment Control** | | | |
-| Single run | [`sim/experiment.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L77-L150) | 77-150 | simulate_one_run |
-| Monte Carlo | [`sim/experiment.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L153-L201) | 153-201 | run_many_experiments |
+| Module | File | Lines | Description |
+|--------|------|-------|-------------|
+| **Defense Mechanisms** |
+| No Defense | [`receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L18-L19) | 18-19 | Baseline |
+| Rolling Counter | [`receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L22-L40) | 22-40 | Strict ordering |
+| Sliding Window | [`receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98) | 43-98 | Bitmask |
+| Challenge-Response | [`receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L101-L122) | 101-122 | Nonce verification |
+| **Cryptography** |
+| HMAC-SHA256 | [`security.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L9-L19) | 9-19 | MAC computation |
+| **Channel Simulation** |
+| Packet Loss | [`channel.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L30) | 28-30 | Probabilistic drop |
+| Reordering | [`channel.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L32-L37) | 32-37 | Delay queue |
+| **Experiment Control** |
+| Single Run | [`experiment.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L77-L150) | 77-150 | simulate_one_run |
+| Monte Carlo | [`experiment.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L153-L201) | 153-201 | run_many_experiments |
 
-#### Key Algorithm Implementation Details
+#### Core Algorithm Example
 
-**1. Sliding Window Bitmask Operations** ([`sim/receiver.py` lines 43-98](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98))
-
-Core idea: Use binary bits of an integer to track reception status within the window
+**Sliding Window Bitmask** ([`receiver.py` lines 43-98](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98))
 
 ```python
-# Case 1: New maximum counter (window slides forward)
+# Window slides forward
 if diff > 0:
-    state.received_mask <<= diff  # Left shift by diff bits
-    state.received_mask |= 1       # Mark current frame
+    state.received_mask <<= diff  # Left shift
+    state.received_mask |= 1       # Mark current
     state.last_counter = frame.counter
 
-# Case 2: Old counter (reordered frame within window)
+# Out-of-order frame within window
 else:
     offset = -diff
-    if (state.received_mask >> offset) & 1:  # Check if already received
+    if (state.received_mask >> offset) & 1:  # Check replay
         return False, "counter_replay"
-    state.received_mask |= (1 << offset)     # Mark as received
+    state.received_mask |= (1 << offset)     # Mark received
 ```
 
-**Implementation Location**:
-- Window advancement: [lines 70-82](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L70-L82)
-- Replay detection: [lines 84-98](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L84-L98)
+**Verification Steps**:
 
-**2. HMAC-SHA256 Computation** ([`sim/security.py` lines 9-19](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L9-L19))
+1. **View core code**: `cat sim/receiver.py`
+2. **Run simple test**: `python main.py --runs 10 --modes window`
+3. **Run full tests**: `python3 -m pytest tests/`
 
-```python
-def compute_mac(token, command, key, mac_length=8):
-    message = f"{token}|{command}".encode("utf-8")
-    mac = hmac.new(key.encode("utf-8"), message, hashlib.sha256).hexdigest()
-    return mac[:mac_length]  # Truncate to specified length
-```
-
-**Why this implementation**:
-- Uses `|` separator to prevent string concatenation attacks
-- Truncated MAC saves bandwidth (8-16 bytes practical for real applications)
-- SHA256 provides 256-bit hash strength
-
-**3. Channel Reordering Simulation** ([`sim/channel.py` lines 28-50](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L50))
-
-```python
-def send(self, frame):
-    # 1. Packet loss
-    if self.rng.random() < self.p_loss:
-        return []
-    
-    # 2. Reordering (random delay)
-    if self.rng.random() < self.p_reorder:
-        delay = self.rng.randint(1, 3)  # Delay 1-3 ticks
-    else:
-        delay = 0
-    
-    # 3. Priority queue scheduling
-    delivery_tick = self.current_tick + delay
-    heapq.heappush(self.pq, (delivery_tick, frame))
-```
-
-**Implementation Location**:
-- Packet loss logic: [lines 28-30](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L30)
-- Reordering logic: [lines 32-37](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L32-L37)
-- Queue management: [lines 39-50](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L39-L50)
-
-#### How to Verify Implementation
-
-**Step 1: Review Data Structures**
-
-```bash
-# View core data structures
-cat sim/types.py
-```
-
-Focus on:
-- [`Frame` lines 25-42](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L25-L42): Understand frame composition
-- [`ReceiverState` lines 45-52](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L45-L52): Understand state persistence
-- [`SimulationConfig` lines 56-83](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L56-L83): Understand configuration parameters
-
-**Step 2: Trace Defense Mechanisms**
-
-```bash
-# View implementation of 4 defense mechanisms
-cat sim/receiver.py
-```
-
-Read in order:
-1. [Lines 18-19](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L18-L19): No defense baseline
-2. [Lines 22-40](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L22-L40): Rolling counter
-3. [Lines 43-98](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98): Sliding window (focus)
-4. [Lines 101-122](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L101-L122): Challenge-response
-
-**Step 3: Understand Attack Model**
-
-```bash
-# View how attacker works
-cat sim/attacker.py
-```
-
-Key methods:
-- [`observe` lines 30-34](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L30-L34): Eavesdrop frames
-- [`replay_frames` lines 36-54](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L36-L54): Generate replay frames
-
-**Step 4: Run Experiments**
-
-```bash
-# Simplest verification
-python main.py --runs 10 --modes window --p-reorder 0.3
-```
-
-**Step 5: Step-through Debugging**
-
-Add breakpoints at critical locations:
-- [`sim/receiver.py` line 77](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L77): Window sliding
-- [`sim/receiver.py` line 94](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L94): Replay detection
-- [`sim/channel.py` line 32](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L32): Reordering decision
-
-#### Code Review Checklist
-
-Reviewers can verify the following key points:
-
-**Security Verification**:
-- [ ] MAC uses HMAC-SHA256 ([`sim/security.py` line 16](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L16))
-- [ ] Constant-time comparison prevents timing attacks ([`sim/security.py` line 27](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L27))
-- [ ] Counter strictly increasing ([`sim/receiver.py` line 36](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L36))
-- [ ] Bitmask correctly detects replay ([`sim/receiver.py` line 93](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L93))
-- [ ] Nonce used only once ([`sim/receiver.py` line 121](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L121))
-
-**Correctness Verification**:
-- [ ] Window advancement logic ([`sim/receiver.py` line 77](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L77))
-- [ ] Reordered frame acceptance logic ([`sim/receiver.py` line 97](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L97))
-- [ ] Packet loss simulation ([`sim/channel.py` line 29](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L29))
-- [ ] Reordering simulation ([`sim/channel.py` lines 33-35](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L33-L35))
-
-**Reproducibility Verification**:
-- [ ] Random seed management ([`sim/experiment.py` line 85](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L85))
-- [ ] All modes use same seed ([`sim/experiment.py` lines 88-93](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L88-L93))
-
-#### Correspondence with Paper Figures
-
-| Paper Figure | Generation Code | Data File |
-|-------------|-----------------|-----------|
-| Fig 1: Reordering Impact | [`scripts/plot_results.py` lines 45-80](https://github.com/tammakiiroha/Replay-simulation/blob/main/scripts/plot_results.py#L45-L80) | `results/p_reorder_sweep.json` |
-| Fig 2: Window Tradeoff | [`scripts/plot_results.py` lines 82-115](https://github.com/tammakiiroha/Replay-simulation/blob/main/scripts/plot_results.py#L82-L115) | `results/window_sweep.json` |
-| Fig 3: Packet Loss Impact | [`scripts/plot_results.py` lines 117-150](https://github.com/tammakiiroha/Replay-simulation/blob/main/scripts/plot_results.py#L117-L150) | `results/p_loss_sweep.json` |
-| Table 1: Defense Comparison | [`scripts/export_tables.py` lines 20-55](https://github.com/tammakiiroha/Replay-simulation/blob/main/scripts/export_tables.py#L20-L55) | `results/ideal_p0.json` |
-
-**Reproduce Figures**:
-```bash
-# 1. Re-run experiments
-python scripts/run_sweeps.py --runs 200
-
-# 2. Generate figures
-python scripts/plot_results.py --formats png
-
-# 3. Export tables
-python scripts/export_tables.py
-```
-
-#### Implementation-to-Standard Correspondence
-
-This section explicitly demonstrates how each defense mechanism and experimental parameter strictly follows international standards and academic literature, proving that **the implementation correctly reproduces real-world attacks and defenses**.
-
-##### 1. Sliding Window ↔ RFC 6479 (IPsec Anti-Replay Algorithm)
-
-**Standard Requirements** (RFC 6479 Section 3.3):
-
-```
-The anti-replay window is a sliding window that tracks the sequence
-numbers that have been received. The window has a fixed size W.
-A bitmap is used to indicate which packets within the window have
-been received.
-```
-
-**Our Implementation** ([`sim/receiver.py` lines 43-98](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98)):
-
-```python
-# RFC 6479 Section 3.3: Use bitmask to track reception status
-state.received_mask  # ← bitmap
-
-# RFC 6479 Section 3.4: Check if sequence number is within window
-diff = frame.counter - state.last_counter
-if diff > window_size:  # Out of window range
-    return False, "counter_out_of_window"
-
-# RFC 6479 Section 3.5: Check if already received (prevent replay)
-if (state.received_mask >> offset) & 1:
-    return False, "counter_replay"
-```
-
-**Parameter Selection Rationale**:
-- **RFC 6479 Recommended Window Size**: 32-64 (Section 4, for high-speed networks)
-- **Our Window Size**: 5 (default)
-- **Justification**: IoT devices have constrained resources (memory, processing power)
-- **Experimental Validation**: W=5 achieves 98% usability (Section 5.2 experimental data)
-
-**Correctness Proof**:
-- ✅ Bitmask operations strictly follow RFC 6479 Section 3.3
-- ✅ Window sliding algorithm consistent with standard
-- ✅ Replay detection logic meets standard requirements
-- ✅ [View code](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98) for line-by-line RFC verification
-
-##### 2. HMAC-SHA256 ↔ RFC 2104 (HMAC Standard)
-
-**Standard Requirements** (RFC 2104 Section 2):
-
-```
-HMAC(K, m) = H((K ⊕ opad) || H((K ⊕ ipad) || m))
-where:
-  H is a cryptographic hash function (SHA-256)
-  K is the secret key
-  m is the message to be authenticated
-```
-
-**Our Implementation** ([`sim/security.py` lines 9-19](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L9-L19)):
-
-```python
-import hmac
-import hashlib
-
-def compute_mac(token, command, key, mac_length=8):
-    message = f"{token}|{command}".encode("utf-8")
-    # Use Python standard library hmac module (FIPS 140-2 certified)
-    mac = hmac.new(key.encode("utf-8"), message, hashlib.sha256).hexdigest()
-    return mac[:mac_length]
-```
-
-**Correctness Proof**:
-- ✅ Uses Python standard library `hmac.new()`, **FIPS 140-2** certified
-- ✅ Hash function uses **SHA-256** (256-bit security strength)
-- ✅ **Avoids implementing cryptography ourselves** (follows security best practices)
-- ✅ Configurable MAC length (default 8 bytes, balances security and bandwidth)
-
-**Why Not Implement Ourselves**:
-- RFC 2104 warns: "Implementors should use existing cryptographic libraries"
-- Self-implementation prone to side-channel attacks
-- Python `hmac` library globally security-audited
-
-##### 3. Attacker Model ↔ Dolev-Yao Threat Model
-
-**Standard Threat Model** (Dolev & Yao, 1983):
-
-Attacker Capabilities:
-- ✓ Eavesdropping on network communication
-- ✓ Message interception
-- ✓ Message delay
-- ✓ Message replay
-
-Attacker Limitations:
-- ✗ Cannot break cryptographic primitives
-- ✗ Cannot guess keys
-
-**Our Implementation** ([`sim/attacker.py` lines 30-54](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L30-L54)):
-
-```python
-class Attacker:
-    def observe(self, frame):
-        # ✓ Eavesdropping: Record all passing frames
-        if self.rng.random() >= self.record_loss:
-            self.recorded.append(frame)
-    
-    def replay_frames(self, target_commands, num_replay):
-        # ✓ Replay: Select and replay recorded frames
-        # ✗ Do not attempt to break MAC
-        # ✗ Do not attempt to forge frames
-        return [frame for frame in self.recorded 
-                if frame.command in target_commands]
-```
-
-**Correctness Proof**:
-- ✅ Strictly follows Dolev-Yao model attacker capability assumptions
-- ✅ Does not attempt to break MAC (meets model limitations)
-- ✅ Only replays eavesdropped frames (realistic attack scenario)
-- ✅ Threat model meets academic standards, results are comparable
-
-##### 4. Channel Model ↔ Real Wireless Network Characteristics
-
-**Why Parameter Settings Are Critical**:
-
-Channel parameters (packet loss rate, reordering probability) directly determine:
-- ✓ Whether experiments reasonably reflect the diversity of real-world wireless networks
-- ✓ Whether defense mechanism availability evaluation is comprehensive
-- ✓ Whether final conclusions have practical reference value
-
-**Parameter Design Considerations**:
-
-To ensure experiments are both realistic and conducive to systematic comparison of different defense mechanisms, this study employs parameterized packet loss/reordering models in simulation. The design principles for each parameter range are as follows.
-
-**Literature Background and Design Rationale for Parameter Ranges**:
-
-This study references reliability research literature on short-range wireless networks such as IEEE 802.15.4 / LoRaWAN / BLE, synthesizing their qualitative conclusions to design the following simulation parameter ranges:
-
-**Relevant Background Literature**:
-
-- **IEEE 802.15.4 / Zigbee**: Baronti et al. (2007)'s survey of wireless sensor networks indicates that indoor industrial environments have factors such as ambient noise, collisions, and multipath propagation that cause link quality fluctuations.
-
-- **LoRaWAN**: Haxhibeqiri et al. (2018)'s survey summarizes performance studies in different deployment scenarios, noting that factors such as building obstruction and distance in urban environments affect packet delivery success rates.
-
-- **BLE**: Gomez et al. (2012)'s evaluation shows that indoor short-range BLE communication experiences decreased link reliability when subject to interference from WiFi, microwaves, etc. in the 2.4GHz band.
-
-- **Industrial Scenarios**: Sha et al. (2017)'s empirical study shows that factors such as metal equipment and electromagnetic interference significantly affect network reliability in real factory deployments of industrial wireless sensor-actuator networks.
-
-**Important Note**: The above literature provides qualitative descriptions of wireless network reliability issues and typical influencing factors, but **the specific numerical ranges used in this study (e.g., "packet loss rate 5-30%") are parameter ranges designed for simulation experiments**, used to systematically evaluate defense mechanism performance under different network conditions, rather than being directly quoted from specific measurement results in these papers.
-
-**Our Experimental Parameter Settings** ([`sim/channel.py` lines 28-50](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L50)):
-
-```python
-# Parameter sweep ranges (simulation parameters designed for systematic evaluation)
-p_loss_values = [0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30]
-#                └─┘  └──────────────────────────────────┘
-#                Ideal  Covers good to poor network conditions
-#                channel Used to comprehensively evaluate defense mechanism performance
-
-p_reorder_values = [0.0, 0.10, 0.20, 0.30]
-#                   └─┘  └──────────────┘
-#                   No    Considers delay jitter in multi-hop networks
-#                   reorder
-
-# Channel simulation implementation
-class Channel:
-    def send(self, frame):
-        # Packet loss simulation (probability model based on Bernoulli process)
-        if self.rng.random() < self.p_loss:
-            return []  # Drop frame
-        
-        # Reordering simulation (priority queue + random delay)
-        if self.rng.random() < self.p_reorder:
-            delay = self.rng.randint(1, 3)  # 1-3 tick delay
-        else:
-            delay = 0
-```
-
-**Design Principles for Parameter Ranges**:
-
-**Packet Loss Rate Range [0%, 30%]:**
-
-- **0%**: Ideal channel baseline, used to compare the theoretical upper bound performance of different defense mechanisms under "no channel error" conditions.
-- **5-15%**: Represents light packet loss situations commonly described in literature for good indoor environments (short distance, no obstruction).
-- **15-30%**: Used to cover link quality degradation in industrial scenarios due to multipath fading, electromagnetic interference, and node density, as well as serving as the upper limit for stress testing.
-
-**Why This Range**:
-- Includes ideal channel (0%) as baseline for comparing theoretical performance of different defense mechanisms
-- 5-15% covers typical IoT application scenarios
-- 15-30% evaluates defense mechanism robustness under poorer network conditions
-- Does not test extreme cases above 30%, as the network becomes essentially unusable at that point, losing practical significance
-
-**Reordering Probability Range [0%, 30%]:**
-
-- **0%**: Single-hop, very small buffer ideal case, almost no reordering.
-- **10-20%**: Considers delay jitter introduced by multi-hop forwarding, buffer queues, and MAC retransmission, which may occur at certain proportions in multi-hop networks.
-- **20-30%**: Stress testing scenario to examine defense mechanism robustness under severe reordering.
-
-**Delay Jitter 1-3 Ticks:**
-
-Assuming each tick = 50ms (typical IoT communication cycle)
-- 1 tick (50ms): Single-hop delay
-- 2 ticks (100ms): 2-hop network delay
-- 3 ticks (150ms): 3-hop network delay
-
-These delay values are used to simulate reordering phenomena in multi-hop networks.
-
-**Reasonableness of Experimental Parameter Design**:
-
-✅ **Comprehensive Coverage**:
-- Parameter range [0%, 30%] covers complete network conditions from ideal to poor
-- Includes ideal channel baseline (0%) and stress testing scenarios (30%)
-
-✅ **Appropriate Evaluation Granularity**:
-- Packet loss rate increments of 5% are sufficiently fine to observe performance trend changes
-- Systematically evaluates defense mechanism performance under different conditions
-
-✅ **Practical Reference Value**:
-- Parameter design comprehensively considers qualitative descriptions from literature on wireless IoT network reliability
-- Covers typical application scenarios from good to poor
-
-**Significance of Experimental Parameter Settings**:
-
-**Example: Sliding Window Availability Evaluation**
-
-| Packet Loss | Experimental Result | Explanation |
-|-------------|-------------------|-------------|
-| 0% | 100% availability | Ideal channel baseline |
-| 10% | 98% availability | Typical indoor scenario |
-| 20% | 95% availability | Poor network conditions |
-| 30% | 92% availability | Stress testing scenario |
-
-Through systematic parameter sweeps, we can:
-- ✅ Comprehensively evaluate defense mechanism performance under different network conditions
-- ✅ Identify applicable ranges and performance boundaries of defense mechanisms
-- ✅ Provide reference basis for actual deployment
-
-**Transparency of Parameter Settings**:
-
-This study explicitly states:
-1. ✅ **Parameter Nature**: These are parameter ranges for simulation experiments, not direct measurement results from a specific paper
-2. ✅ **Design Basis**: Synthesizes qualitative descriptions from literature on wireless network reliability issues
-3. ✅ **Experimental Objective**: Through parameterized modeling, systematically evaluates performance tradeoffs of different defense mechanisms
-4. ✅ **Result Interpretation**: Experimental conclusions should be understood as "comparative results under parameterized models," providing reference for practical applications
-
-Therefore, this study's experimental design is **transparent and reasonable**, and conclusions have **reference value**.
-
-##### 5. Challenge-Response ↔ Cryptographic Protocol Standards
-
-**Standard Protocol** (TLS 1.3 Handshake, RFC 8446):
-
-```
-Client → Server:  ClientHello + random nonce
-Server → Client:  ServerHello + response based on nonce
-```
-
-**Our Implementation** ([`sim/receiver.py` lines 101-122](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L101-L122) + [`sim/sender.py` lines 22-24](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/sender.py#L22-L24)):
-
-```python
-# Receiver generates challenge (Nonce)
-def issue_nonce(self):
-    self.expected_nonce = secrets.randbits(self.nonce_bits)
-    return self.expected_nonce
-
-# Sender responds to challenge
-def next_frame(self, command):
-    nonce = self.receiver.issue_nonce()  # Get challenge
-    mac = compute_mac(nonce, command, self.shared_key)  # Compute response
-    return Frame(command, counter=0, mac=mac, nonce=nonce)
-
-# Receiver verifies response
-def verify_challenge_response(self, frame, state):
-    if frame.nonce != state.expected_nonce:
-        return False, "nonce_mismatch"
-    # Verify MAC
-    expected_mac = compute_mac(frame.nonce, frame.command, ...)
-    if not constant_time_compare(frame.mac, expected_mac):
-        return False, "mac_mismatch"
-    # Generate new nonce (use once only)
-    state.expected_nonce = secrets.randbits(...)
-    return True
-```
-
-**Correctness Proof**:
-- ✅ Nonce uses `secrets.randbits()` (cryptographically secure random number generator)
-- ✅ Each Nonce used only once (prevents replay)
-- ✅ Combined with HMAC-SHA256 provides message authentication
-- ✅ Protocol flow meets standard challenge-response pattern
-
-##### 6. Experimental Method ↔ Monte Carlo Simulation Standards
-
-**Standard Method** (Metropolis & Ulam, 1949; Rubinstein & Kroese, 2016):
-
-Monte Carlo Simulation Requirements:
-1. Large number of independent trials
-2. Well-defined randomness source
-3. Statistical significance testing
-
-**Our Implementation** ([`sim/experiment.py` lines 153-201](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L153-L201)):
-
-```python
-def run_many_experiments(config, num_runs, rng_seed=None):
-    # 1. Deterministic random number generator (reproducible)
-    rng = random.Random(rng_seed) if rng_seed else random.Random()
-    
-    # 2. Large number of independent experiments
-    results = []
-    for run_idx in range(num_runs):
-        seed_for_run = rng.randint(0, 2**31 - 1)
-        result = simulate_one_run(config, seed_for_run)
-        results.append(result)
-    
-    # 3. Statistical analysis (mean, standard deviation)
-    avg_legit = np.mean([r['legit_acceptance'] for r in results])
-    std_legit = np.std([r['legit_acceptance'] for r in results])
-    avg_attack = np.mean([r['attack_success'] for r in results])
-    std_attack = np.std([r['attack_success'] for r in results])
-    
-    return {
-        'avg_legit': avg_legit,
-        'std_legit': std_legit,
-        'avg_attack': avg_attack,
-        'std_attack': std_attack,
-        'num_runs': num_runs
-    }
-```
-
-**Experimental Parameter Settings**:
-- **Number of Runs**: 200 (per configuration)
-- **Confidence Level**: 95% (standard deviation provides uncertainty estimate)
-- **Random Seed**: Specifiable (ensures full reproducibility)
-
-**Correctness Proof**:
-- ✅ Large sample size (200 runs) ensures statistical significance
-- ✅ Independent experiments (each uses different random seed)
-- ✅ Reports mean and standard deviation (meets scientific experimental standards)
-- ✅ Fully reproducible (fixed seed produces identical results)
-
-##### Implementation Correctness Summary
-
-| Component | Follows Standard/Literature | Code Location | Verification Method |
-|-----------|---------------------------|---------------|---------------------|
-| Sliding Window | RFC 6479 | [`receiver.py#L43-98`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98) | Line-by-line RFC comparison + experimental validation |
-| HMAC | RFC 2104 | [`security.py#L16`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L16) | Uses FIPS-certified library |
-| Attacker | Dolev-Yao | [`attacker.py#L30-54`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L30-L54) | Follows standard threat model |
-| Channel | Parameterized Modeling | [`channel.py#L28-50`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L50) | Bernoulli process + priority queue |
-| Challenge-Response | RFC 8446 | [`receiver.py#L101-122`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L101-L122) | Standard protocol flow |
-| Experimental Method | Monte Carlo Standards | [`experiment.py#L153-201`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L153-L201) | 200 independent experiments |
-
-**Key Conclusions**:
-
-Through the above detailed correspondence, we prove:
-
-1. ✅ **Implementation Correctness**: Each component strictly follows international standards or academic literature
-2. ✅ **Experimental Reliability**: Parameter settings based on real network measurement data
-3. ✅ **Result Validity**: Experimental methods meet Monte Carlo simulation standards
-4. ✅ **Fully Verifiable**: All code is open source, clickable to view and independently verify
-
-Therefore, the experimental data and conclusions of this paper have **sufficient credibility and practical guidance value**.
+For detailed code review checklist and verification steps, see [`CONTRIBUTING.md`](https://github.com/tammakiiroha/Replay-simulation/blob/main/CONTRIBUTING.md).
 
 ---
 
@@ -1682,85 +1185,6 @@ Start Choosing Defense Mechanism
 ---
 
 
-## 9. Glossary
-
-### A-F
-
-**Acceptance Rate**
-- Proportion of frames accepted by receiver
-- Two types: legitimate acceptance (usability) and attack success (security)
-
-**Attack Mode**
-- Post: Batch replay after legitimate communication
-- Inline: Mix replays during legitimate communication
-
-**Bitmask**
-- Integer recording received counters in sliding window
-- Example: 0b10101 → bits 0, 2, 4 received
-
-**Challenge-Response**
-- Authentication method where receiver sends challenge (nonce) and sender returns response
-
-**Counter**
-- Integer incrementing with each frame (0, 1, 2, 3, ...)
-- Used for replay detection
-
-**Frame**
-- Minimum unit of wireless communication
-- Structure: `{command, counter, mac, nonce}`
-
-### G-M
-
-**HMAC (Hash-based Message Authentication Code)**
-- Message authentication code using shared key
-- This project uses HMAC-SHA256
-
-**Inline Attack**
-- Attack executing replays simultaneously with legitimate communication
-
-**Legitimate Traffic**
-- Communication from legitimate users
-
-**MAC (Message Authentication Code)**
-- Short code ensuring message integrity and authenticity
-- Attacker cannot forge valid MAC
-
-**Monte Carlo Simulation**
-- Statistical simulation using random numbers
-- This project uses 200-500 trials to calculate confidence intervals
-
-### N-Z
-
-**Nonce**
-- Abbreviation for "Number used ONCE"
-- Random value used only once
-- Used for replay prevention
-
-**Packet Loss**
-- Phenomenon where frames are lost in wireless communication
-- p_loss: Loss probability (0.0 = no loss, 0.2 = 20% loss)
-
-**Packet Reordering**
-- Phenomenon where frames arrive in different order than sent
-- p_reorder: Reordering probability
-
-**Replay Attack**
-- Attack retransmitting previously intercepted frames
-
-**Rolling Counter**
-- Method rejecting old frames using monotonically increasing counter
-
-**Sliding Window**
-- Method handling reordering by allowing counter range
-- Records received counters using bitmask
-
-**Seed**
-- Initial value for random number generator
-- Same seed enables experiment reproduction
-
----
-
-## 10. Demonstration
 
 ### 10.1 Quick Demo (5 minutes)
 

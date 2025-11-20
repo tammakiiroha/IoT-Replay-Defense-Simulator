@@ -386,564 +386,67 @@ $$
 
 ## 6. 技术实现细节
 
-### 6.1 代码实现路线图（完全可重现）
+### 6.1 代码实现路线图
 
-本节提供**完整的代码路径**，使任何人都能验证和重现我们的实验结果。
+本节提供核心代码路径，便于验证和重现实验结果。
 
-#### 核心模块概览
+#### 核心模块结构
 
 ```
 sim/
-├── types.py           # 数据结构定义（Frame, ReceiverState, SimulationConfig）
-├── sender.py          # 发送方逻辑（帧生成、计数器、MAC）
-├── receiver.py        # 接收方逻辑（4种防御机制的验证）
-├── security.py        # 密码学原语（HMAC-SHA256）
-├── channel.py         # 信道模型（丢包、乱序模拟）
-├── attacker.py        # 攻击者模型（记录、重放）
-├── experiment.py      # 蒙特卡洛实验控制
-└── commands.py        # 命令集合定义
+├── types.py        # 数据结构（Frame, ReceiverState, Config）
+├── sender.py       # 发送方（帧生成、计数器、MAC）
+├── receiver.py     # 接收方（4种防御机制）
+├── security.py     # 密码学（HMAC-SHA256）
+├── channel.py      # 信道模拟（丢包、乱序）
+├── attacker.py     # 攻击者（记录、重放）
+└── experiment.py   # 蒙特卡洛实验控制
 ```
 
-#### 关键实现位置速查表
+#### 关键实现位置
 
-| 功能模块 | 文件路径 | 关键行号 | 说明 |
-|---------|---------|---------|------|
-| **数据结构** | | | |
-| Frame 定义 | [`sim/types.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L25-L42) | 25-42 | 帧结构（command, counter, mac, nonce） |
-| ReceiverState | [`sim/types.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L45-L52) | 45-52 | 接收方状态（last_counter, received_mask） |
-| SimulationConfig | [`sim/types.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L56-L83) | 56-83 | 仿真配置参数 |
-| **防御机制** | | | |
-| 无防御 | [`sim/receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L18-L19) | 18-19 | 基线，接受所有帧 |
-| 滚动计数器 | [`sim/receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L22-L40) | 22-40 | 严格单调递增检查 |
-| 滑动窗口 | [`sim/receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98) | 43-98 | 位掩码窗口机制 |
-| 挑战-响应 | [`sim/receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L101-L122) | 101-122 | Nonce 验证 |
-| **密码学** | | | |
-| HMAC-SHA256 | [`sim/security.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L9-L19) | 9-19 | MAC 计算 |
-| 常量时间比较 | [`sim/security.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L22-L27) | 22-27 | 防止时序攻击 |
-| **发送方** | | | |
-| 帧生成 | [`sim/sender.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/sender.py#L17-L29) | 17-29 | 根据模式生成帧 |
-| 计数器递增 | [`sim/sender.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/sender.py#L27) | 27 | tx_counter += 1 |
-| **信道模拟** | | | |
-| 丢包模拟 | [`sim/channel.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L30) | 28-30 | 概率性丢弃帧 |
-| 乱序模拟 | [`sim/channel.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L32-L37) | 32-37 | 优先队列延迟 |
-| **攻击者** | | | |
-| 帧记录 | [`sim/attacker.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L30-L34) | 30-34 | 窃听并保存帧 |
-| 选择性重放 | [`sim/attacker.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L36-L54) | 36-54 | 重放目标命令 |
-| **实验控制** | | | |
-| 单次运行 | [`sim/experiment.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L77-L150) | 77-150 | simulate_one_run |
-| 蒙特卡洛 | [`sim/experiment.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L153-L201) | 153-201 | run_many_experiments |
+| 模块 | 文件 | 行号 | 说明 |
+|------|------|------|------|
+| **防御机制** |
+| 无防御 | [`receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L18-L19) | 18-19 | 基线 |
+| 滚动计数器 | [`receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L22-L40) | 22-40 | 严格顺序 |
+| 滑动窗口 | [`receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98) | 43-98 | 位掩码 |
+| 挑战-响应 | [`receiver.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L101-L122) | 101-122 | Nonce验证 |
+| **密码学** |
+| HMAC-SHA256 | [`security.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L9-L19) | 9-19 | MAC计算 |
+| **信道模拟** |
+| 丢包 | [`channel.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L30) | 28-30 | 概率丢弃 |
+| 乱序 | [`channel.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L32-L37) | 32-37 | 延迟队列 |
+| **实验控制** |
+| 单次运行 | [`experiment.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L77-L150) | 77-150 | simulate_one_run |
+| 蒙特卡洛 | [`experiment.py`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L153-L201) | 153-201 | run_many_experiments |
 
-#### 关键算法实现详解
+#### 核心算法示例
 
-**1. 滑动窗口位掩码操作**（[`sim/receiver.py` 第43-98行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98)）
-
-核心思想：使用一个整数的二进制位记录窗口内的接收状态
+**滑动窗口位掩码**（[`receiver.py` 43-98行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98)）
 
 ```python
-# 情况1：新的最大计数器（窗口向前滑动）
+# 窗口向前滑动
 if diff > 0:
-    state.received_mask <<= diff  # 左移 diff 位
-    state.received_mask |= 1       # 标记当前帧
+    state.received_mask <<= diff  # 左移
+    state.received_mask |= 1       # 标记当前
     state.last_counter = frame.counter
 
-# 情况2：旧计数器（窗口内乱序帧）
+# 窗口内乱序帧
 else:
     offset = -diff
-    if (state.received_mask >> offset) & 1:  # 检查是否已收到
+    if (state.received_mask >> offset) & 1:  # 检查重放
         return False, "counter_replay"
-    state.received_mask |= (1 << offset)     # 标记为已收到
+    state.received_mask |= (1 << offset)     # 标记已收
 ```
 
-**实现位置**：
-- 窗口前进：[第70-82行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L70-L82)
-- 乱序检测：[第84-98行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L84-L98)
+**验证步骤**：
 
-**2. HMAC-SHA256 计算**（[`sim/security.py` 第9-19行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L9-L19)）
+1. **查看核心代码**：`cat sim/receiver.py`
+2. **运行简单测试**：`python main.py --runs 10 --modes window`
+3. **查看完整测试**：`python3 -m pytest tests/`
 
-```python
-def compute_mac(token, command, key, mac_length=8):
-    message = f"{token}|{command}".encode("utf-8")
-    mac = hmac.new(key.encode("utf-8"), message, hashlib.sha256).hexdigest()
-    return mac[:mac_length]  # 截断到指定长度
-```
-
-**为什么这样实现**：
-- 使用 `|` 分隔符防止字符串拼接攻击
-- 截断 MAC 节省带宽（实际应用中可用8-16字节）
-- SHA256 提供 256 位哈希强度
-
-**3. 信道乱序模拟**（[`sim/channel.py` 第28-50行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L50)）
-
-```python
-def send(self, frame):
-    # 1. 丢包
-    if self.rng.random() < self.p_loss:
-        return []
-    
-    # 2. 乱序（随机延迟）
-    if self.rng.random() < self.p_reorder:
-        delay = self.rng.randint(1, 3)  # 延迟1-3个时间片
-    else:
-        delay = 0
-    
-    # 3. 优先队列调度
-    delivery_tick = self.current_tick + delay
-    heapq.heappush(self.pq, (delivery_tick, frame))
-```
-
-**实现位置**：
-- 丢包逻辑：[第28-30行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L30)
-- 乱序逻辑：[第32-37行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L32-L37)
-- 队列管理：[第39-50行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L39-L50)
-
-#### 如何验证实现
-
-**步骤1：阅读数据结构**
-
-```bash
-# 查看核心数据结构
-cat sim/types.py
-```
-
-重点关注：
-- [`Frame` 第25-42行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L25-L42)：理解帧的组成
-- [`ReceiverState` 第45-52行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L45-L52)：理解状态持久化
-- [`SimulationConfig` 第56-83行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/types.py#L56-L83)：理解配置参数
-
-**步骤2：追踪防御机制**
-
-```bash
-# 查看4种防御机制的实现
-cat sim/receiver.py
-```
-
-按顺序阅读：
-1. [第18-19行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L18-L19)：无防御基线
-2. [第22-40行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L22-L40)：滚动计数器
-3. [第43-98行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98)：滑动窗口（重点）
-4. [第101-122行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L101-L122)：挑战-响应
-
-**步骤3：理解攻击模型**
-
-```bash
-# 查看攻击者如何工作
-cat sim/attacker.py
-```
-
-关键方法：
-- [`observe` 第30-34行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L30-L34)：窃听帧
-- [`replay_frames` 第36-54行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L36-L54)：生成重放帧
-
-**步骤4：运行实验**
-
-```bash
-# 最简单的验证
-python main.py --runs 10 --modes window --p-reorder 0.3
-```
-
-**步骤5：单步调试**
-
-在关键位置添加断点：
-- [`sim/receiver.py` 第77行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L77)：窗口滑动
-- [`sim/receiver.py` 第94行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L94)：重放检测
-- [`sim/channel.py` 第32行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L32)：乱序决策
-
-#### 代码审查清单
-
-评审者可以验证以下关键点：
-
-**安全性验证**：
-- [ ] MAC 使用 HMAC-SHA256（[`sim/security.py` 第16行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L16)）
-- [ ] 常量时间比较防止时序攻击（[`sim/security.py` 第27行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L27)）
-- [ ] 计数器严格递增（[`sim/receiver.py` 第36行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L36)）
-- [ ] 位掩码正确检测重放（[`sim/receiver.py` 第93行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L93)）
-- [ ] Nonce 只使用一次（[`sim/receiver.py` 第121行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L121)）
-
-**正确性验证**：
-- [ ] 窗口前进逻辑（[`sim/receiver.py` 第77行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L77)）
-- [ ] 乱序帧接受逻辑（[`sim/receiver.py` 第97行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L97)）
-- [ ] 丢包模拟（[`sim/channel.py` 第29行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L29)）
-- [ ] 乱序模拟（[`sim/channel.py` 第33-35行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L33-L35)）
-
-**可重现性验证**：
-- [ ] 随机种子管理（[`sim/experiment.py` 第85行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L85)）
-- [ ] 所有模式使用相同种子（[`sim/experiment.py` 第88-93行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L88-L93)）
-
-#### 与论文图表的对应关系
-
-| 论文图表 | 生成代码 | 数据文件 |
-|---------|---------|---------|
-| 图1：乱序影响 | [`scripts/plot_results.py` 第45-80行](https://github.com/tammakiiroha/Replay-simulation/blob/main/scripts/plot_results.py#L45-L80) | `results/p_reorder_sweep.json` |
-| 图2：窗口权衡 | [`scripts/plot_results.py` 第82-115行](https://github.com/tammakiiroha/Replay-simulation/blob/main/scripts/plot_results.py#L82-L115) | `results/window_sweep.json` |
-| 图3：丢包影响 | [`scripts/plot_results.py` 第117-150行](https://github.com/tammakiiroha/Replay-simulation/blob/main/scripts/plot_results.py#L117-L150) | `results/p_loss_sweep.json` |
-| 表1：防御对比 | [`scripts/export_tables.py` 第20-55行](https://github.com/tammakiiroha/Replay-simulation/blob/main/scripts/export_tables.py#L20-L55) | `results/ideal_p0.json` |
-
-**重现图表**：
-```bash
-# 1. 重新运行实验
-python scripts/run_sweeps.py --runs 200
-
-# 2. 生成图表
-python scripts/plot_results.py --formats png
-
-# 3. 导出表格
-python scripts/export_tables.py
-```
-
-#### 实现与标准的对应关系
-
-本节明确说明每个防御机制和实验参数如何严格遵循国际标准和学术文献，以证明**实现正确复现了现实世界的攻击和防御**。
-
-##### 1. 滑动窗口 ↔ RFC 6479（IPsec Anti-Replay Algorithm）
-
-**标准要求**（RFC 6479 第3.3节）：
-
-```
-The anti-replay window is a sliding window that tracks the sequence
-numbers that have been received. The window has a fixed size W.
-A bitmap is used to indicate which packets within the window have
-been received.
-```
-
-**我们的实现**（[`sim/receiver.py` 第43-98行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98)）：
-
-```python
-# RFC 6479 第3.3节：使用位掩码记录接收状态
-state.received_mask  # ← 位图（bitmap）
-
-# RFC 6479 第3.4节：检查序列号是否在窗口内
-diff = frame.counter - state.last_counter
-if diff > window_size:  # 超出窗口范围
-    return False, "counter_out_of_window"
-
-# RFC 6479 第3.5节：检查是否已接收（防止重放）
-if (state.received_mask >> offset) & 1:
-    return False, "counter_replay"
-```
-
-**参数选择依据**：
-- **RFC 6479 建议窗口大小**：32-64（第4节，用于高速网络）
-- **我们的窗口大小**：5（默认）
-- **理由**：IoT 设备资源受限（内存、处理能力）
-- **实验验证**：W=5 时达到 98% 可用性（本文第5.2节实验数据）
-
-**正确性证明**：
-- ✅ 位掩码操作严格遵循 RFC 6479 第3.3节描述
-- ✅ 窗口滑动算法与标准一致
-- ✅ 重放检测逻辑符合标准要求
-- ✅ [点击查看代码](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98) 可逐行对照 RFC 文档验证
-
-##### 2. HMAC-SHA256 ↔ RFC 2104（HMAC 标准）
-
-**标准要求**（RFC 2104 第2节）：
-
-```
-HMAC(K, m) = H((K ⊕ opad) || H((K ⊕ ipad) || m))
-where:
-  H is a cryptographic hash function (SHA-256)
-  K is the secret key
-  m is the message to be authenticated
-```
-
-**我们的实现**（[`sim/security.py` 第9-19行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L9-L19)）：
-
-```python
-import hmac
-import hashlib
-
-def compute_mac(token, command, key, mac_length=8):
-    message = f"{token}|{command}".encode("utf-8")
-    # 使用 Python 标准库的 hmac 模块（FIPS 140-2 认证）
-    mac = hmac.new(key.encode("utf-8"), message, hashlib.sha256).hexdigest()
-    return mac[:mac_length]
-```
-
-**正确性证明**：
-- ✅ 使用 Python 标准库 `hmac.new()`，已通过 **FIPS 140-2** 认证
-- ✅ 哈希函数使用 **SHA-256**（256位安全强度）
-- ✅ **避免自己实现密码学**（遵循安全编程最佳实践）
-- ✅ MAC 长度可配置（默认8字节，平衡安全性与带宽）
-
-**为什么不自己实现**：
-- RFC 2104 警告："Implementors should use existing cryptographic libraries"
-- 自己实现容易引入侧信道攻击（side-channel attacks）
-- Python `hmac` 库经过全球安全审计
-
-##### 3. 攻击者模型 ↔ Dolev-Yao 威胁模型
-
-**标准威胁模型**（Dolev & Yao, 1983）：
-
-攻击者能力：
-- ✓ 窃听网络通信（Eavesdropping）
-- ✓ 拦截消息（Interception）
-- ✓ 延迟消息（Delay）
-- ✓ 重放消息（Replay）
-
-攻击者限制：
-- ✗ 不能破解密码学原语（Cannot break cryptographic primitives）
-- ✗ 不能猜测密钥（Cannot guess keys）
-
-**我们的实现**（[`sim/attacker.py` 第30-54行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L30-L54)）：
-
-```python
-class Attacker:
-    def observe(self, frame):
-        # ✓ 窃听：记录所有经过的帧
-        if self.rng.random() >= self.record_loss:
-            self.recorded.append(frame)
-    
-    def replay_frames(self, target_commands, num_replay):
-        # ✓ 重放：选择并重放记录的帧
-        # ✗ 不尝试破解 MAC
-        # ✗ 不尝试伪造帧
-        return [frame for frame in self.recorded 
-                if frame.command in target_commands]
-```
-
-**正确性证明**：
-- ✅ 严格遵循 Dolev-Yao 模型的攻击者能力假设
-- ✅ 不尝试破解 MAC（符合模型限制）
-- ✅ 只重放已窃听的帧（真实攻击场景）
-- ✅ 威胁模型符合学术标准，结果具有可比性
-
-##### 4. 信道模型 ↔ 真实无线网络特性
-
-**为什么参数设置至关重要**：
-
-信道参数（丢包率、乱序概率）直接决定：
-- ✓ 实验是否合理反映现实世界无线网络的多样性
-- ✓ 防御机制的可用性评估是否全面
-- ✓ 最终结论是否具有实际参考价值
-
-**参数设置的考虑因素**：
-
-为了让实验既有现实意义，又便于系统地比较不同防御机制，本研究在仿真中采用了参数化的丢包/乱序模型。各参数范围的设计原则如下。
-
-**参数范围的文献背景与设计依据**：
-
-本研究参考了关于 IEEE 802.15.4 / LoRaWAN / BLE 等短距离无线网络的可靠性研究文献，综合其定性结论，设计了以下仿真参数范围：
-
-**相关背景文献**：
-
-- **IEEE 802.15.4 / Zigbee**：P. Baronti et al. (2007) 对无线传感器网络的综述表明，室内工业环境中存在环境噪声、碰撞、多路径传播等因素，导致链路质量波动。
-
-- **LoRaWAN**：J. Haxhibeqiri et al. (2018) 的综述汇总了不同部署场景下的性能研究，指出城市环境中建筑物遮挡、距离等因素会影响数据包传输成功率。
-
-- **BLE**：C. Gomez et al. (2012) 的评估显示，室内短距离 BLE 通信在 2.4GHz 频段受到 WiFi、微波炉等干扰时，链路可靠性会下降。
-
-- **工业场景**：M. Sha et al. (2017) 的实证研究表明，工业无线传感器-执行器网络在真实工厂部署中，金属设备、电磁干扰等因素会显著影响网络可靠性。
-
-**重要说明**：上述文献提供了关于无线网络可靠性问题的定性描述和典型影响因素，但**本研究中使用的具体数值区间（如"丢包率5-30%"）是为仿真实验设计的参数范围**，用于系统地评估防御机制在不同网络条件下的性能，而非直接引用自这些文献的某一具体测量结果。
-
-**我们的实验参数设置**（[`sim/channel.py` 第28-50行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L50)）：
-
-```python
-# 参数扫描范围（为系统评估设计的仿真参数）
-p_loss_values = [0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30]
-#                └─┘  └──────────────────────────────────┘
-#                理想  覆盖从良好到恶劣的网络条件
-#                信道  用于全面评估防御机制性能
-
-p_reorder_values = [0.0, 0.10, 0.20, 0.30]
-#                   └─┘  └──────────────┘
-#                   无    考虑多跳网络的延迟抖动
-#                   乱序  
-
-# 信道模拟实现
-class Channel:
-    def send(self, frame):
-        # 丢包模拟（基于伯努利过程的概率模型）
-        if self.rng.random() < self.p_loss:
-            return []  # 丢弃帧
-        
-        # 乱序模拟（优先队列 + 随机延迟）
-        if self.rng.random() < self.p_reorder:
-            delay = self.rng.randint(1, 3)  # 1-3 时间片延迟
-        else:
-            delay = 0
-```
-
-**参数范围的设计原则**：
-
-**丢包率范围 [0%, 30%]：**
-
-- **0%**：理想信道基线，用于对比不同防御机制在"无信道误差"条件下的理论上限性能。
-- **5-15%**：代表文献中描述的良好室内环境（短距离、无遮挡）下常见的轻度丢包情况。
-- **15-30%**：用于覆盖工业场景中由于多径衰落、电磁干扰、节点密集带来的链路质量下降，以及作为压力测试的上限。
-
-**为什么选择这个范围**：
-- 包含理想信道（0%）作为基准，便于比较不同防御机制的理论性能
-- 5-15% 覆盖典型IoT应用场景
-- 15-30% 用于评估防御机制在较差网络条件下的鲁棒性
-- 不测试超过30%的极端情况，因为此时网络基本不可用，失去实际意义
-
-**乱序概率范围 [0%, 30%]：**
-
-- **0%**：单跳、缓冲很小的理想情况，几乎没有乱序。
-- **10-20%**：考虑多跳转发、缓冲队列和MAC重传引入的延迟抖动，在多跳网络中可能出现的一定比例乱序。
-- **20-30%**：作为压力测试场景，用于检验防御机制在严重乱序下的鲁棒性。
-
-**延迟抖动 1-3 时间片：**
-
-假设每个时间片 = 50ms（典型的IoT通信周期）
-- 1 时间片 (50ms)：单跳延迟
-- 2 时间片 (100ms)：2跳网络延迟
-- 3 时间片 (150ms)：3跳网络延迟
-
-这些延迟值用于模拟多跳网络中的乱序现象。
-
-**实验参数设计的合理性**：
-
-✅ **覆盖范围充分**：
-- 参数范围 [0%, 30%] 涵盖了从理想到恶劣的完整网络状况
-- 包含理想信道基线（0%）和压力测试场景（30%）
-
-✅ **评估粒度适当**：
-- 丢包率以 5% 为步长，足够细致地观察性能变化趋势
-- 系统地评估防御机制在不同条件下的表现
-
-✅ **具有现实参考意义**：
-- 参数设计综合考虑了文献中关于无线IoT网络的定性描述
-- 覆盖了从良好到较差的典型应用场景
-
-**实验参数设置的意义**：
-
-**示例：滑动窗口的可用性评估**
-
-| 丢包率 | 实验结果 | 说明 |
-|--------|---------|------|
-| 0% | 100% 可用性 | 理想信道基线 |
-| 10% | 98% 可用性 | 典型室内场景 |
-| 20% | 95% 可用性 | 较差网络条件 |
-| 30% | 92% 可用性 | 压力测试场景 |
-
-通过系统的参数扫描，我们能够：
-- ✅ 全面评估防御机制在不同网络条件下的性能
-- ✅ 识别防御机制的适用范围和性能边界
-- ✅ 为实际部署提供参考依据
-
-**参数设置的透明性**：
-
-本研究明确说明：
-1. ✅ **参数性质**：这些是仿真实验的参数范围，不是某一文献的直接测量结果
-2. ✅ **设计依据**：综合了文献对无线网络可靠性问题的定性描述
-3. ✅ **实验目标**：通过参数化建模，系统地评估不同防御机制的性能权衡
-4. ✅ **结果解释**：实验结论应理解为"在参数化模型下的比较结果"，为实际应用提供参考
-
-因此，本研究的实验设计是**透明和合理的**，结论具有**参考价值**。
-
-##### 5. 挑战-响应 ↔ 密码学协议标准
-
-**标准协议**（TLS 1.3 Handshake, RFC 8446）：
-
-```
-Client → Server:  ClientHello + random nonce
-Server → Client:  ServerHello + response based on nonce
-```
-
-**我们的实现**（[`sim/receiver.py` 第101-122行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L101-L122) + [`sim/sender.py` 第22-24行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/sender.py#L22-L24)）：
-
-```python
-# 接收方生成挑战（Nonce）
-def issue_nonce(self):
-    self.expected_nonce = secrets.randbits(self.nonce_bits)
-    return self.expected_nonce
-
-# 发送方响应挑战
-def next_frame(self, command):
-    nonce = self.receiver.issue_nonce()  # 获取挑战
-    mac = compute_mac(nonce, command, self.shared_key)  # 计算响应
-    return Frame(command, counter=0, mac=mac, nonce=nonce)
-
-# 接收方验证响应
-def verify_challenge_response(self, frame, state):
-    if frame.nonce != state.expected_nonce:
-        return False, "nonce_mismatch"
-    # 验证 MAC
-    expected_mac = compute_mac(frame.nonce, frame.command, ...)
-    if not constant_time_compare(frame.mac, expected_mac):
-        return False, "mac_mismatch"
-    # 生成新 nonce（每次只用一次）
-    state.expected_nonce = secrets.randbits(...)
-    return True
-```
-
-**正确性证明**：
-- ✅ Nonce 使用 `secrets.randbits()`（密码学安全的随机数生成器）
-- ✅ 每个 Nonce 只使用一次（防止重放）
-- ✅ 结合 HMAC-SHA256 提供消息认证
-- ✅ 协议流程符合标准挑战-响应模式
-
-##### 6. 实验方法 ↔ 蒙特卡洛仿真标准
-
-**标准方法**（Metropolis & Ulam, 1949; Rubinstein & Kroese, 2016）：
-
-蒙特卡洛仿真要求：
-1. 大量独立重复实验（Large number of independent trials）
-2. 随机性来源明确（Well-defined randomness source）
-3. 统计显著性验证（Statistical significance testing）
-
-**我们的实现**（[`sim/experiment.py` 第153-201行](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L153-L201)）：
-
-```python
-def run_many_experiments(config, num_runs, rng_seed=None):
-    # 1. 确定性随机数生成器（可重现）
-    rng = random.Random(rng_seed) if rng_seed else random.Random()
-    
-    # 2. 大量独立重复实验
-    results = []
-    for run_idx in range(num_runs):
-        seed_for_run = rng.randint(0, 2**31 - 1)
-        result = simulate_one_run(config, seed_for_run)
-        results.append(result)
-    
-    # 3. 统计分析（均值、标准差）
-    avg_legit = np.mean([r['legit_acceptance'] for r in results])
-    std_legit = np.std([r['legit_acceptance'] for r in results])
-    avg_attack = np.mean([r['attack_success'] for r in results])
-    std_attack = np.std([r['attack_success'] for r in results])
-    
-    return {
-        'avg_legit': avg_legit,
-        'std_legit': std_legit,
-        'avg_attack': avg_attack,
-        'std_attack': std_attack,
-        'num_runs': num_runs
-    }
-```
-
-**实验参数设置**：
-- **运行次数**：200次（每个配置）
-- **置信度**：95%（标准差提供不确定性估计）
-- **随机种子**：可指定（保证完全可重现）
-
-**正确性证明**：
-- ✅ 大样本量（200次）保证统计显著性
-- ✅ 独立实验（每次使用不同随机种子）
-- ✅ 报告均值和标准差（符合科学实验标准）
-- ✅ 完全可重现（固定种子产生相同结果）
-
-##### 实现正确性总结
-
-| 组件 | 遵循标准/文献 | 代码位置 | 验证方法 |
-|------|-------------|---------|---------|
-| 滑动窗口 | RFC 6479 | [`receiver.py#L43-98`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L43-L98) | 逐行对照RFC + 实验验证 |
-| HMAC | RFC 2104 | [`security.py#L16`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/security.py#L16) | 使用FIPS认证库 |
-| 攻击者 | Dolev-Yao | [`attacker.py#L30-54`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/attacker.py#L30-L54) | 遵循标准威胁模型 |
-| 信道 | 参数化建模 | [`channel.py#L28-50`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/channel.py#L28-L50) | 伯努利过程+优先队列 |
-| 挑战-响应 | RFC 8446 | [`receiver.py#L101-122`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/receiver.py#L101-L122) | 标准协议流程 |
-| 实验方法 | 蒙特卡洛标准 | [`experiment.py#L153-201`](https://github.com/tammakiiroha/Replay-simulation/blob/main/sim/experiment.py#L153-L201) | 200次独立实验 |
-
-**关键结论**：
-
-通过以上详细的对应关系说明，我们证明：
-
-1. ✅ **实现正确性**：每个组件都严格遵循国际标准或学术文献
-2. ✅ **实验可靠性**：参数设置基于真实网络测量数据
-3. ✅ **结果有效性**：实验方法符合蒙特卡洛仿真标准
-4. ✅ **完全可验证**：所有代码开源，可点击查看并独立验证
-
-因此，本文的实验数据和结论具有**充分的可信度和实际指导价值**。
+详细的代码审查清单和验证步骤请参考 [`CONTRIBUTING.md`](https://github.com/tammakiiroha/Replay-simulation/blob/main/CONTRIBUTING.md)。
 
 ---
 
@@ -1713,85 +1216,6 @@ for mode in [no_def, rolling, window, challenge]:
 
 ---
 
-## 9. 术语表
-
-### A-F
-
-**接受率（Acceptance Rate）**
-- 接收方接受帧的比例
-- 两种类型：合法接受（可用性）和攻击成功（安全性）
-
-**攻击模式（Attack Mode）**
-- Post：合法通信后批量重放
-- Inline：合法通信期间混入重放
-
-**位掩码（Bitmask）**
-- 在滑动窗口中记录已接收计数器的整数
-- 示例：0b10101 → 位0、2、4已接收
-
-**挑战-响应（Challenge-Response）**
-- 接收方发送挑战（nonce），发送方返回响应的认证方法
-
-**计数器（Counter）**
-- 每帧递增的整数（0, 1, 2, 3, ...）
-- 用于重放检测
-
-**帧（Frame）**
-- 无线通信的最小单位
-- 结构：`{command, counter, mac, nonce}`
-
-### G-M
-
-**HMAC（基于哈希的消息认证码）**
-- 使用共享密钥的消息认证码
-- 本项目使用HMAC-SHA256
-
-**内联攻击（Inline Attack）**
-- 与合法通信同时执行重放的攻击
-
-**合法流量（Legitimate Traffic）**
-- 来自合法用户的通信
-
-**MAC（消息认证码）**
-- 确保消息完整性和真实性的短代码
-- 攻击者无法伪造有效的MAC
-
-**蒙特卡洛仿真（Monte Carlo Simulation）**
-- 使用随机数的统计仿真
-- 本项目使用200-500次试验计算置信区间
-
-### N-Z
-
-**Nonce（随机数）**
-- "Number used ONCE"的缩写
-- 只使用一次的随机值
-- 用于重放防护
-
-**丢包（Packet Loss）**
-- 无线通信中帧丢失的现象
-- p_loss：丢失概率（0.0 = 无丢失，0.2 = 20%丢失）
-
-**包乱序（Packet Reordering）**
-- 帧到达顺序与发送顺序不同的现象
-- p_reorder：乱序概率
-
-**重放攻击（Replay Attack）**
-- 重新发送先前截获的帧的攻击
-
-**滚动计数器（Rolling Counter）**
-- 使用单调递增计数器拒绝旧帧的方法
-
-**滑动窗口（Sliding Window）**
-- 允许计数器范围以处理乱序的方法
-- 使用位掩码记录已接收的计数器
-
-**种子（Seed）**
-- 随机数生成器的初始值
-- 相同种子可重现实验
-
----
-
-## 10. 演示说明
 
 ### 10.1 快速演示（5分钟）
 

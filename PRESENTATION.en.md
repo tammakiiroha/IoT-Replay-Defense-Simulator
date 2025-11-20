@@ -1482,7 +1482,7 @@ window   10    post    0.30       5        99.50%      0.00%
 
 ---
 
-### 10.2 Figure Demo (3 minutes)
+### 11.2 Figure Demonstration
 
 **Figure 1: Packet Reordering Impact**
 ```bash
@@ -1511,7 +1511,7 @@ open figures/window_tradeoff.png
 
 ---
 
-### 10.3 Code Walkthrough (5 minutes)
+### 11.3 Code Demonstration
 
 **Demo 1: Sliding Window Operation**
 

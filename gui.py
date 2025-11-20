@@ -653,7 +653,9 @@ class SimulationGUI:
             text=self.t(label_key),
             font=FONTS["body"],
             fg=COLORS["text_secondary"],
-            bg=COLORS["bg_card"]
+            bg=COLORS["bg_card"],
+            width=30,  # 固定宽度，确保三语统一
+            anchor="w"  # 左对齐
         ).pack(side=tk.LEFT)
         
         value_label = tk.Label(

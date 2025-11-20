@@ -718,7 +718,7 @@ class SimulationGUI:
         # 为随机种子添加说明文本
         elif label_key == "seed":
             hint_text = {
-                "en": "0=Random | Non-zero=Reproducible (e.g., 42 always gives same result)",
+                "en": "0=Random | Fixed number=Reproducible",
                 "zh": "0=随机 | 非0=可重现（如42每次结果相同）",
                 "ja": "0=ランダム | 非0=再現可能（例:42は毎回同じ結果）"
             }

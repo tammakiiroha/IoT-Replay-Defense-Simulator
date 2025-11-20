@@ -29,16 +29,16 @@ TRANSLATIONS = {
         "window": "Sliding Window",
         "challenge": "Challenge-Response",
         "runs": "Monte Carlo Runs",
-        "num_legit": "Legitimate Transmissions (per run)",
-        "num_replay": "Replay Attempts (per run)",
-        "p_loss": "Packet Loss Rate (p_loss)",
-        "p_reorder": "Reordering Rate (p_reorder)",
-        "window_size": "Window Size (for Sliding Window)",
-        "attack_mode": "Attack Mode",
-        "post_run": "Post-run (replay after legitimate traffic)",
-        "inline": "Inline (replay during legitimate traffic)",
+        "num_legit": "Legitimate Packets",
+        "num_replay": "Replay Attempts",
+        "p_loss": "Packet Loss Rate",
+        "p_reorder": "Reordering Rate",
+        "window_size": "Window Size",
+        "attack_mode": "Attack Timing",
+        "post_run": "Post-run (after legit traffic)",
+        "inline": "Inline (during legit traffic)",
         "seed": "Random Seed",
-        "attacker_loss": "Attacker Recording Loss Rate",
+        "attacker_loss": "Attacker Loss Rate",
         "advanced": "Advanced Parameters",
         "start_sim": "▶  Run Simulation",
         "live_output": "Console Output",
@@ -658,8 +658,8 @@ class SimulationGUI:
         
         value_label = tk.Label(
             header,
-            font=FONTS["h2"],  # 增大字体从h3到h2
-            fg=COLORS["primary"],  # 改为深蓝色，更清晰
+            font=FONTS["h2"],  # 增大字体
+            fg=COLORS["accent"],  # 金褐色强调
             bg=COLORS["bg_card"]
         )
         value_label.pack(side=tk.RIGHT, padx=10)  # 增加左边距

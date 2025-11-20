@@ -1213,127 +1213,6 @@ for mode in [no_def, rolling, window, challenge]:
 - 完整源代码：[GitHub](https://github.com/tammakiiroha/Replay-simulation)
 - 原始数据：`results/*.json`
 - 参数配置：[EXPERIMENTAL_PARAMETERS.zh.md](EXPERIMENTAL_PARAMETERS.zh.md)
-
----
-
-
-### 11.1 快速演示
-
-**步骤1：基本执行**
-```bash
-python3 main.py --runs 10 --num-legit 10 --num-replay 20 \
-                --modes rolling window --p-loss 0.05
-```
-
-**示例输出**：
-```
-Mode     Runs  Attack  p_loss  Window  Avg Legit  Avg Attack
--------  ----  ------  ------  ------  ---------  ----------
-rolling  10    post    0.05    0        96.00%      0.00%
-window   10    post    0.05    5        96.00%      0.50%
-```
-
-**要点**：
-- 滚动计数器和窗口具有相同的合法接受率（仅丢包时）
-- 两者安全性都很高
-
----
-
-**步骤2：乱序影响**
-```bash
-python3 main.py --runs 10 --num-legit 20 --num-replay 50 \
-                --modes rolling window --p-reorder 0.3
-```
-
-**示例输出**：
-```
-Mode     Runs  Attack  p_reorder  Window  Avg Legit  Avg Attack
--------  ----  ------  ---------  ------  ---------  ----------
-rolling  10    post    0.30       0        82.50%      0.00%
-window   10    post    0.30       5        99.50%      0.00%
-```
-
-**要点**：
-- 滚动计数器的合法接受率**下降17%**
-- 窗口几乎不受影响（99.5%）
-
----
-
-### 11.2 图表演示
-
-**图1：包乱序影响**
-```bash
-python3 scripts/plot_results.py --formats png
-```
-
-文件：`figures/p_reorder_legit.png`
-
-**要点**：
-- X轴：p_reorder（乱序概率）
-- Y轴：合法接受率
-- 蓝线（滚动）：急剧下降
-- 橙线（窗口）：几乎平坦
-
----
-
-**图2：窗口大小权衡**
-```bash
-open figures/window_tradeoff.png
-```
-
-**要点**：
-- W=1：可用性低（27%），安全性高（4.5%）
-- W=3-5：**最优平衡**（95% / 0.3%）
-- W=10：可用性微增，安全性微降
-
----
-
-### 11.3 代码演示
-
-**演示1：滑动窗口操作**
-
-```python
-# 打开 sim/receiver.py
-def verify_with_window(frame, state, window_size):
-    diff = frame.counter - state.last_counter
-    
-    if diff > 0:  # 新计数器
-        print(f"新的最大计数器：{frame.counter}")
-        state.received_mask <<= diff
-        state.received_mask |= 1
-        state.last_counter = frame.counter
-        return VerificationResult(True, "accept_new", state)
-```
-
-**要点**：
-1. `diff > 0`：计数器前进 → 移动窗口
-2. `received_mask <<= diff`：左移以移除旧位
-3. `received_mask |= 1`：标记当前计数器为已接收
-
----
-
-**演示2：信道模型乱序**
-
-```python
-# 打开 sim/channel.py
-def send(self, frame):
-    if self.rng.random() < self.p_reorder:
-        delay = self.rng.randint(1, 3)  # 随机延迟
-        print(f"帧 {frame.counter} 延迟 {delay} 个时间片")
-    else:
-        delay = 0
-    
-    delivery_tick = self.current_tick + delay
-    heapq.heappush(self.pq, (delivery_tick, frame))
-```
-
-**要点**：
-1. 30%概率延迟1-3个时间片
-2. 优先队列（堆）管理交付时间
-3. 这自然导致乱序
-
----
-
 ## 9. 项目质量保证
 
 ### 9.1 测试覆盖率
@@ -1588,6 +1467,127 @@ Please fix the errors and try again.
 ---
 
 ## 11. 演示说明
+
+---
+
+
+### 11.1 快速演示
+
+**步骤1：基本执行**
+```bash
+python3 main.py --runs 10 --num-legit 10 --num-replay 20 \
+                --modes rolling window --p-loss 0.05
+```
+
+**示例输出**：
+```
+Mode     Runs  Attack  p_loss  Window  Avg Legit  Avg Attack
+-------  ----  ------  ------  ------  ---------  ----------
+rolling  10    post    0.05    0        96.00%      0.00%
+window   10    post    0.05    5        96.00%      0.50%
+```
+
+**要点**：
+- 滚动计数器和窗口具有相同的合法接受率（仅丢包时）
+- 两者安全性都很高
+
+---
+
+**步骤2：乱序影响**
+```bash
+python3 main.py --runs 10 --num-legit 20 --num-replay 50 \
+                --modes rolling window --p-reorder 0.3
+```
+
+**示例输出**：
+```
+Mode     Runs  Attack  p_reorder  Window  Avg Legit  Avg Attack
+-------  ----  ------  ---------  ------  ---------  ----------
+rolling  10    post    0.30       0        82.50%      0.00%
+window   10    post    0.30       5        99.50%      0.00%
+```
+
+**要点**：
+- 滚动计数器的合法接受率**下降17%**
+- 窗口几乎不受影响（99.5%）
+
+---
+
+### 11.2 图表演示
+
+**图1：包乱序影响**
+```bash
+python3 scripts/plot_results.py --formats png
+```
+
+文件：`figures/p_reorder_legit.png`
+
+**要点**：
+- X轴：p_reorder（乱序概率）
+- Y轴：合法接受率
+- 蓝线（滚动）：急剧下降
+- 橙线（窗口）：几乎平坦
+
+---
+
+**图2：窗口大小权衡**
+```bash
+open figures/window_tradeoff.png
+```
+
+**要点**：
+- W=1：可用性低（27%），安全性高（4.5%）
+- W=3-5：**最优平衡**（95% / 0.3%）
+- W=10：可用性微增，安全性微降
+
+---
+
+### 11.3 代码演示
+
+**演示1：滑动窗口操作**
+
+```python
+# 打开 sim/receiver.py
+def verify_with_window(frame, state, window_size):
+    diff = frame.counter - state.last_counter
+    
+    if diff > 0:  # 新计数器
+        print(f"新的最大计数器：{frame.counter}")
+        state.received_mask <<= diff
+        state.received_mask |= 1
+        state.last_counter = frame.counter
+        return VerificationResult(True, "accept_new", state)
+```
+
+**要点**：
+1. `diff > 0`：计数器前进 → 移动窗口
+2. `received_mask <<= diff`：左移以移除旧位
+3. `received_mask |= 1`：标记当前计数器为已接收
+
+---
+
+**演示2：信道模型乱序**
+
+```python
+# 打开 sim/channel.py
+def send(self, frame):
+    if self.rng.random() < self.p_reorder:
+        delay = self.rng.randint(1, 3)  # 随机延迟
+        print(f"帧 {frame.counter} 延迟 {delay} 个时间片")
+    else:
+        delay = 0
+    
+    delivery_tick = self.current_tick + delay
+    heapq.heappush(self.pq, (delivery_tick, frame))
+```
+
+**要点**：
+1. 30%概率延迟1-3个时间片
+2. 优先队列（堆）管理交付时间
+3. 这自然导致乱序
+
+---
+
 
 ### 11.4 问答准备
 

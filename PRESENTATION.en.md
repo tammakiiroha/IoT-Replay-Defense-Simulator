@@ -1181,128 +1181,6 @@ Start Choosing Defense Mechanism
   - p_loss=0.20: Both at 79.53%
 - **Reason**: Without reordering, Window has no advantage
 - Packet loss equally affects both methods
-
----
-
-
-
-### 11.1 Quick Demo
-
-**Step 1: Basic Execution**
-```bash
-python3 main.py --runs 10 --num-legit 10 --num-replay 20 \
-                --modes rolling window --p-loss 0.05
-```
-
-**Sample Output**:
-```
-Mode     Runs  Attack  p_loss  Window  Avg Legit  Avg Attack
--------  ----  ------  ------  ------  ---------  ----------
-rolling  10    post    0.05    0        96.00%      0.00%
-window   10    post    0.05    5        96.00%      0.50%
-```
-
-**Key Points**:
-- Rolling and Window have same legitimate acceptance (packet loss only)
-- Both have high security
-
----
-
-**Step 2: Reordering Impact**
-```bash
-python3 main.py --runs 10 --num-legit 20 --num-replay 50 \
-                --modes rolling window --p-reorder 0.3
-```
-
-**Sample Output**:
-```
-Mode     Runs  Attack  p_reorder  Window  Avg Legit  Avg Attack
--------  ----  ------  ---------  ------  ---------  ----------
-rolling  10    post    0.30       0        82.50%      0.00%
-window   10    post    0.30       5        99.50%      0.00%
-```
-
-**Key Points**:
-- Rolling legitimate acceptance **drops 17%**
-- Window nearly unaffected (99.5%)
-
----
-
-### 10.2 Figure Demo (3 minutes)
-
-**Figure 1: Packet Reordering Impact**
-```bash
-python3 scripts/plot_results.py --formats png
-```
-
-File: `figures/p_reorder_legit.png`
-
-**Key Points**:
-- X-axis: p_reorder (reordering probability)
-- Y-axis: Legitimate acceptance rate
-- Blue line (Rolling): Sharp decline
-- Orange line (Window): Nearly flat
-
----
-
-**Figure 2: Window Size Tradeoff**
-```bash
-open figures/window_tradeoff.png
-```
-
-**Key Points**:
-- W=1: Low usability (27%), high security (4.5%)
-- W=3-5: **Optimal balance** (95% / 0.3%)
-- W=10: Marginal usability increase, slight security decrease
-
----
-
-### 10.3 Code Walkthrough (5 minutes)
-
-**Demo 1: Sliding Window Operation**
-
-```python
-# Open sim/receiver.py
-def verify_with_window(frame, state, window_size):
-    diff = frame.counter - state.last_counter
-    
-    if diff > 0:  # New counter
-        print(f"New maximum counter: {frame.counter}")
-        state.received_mask <<= diff
-        state.received_mask |= 1
-        state.last_counter = frame.counter
-        return VerificationResult(True, "accept_new", state)
-```
-
-**Key Points**:
-1. `diff > 0`: Counter advanced → shift window
-2. `received_mask <<= diff`: Left shift to remove old bits
-3. `received_mask |= 1`: Mark current counter as received
-
----
-
-**Demo 2: Channel Model Reordering**
-
-```python
-# Open sim/channel.py
-def send(self, frame):
-    if self.rng.random() < self.p_reorder:
-        delay = self.rng.randint(1, 3)  # Random delay
-        print(f"Frame {frame.counter} delayed by {delay} ticks")
-    else:
-        delay = 0
-    
-    delivery_tick = self.current_tick + delay
-    heapq.heappush(self.pq, (delivery_tick, frame))
-```
-
-**Key Points**:
-1. 30% probability of 1-3 tick delay
-2. Priority queue (heap) manages delivery time
-3. This naturally causes reordering
-
----
-
 ## 9. Project Quality Assurance
 
 ### 9.1 Test Coverage
@@ -1557,6 +1435,128 @@ These quality assurance measures ensure:
 ---
 
 ## 11. Demonstration
+
+---
+
+
+
+### 11.1 Quick Demo
+
+**Step 1: Basic Execution**
+```bash
+python3 main.py --runs 10 --num-legit 10 --num-replay 20 \
+                --modes rolling window --p-loss 0.05
+```
+
+**Sample Output**:
+```
+Mode     Runs  Attack  p_loss  Window  Avg Legit  Avg Attack
+-------  ----  ------  ------  ------  ---------  ----------
+rolling  10    post    0.05    0        96.00%      0.00%
+window   10    post    0.05    5        96.00%      0.50%
+```
+
+**Key Points**:
+- Rolling and Window have same legitimate acceptance (packet loss only)
+- Both have high security
+
+---
+
+**Step 2: Reordering Impact**
+```bash
+python3 main.py --runs 10 --num-legit 20 --num-replay 50 \
+                --modes rolling window --p-reorder 0.3
+```
+
+**Sample Output**:
+```
+Mode     Runs  Attack  p_reorder  Window  Avg Legit  Avg Attack
+-------  ----  ------  ---------  ------  ---------  ----------
+rolling  10    post    0.30       0        82.50%      0.00%
+window   10    post    0.30       5        99.50%      0.00%
+```
+
+**Key Points**:
+- Rolling legitimate acceptance **drops 17%**
+- Window nearly unaffected (99.5%)
+
+---
+
+### 10.2 Figure Demo (3 minutes)
+
+**Figure 1: Packet Reordering Impact**
+```bash
+python3 scripts/plot_results.py --formats png
+```
+
+File: `figures/p_reorder_legit.png`
+
+**Key Points**:
+- X-axis: p_reorder (reordering probability)
+- Y-axis: Legitimate acceptance rate
+- Blue line (Rolling): Sharp decline
+- Orange line (Window): Nearly flat
+
+---
+
+**Figure 2: Window Size Tradeoff**
+```bash
+open figures/window_tradeoff.png
+```
+
+**Key Points**:
+- W=1: Low usability (27%), high security (4.5%)
+- W=3-5: **Optimal balance** (95% / 0.3%)
+- W=10: Marginal usability increase, slight security decrease
+
+---
+
+### 10.3 Code Walkthrough (5 minutes)
+
+**Demo 1: Sliding Window Operation**
+
+```python
+# Open sim/receiver.py
+def verify_with_window(frame, state, window_size):
+    diff = frame.counter - state.last_counter
+    
+    if diff > 0:  # New counter
+        print(f"New maximum counter: {frame.counter}")
+        state.received_mask <<= diff
+        state.received_mask |= 1
+        state.last_counter = frame.counter
+        return VerificationResult(True, "accept_new", state)
+```
+
+**Key Points**:
+1. `diff > 0`: Counter advanced → shift window
+2. `received_mask <<= diff`: Left shift to remove old bits
+3. `received_mask |= 1`: Mark current counter as received
+
+---
+
+**Demo 2: Channel Model Reordering**
+
+```python
+# Open sim/channel.py
+def send(self, frame):
+    if self.rng.random() < self.p_reorder:
+        delay = self.rng.randint(1, 3)  # Random delay
+        print(f"Frame {frame.counter} delayed by {delay} ticks")
+    else:
+        delay = 0
+    
+    delivery_tick = self.current_tick + delay
+    heapq.heappush(self.pq, (delivery_tick, frame))
+```
+
+**Key Points**:
+1. 30% probability of 1-3 tick delay
+2. Priority queue (heap) manages delivery time
+3. This naturally causes reordering
+
+---
+
 
 ### 11.4 Q&A Preparation
 

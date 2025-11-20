@@ -1088,128 +1088,6 @@ for mode in [no_def, rolling, window, challenge]:
 - 完全なソースコード：[GitHub](https://github.com/tammakiiroha/Replay-simulation)
 - 生データ：`results/*.json`
 - パラメータ構成：[EXPERIMENTAL_PARAMETERS.ja.md](EXPERIMENTAL_PARAMETERS.ja.md)
-
----
-
-
-
-### 11.1 クイックデモ
-
-**ステップ 1: 基本実行**
-```bash
-python3 main.py --runs 10 --num-legit 10 --num-replay 20 \
-                --modes rolling window --p-loss 0.05
-```
-
-**出力例**：
-```
-Mode     Runs  Attack  p_loss  Window  Avg Legit  Avg Attack
--------  ----  ------  ------  ------  ---------  ----------
-rolling  10    post    0.05    0        96.00%      0.00%
-window   10    post    0.05    5        96.00%      0.50%
-```
-
-**説明ポイント**：
-- Rolling と Window が同じ正規受理率（パケット損失のみの場合）
-- セキュリティも両方高い
-
----
-
-**ステップ 2: 順序入れ替えの影響**
-```bash
-python3 main.py --runs 10 --num-legit 20 --num-replay 50 \
-                --modes rolling window --p-reorder 0.3
-```
-
-**出力例**：
-```
-Mode     Runs  Attack  p_reorder  Window  Avg Legit  Avg Attack
--------  ----  ------  ---------  ------  ---------  ----------
-rolling  10    post    0.30       0        82.50%      0.00%
-window   10    post    0.30       5        99.50%      0.00%
-```
-
-**説明ポイント**：
-- Rolling の正規受理率が **17%低下**
-- Window はほぼ影響なし（99.5%）
-
----
-
-### 10.2 図表デモ（3分）
-
-**図1: パケット順序入れ替えの影響**
-```bash
-python3 scripts/plot_results.py --formats png
-```
-
-ファイル: `figures/p_reorder_legit.png`
-
-**説明ポイント**：
-- 横軸：p_reorder（順序入れ替え確率）
-- 縦軸：正規受理率
-- 青線（Rolling）：急激に低下
-- オレンジ線（Window）：ほぼ平坦
-
----
-
-**図2: ウィンドウサイズのトレードオフ**
-```bash
-open figures/window_tradeoff.png
-```
-
-**説明ポイント**：
-- W=1: ユーザビリティ低い（27%）、セキュリティ高い（4.5%）
-- W=3-5: **最適バランス**（95% / 0.3%）
-- W=10: ユーザビリティ微増、セキュリティ微減
-
----
-
-### 10.3 コードウォークスルー（5分）
-
-**デモ 1: スライディングウィンドウの動作**
-
-```python
-# sim/receiver.py を開く
-def verify_with_window(frame, state, window_size):
-    diff = frame.counter - state.last_counter
-    
-    if diff > 0:  # 新しいカウンタ
-        print(f"新しい最大カウンタ: {frame.counter}")
-        state.received_mask <<= diff
-        state.received_mask |= 1
-        state.last_counter = frame.counter
-        return VerificationResult(True, "accept_new", state)
-```
-
-**説明ポイント**：
-1. `diff > 0`: カウンタが進んだ → ウィンドウをシフト
-2. `received_mask <<= diff`: 左シフトで古いビットを追い出す
-3. `received_mask |= 1`: 現在のカウンタを受信済みにマーク
-
----
-
-**デモ 2: チャネルモデルの順序入れ替え**
-
-```python
-# sim/channel.py を開く
-def send(self, frame):
-    if self.rng.random() < self.p_reorder:
-        delay = self.rng.randint(1, 3)  # ランダムな遅延
-        print(f"フレーム {frame.counter} を {delay} ティック遅延")
-    else:
-        delay = 0
-    
-    delivery_tick = self.current_tick + delay
-    heapq.heappush(self.pq, (delivery_tick, frame))
-```
-
-**説明ポイント**：
-1. 30% の確率で 1-3 ティック遅延
-2. 優先度キュー（ヒープ）で配信時刻を管理
-3. これにより順序入れ替えが自然に発生
-
----
-
 ## 9. プロジェクト品質保証
 
 ### 9.1 テストカバレッジ
@@ -1464,6 +1342,128 @@ python main.py --p-loss 1.5
 ---
 
 ## 11. デモンストレーション
+
+---
+
+
+
+### 11.1 クイックデモ
+
+**ステップ 1: 基本実行**
+```bash
+python3 main.py --runs 10 --num-legit 10 --num-replay 20 \
+                --modes rolling window --p-loss 0.05
+```
+
+**出力例**：
+```
+Mode     Runs  Attack  p_loss  Window  Avg Legit  Avg Attack
+-------  ----  ------  ------  ------  ---------  ----------
+rolling  10    post    0.05    0        96.00%      0.00%
+window   10    post    0.05    5        96.00%      0.50%
+```
+
+**説明ポイント**：
+- Rolling と Window が同じ正規受理率（パケット損失のみの場合）
+- セキュリティも両方高い
+
+---
+
+**ステップ 2: 順序入れ替えの影響**
+```bash
+python3 main.py --runs 10 --num-legit 20 --num-replay 50 \
+                --modes rolling window --p-reorder 0.3
+```
+
+**出力例**：
+```
+Mode     Runs  Attack  p_reorder  Window  Avg Legit  Avg Attack
+-------  ----  ------  ---------  ------  ---------  ----------
+rolling  10    post    0.30       0        82.50%      0.00%
+window   10    post    0.30       5        99.50%      0.00%
+```
+
+**説明ポイント**：
+- Rolling の正規受理率が **17%低下**
+- Window はほぼ影響なし（99.5%）
+
+---
+
+### 10.2 図表デモ（3分）
+
+**図1: パケット順序入れ替えの影響**
+```bash
+python3 scripts/plot_results.py --formats png
+```
+
+ファイル: `figures/p_reorder_legit.png`
+
+**説明ポイント**：
+- 横軸：p_reorder（順序入れ替え確率）
+- 縦軸：正規受理率
+- 青線（Rolling）：急激に低下
+- オレンジ線（Window）：ほぼ平坦
+
+---
+
+**図2: ウィンドウサイズのトレードオフ**
+```bash
+open figures/window_tradeoff.png
+```
+
+**説明ポイント**：
+- W=1: ユーザビリティ低い（27%）、セキュリティ高い（4.5%）
+- W=3-5: **最適バランス**（95% / 0.3%）
+- W=10: ユーザビリティ微増、セキュリティ微減
+
+---
+
+### 10.3 コードウォークスルー（5分）
+
+**デモ 1: スライディングウィンドウの動作**
+
+```python
+# sim/receiver.py を開く
+def verify_with_window(frame, state, window_size):
+    diff = frame.counter - state.last_counter
+    
+    if diff > 0:  # 新しいカウンタ
+        print(f"新しい最大カウンタ: {frame.counter}")
+        state.received_mask <<= diff
+        state.received_mask |= 1
+        state.last_counter = frame.counter
+        return VerificationResult(True, "accept_new", state)
+```
+
+**説明ポイント**：
+1. `diff > 0`: カウンタが進んだ → ウィンドウをシフト
+2. `received_mask <<= diff`: 左シフトで古いビットを追い出す
+3. `received_mask |= 1`: 現在のカウンタを受信済みにマーク
+
+---
+
+**デモ 2: チャネルモデルの順序入れ替え**
+
+```python
+# sim/channel.py を開く
+def send(self, frame):
+    if self.rng.random() < self.p_reorder:
+        delay = self.rng.randint(1, 3)  # ランダムな遅延
+        print(f"フレーム {frame.counter} を {delay} ティック遅延")
+    else:
+        delay = 0
+    
+    delivery_tick = self.current_tick + delay
+    heapq.heappush(self.pq, (delivery_tick, frame))
+```
+
+**説明ポイント**：
+1. 30% の確率で 1-3 ティック遅延
+2. 優先度キュー（ヒープ）で配信時刻を管理
+3. これにより順序入れ替えが自然に発生
+
+---
+
 
 ### 11.4 質疑応答の準備
 

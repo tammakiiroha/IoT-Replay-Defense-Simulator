@@ -32,6 +32,9 @@ TRANSLATIONS = {
         "p_loss": "Packet Loss Rate (p_loss)",
         "p_reorder": "Reordering Rate (p_reorder)",
         "window_size": "Window Size (for Sliding Window)",
+        "attack_mode": "Attack Mode",
+        "post_run": "Post-run (replay after legitimate traffic)",
+        "inline": "Inline (replay during legitimate traffic)",
         "start_sim": "▶  Run Simulation",
         "live_output": "Console Output",
         "status_ready": "Ready",
@@ -79,6 +82,9 @@ TRANSLATIONS = {
         "p_loss": "丢包率 (p_loss)",
         "p_reorder": "乱序率 (p_reorder)",
         "window_size": "窗口大小（滑动窗口）",
+        "attack_mode": "攻击模式",
+        "post_run": "事后攻击（正规流量后重放）",
+        "inline": "内联攻击（正规流量中重放）",
         "start_sim": "▶  运行仿真",
         "live_output": "控制台输出",
         "status_ready": "就绪",
@@ -126,6 +132,9 @@ TRANSLATIONS = {
         "p_loss": "パケット損失率 (p_loss)",
         "p_reorder": "並び替え率 (p_reorder)",
         "window_size": "ウィンドウサイズ（スライディング）",
+        "attack_mode": "攻撃モード",
+        "post_run": "事後攻撃（正規トラフィック後）",
+        "inline": "インライン攻撃（正規トラフィック中）",
         "start_sim": "▶  シミュレーション実行",
         "live_output": "コンソール出力",
         "status_ready": "準備完了",
@@ -544,6 +553,29 @@ class SimulationGUI:
         # 分割线
         tk.Frame(scrollable_frame, bg=COLORS["divider"], height=1).pack(fill=tk.X, pady=18)
         
+        # 攻击模式
+        tk.Label(
+            scrollable_frame,
+            text=self.t("attack_mode"),
+            font=FONTS["h3"],
+            fg=COLORS["text_primary"],
+            bg=COLORS["bg_card"]
+        ).pack(anchor="w", pady=(0, 10))
+        
+        self.attack_mode_var = tk.StringVar(value="post")
+        
+        for key, value in [("post_run", "post"), ("inline", "inline")]:
+            ttk.Radiobutton(
+                scrollable_frame,
+                text=self.t(key),
+                variable=self.attack_mode_var,
+                value=value,
+                style="Academic.TRadiobutton"
+            ).pack(anchor="w", pady=4)
+        
+        # 分割线
+        tk.Frame(scrollable_frame, bg=COLORS["divider"], height=1).pack(fill=tk.X, pady=18)
+        
         # 参数配置
         tk.Label(
             scrollable_frame,
@@ -735,7 +767,7 @@ class SimulationGUI:
             "challenge": "challenge"
         }
         modes = defense_map[self.defense_var.get()]
-        cmd = f"--modes {modes} --runs {self.runs_var.get()} --num-legit 20 --num-replay 100 --p-loss {self.ploss_var.get()} --p-reorder {self.preorder_var.get()} --window-size {self.window_size_var.get()}"
+        cmd = f"--modes {modes} --runs {self.runs_var.get()} --num-legit 20 --num-replay 100 --p-loss {self.ploss_var.get()} --p-reorder {self.preorder_var.get()} --window-size {self.window_size_var.get()} --attack-mode {self.attack_mode_var.get()}"
         self.run_command(cmd, self.t("custom_exp"))
     
     def run_command(self, args, description):

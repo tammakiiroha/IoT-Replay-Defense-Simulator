@@ -498,9 +498,32 @@ class SimulationGUI:
         card = SectionCard(parent, title=self.t("custom_exp"))
         card.pack(fill=tk.BOTH, expand=True)
         
+        # 创建Canvas和Scrollbar用于滚动
+        canvas = tk.Canvas(card.content, bg=COLORS["bg_card"], highlightthickness=0)
+        scrollbar = tk.Scrollbar(card.content, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=COLORS["bg_card"])
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # 鼠标滚轮支持
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)  # Windows/macOS
+        canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))  # Linux
+        canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))   # Linux
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
         # 防御机制
         tk.Label(
-            card.content,
+            scrollable_frame,
             text=self.t("defense_mech"),
             font=FONTS["h3"],
             fg=COLORS["text_primary"],
@@ -511,7 +534,7 @@ class SimulationGUI:
         
         for key in ["all", "no_def", "rolling", "window", "challenge"]:
             ttk.Radiobutton(
-                card.content,
+                scrollable_frame,
                 text=self.t(key),
                 variable=self.defense_var,
                 value=key,
@@ -519,11 +542,11 @@ class SimulationGUI:
             ).pack(anchor="w", pady=4)
         
         # 分割线
-        tk.Frame(card.content, bg=COLORS["divider"], height=1).pack(fill=tk.X, pady=18)
+        tk.Frame(scrollable_frame, bg=COLORS["divider"], height=1).pack(fill=tk.X, pady=18)
         
         # 参数配置
         tk.Label(
-            card.content,
+            scrollable_frame,
             text=self.t("params"),
             font=FONTS["h3"],
             fg=COLORS["text_primary"],
@@ -535,21 +558,21 @@ class SimulationGUI:
         self.preorder_var = tk.DoubleVar(value=0.0)
         self.window_size_var = tk.IntVar(value=5)
         
-        self.create_slider(card.content, "runs", self.runs_var, 10, 200, False)
-        self.create_slider(card.content, "p_loss", self.ploss_var, 0.0, 0.5, True)
-        self.create_slider(card.content, "p_reorder", self.preorder_var, 0.0, 0.5, True)
-        self.create_slider(card.content, "window_size", self.window_size_var, 1, 20, False)
+        self.create_slider(scrollable_frame, "runs", self.runs_var, 10, 200, False)
+        self.create_slider(scrollable_frame, "p_loss", self.ploss_var, 0.0, 0.5, True)
+        self.create_slider(scrollable_frame, "p_reorder", self.preorder_var, 0.0, 0.5, True)
+        self.create_slider(scrollable_frame, "window_size", self.window_size_var, 1, 20, False)
         
         # 运行按钮
-        tk.Frame(card.content, bg=COLORS["bg_card"], height=15).pack()
+        tk.Frame(scrollable_frame, bg=COLORS["bg_card"], height=15).pack()
         
         AcademicButton(
-            card.content,
+            scrollable_frame,
             text=self.t("start_sim"),
             command=self.run_custom,
             style="accent",
             height=50
-        ).pack(fill=tk.X)
+        ).pack(fill=tk.X, padx=5)
     
     def create_slider(self, parent, label_key, variable, min_val, max_val, is_float):
         """创建滑动条"""

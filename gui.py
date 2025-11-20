@@ -31,6 +31,7 @@ TRANSLATIONS = {
         "runs": "Monte Carlo Runs",
         "p_loss": "Packet Loss Rate (p_loss)",
         "p_reorder": "Reordering Rate (p_reorder)",
+        "window_size": "Window Size (for Sliding Window)",
         "start_sim": "▶  Run Simulation",
         "live_output": "Console Output",
         "status_ready": "Ready",
@@ -77,6 +78,7 @@ TRANSLATIONS = {
         "runs": "蒙特卡洛运行次数",
         "p_loss": "丢包率 (p_loss)",
         "p_reorder": "乱序率 (p_reorder)",
+        "window_size": "窗口大小（滑动窗口）",
         "start_sim": "▶  运行仿真",
         "live_output": "控制台输出",
         "status_ready": "就绪",
@@ -123,6 +125,7 @@ TRANSLATIONS = {
         "runs": "モンテカルロ実行回数",
         "p_loss": "パケット損失率 (p_loss)",
         "p_reorder": "並び替え率 (p_reorder)",
+        "window_size": "ウィンドウサイズ（スライディング）",
         "start_sim": "▶  シミュレーション実行",
         "live_output": "コンソール出力",
         "status_ready": "準備完了",
@@ -530,10 +533,12 @@ class SimulationGUI:
         self.runs_var = tk.IntVar(value=50)
         self.ploss_var = tk.DoubleVar(value=0.0)
         self.preorder_var = tk.DoubleVar(value=0.0)
+        self.window_size_var = tk.IntVar(value=5)
         
         self.create_slider(card.content, "runs", self.runs_var, 10, 200, False)
         self.create_slider(card.content, "p_loss", self.ploss_var, 0.0, 0.5, True)
         self.create_slider(card.content, "p_reorder", self.preorder_var, 0.0, 0.5, True)
+        self.create_slider(card.content, "window_size", self.window_size_var, 1, 20, False)
         
         # 运行按钮
         tk.Frame(card.content, bg=COLORS["bg_card"], height=15).pack()
@@ -572,7 +577,19 @@ class SimulationGUI:
         
         def update(*args):
             val = variable.get()
-            value_label.config(text=f"{val:.2f}" if is_float else f"{int(val)}")
+            text = f"{val:.2f}" if is_float else f"{int(val)}"
+            
+            # 为窗口大小添加建议提示
+            if label_key == "window_size":
+                ival = int(val)
+                if ival < 3:
+                    text += " ⚠"  # 太小
+                elif 3 <= ival <= 7:
+                    text += " ✓"  # 推荐范围
+                elif ival > 10:
+                    text += " ⚠"  # 太大
+            
+            value_label.config(text=text)
         
         variable.trace_add("write", update)
         update()
@@ -585,6 +602,21 @@ class SimulationGUI:
             orient="horizontal",
             style="Academic.Horizontal.TScale"
         ).pack(fill=tk.X)
+        
+        # 为窗口大小添加说明文本
+        if label_key == "window_size":
+            hint_text = {
+                "en": "Recommended: 3-7 (balance security & usability)",
+                "zh": "推荐值：3-7（平衡安全性与可用性）",
+                "ja": "推奨値：3-7（セキュリティと使いやすさのバランス）"
+            }
+            tk.Label(
+                frame,
+                text=hint_text[self.current_lang.get()],
+                font=FONTS["small"],
+                fg=COLORS["text_muted"],
+                bg=COLORS["bg_card"]
+            ).pack(anchor="w", pady=(2, 0))
     
     def create_output_panel(self, parent):
         """输出面板"""
@@ -680,7 +712,7 @@ class SimulationGUI:
             "challenge": "challenge"
         }
         modes = defense_map[self.defense_var.get()]
-        cmd = f"--modes {modes} --runs {self.runs_var.get()} --num-legit 20 --num-replay 100 --p-loss {self.ploss_var.get()} --p-reorder {self.preorder_var.get()}"
+        cmd = f"--modes {modes} --runs {self.runs_var.get()} --num-legit 20 --num-replay 100 --p-loss {self.ploss_var.get()} --p-reorder {self.preorder_var.get()} --window-size {self.window_size_var.get()}"
         self.run_command(cmd, self.t("custom_exp"))
     
     def run_command(self, args, description):

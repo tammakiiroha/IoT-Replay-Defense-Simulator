@@ -490,7 +490,7 @@ class Channel:
 
 ---
 
-### 6.2 Rolling Counter Synchronization Problem and Sliding Window Solution
+### 6.3 Rolling Counter Synchronization Issues and Sliding Window Solution
 
 **Core Question**: After communication delays, won't the receiver and sender counters become forever out of sync?
 
@@ -640,7 +640,7 @@ Result:
 
 ---
 
-### 6.3 Challenge-Response Cryptographic Algorithm Details
+### 6.4 Challenge-Response Encryption Algorithm Details
 
 **Core Question**: What encryption algorithm is used? How do both parties generate and match keys?
 
@@ -782,7 +782,7 @@ This study assumes PSK, but real deployments can use:
 
 ---
 
-### 6.4 Monte Carlo Simulation
+### 6.5 Monte Carlo Simulation
 
 **Why Needed?**
 - Statistical evaluation of random effects (packet loss, reordering)
@@ -808,7 +808,7 @@ def run_many_experiments(config, num_runs):
 
 ---
 
-### 6.3 Attacker Model
+### 6.6 Attacker Model
 
 **2 Types of Attack Timing**:
 
@@ -1186,7 +1186,7 @@ Start Choosing Defense Mechanism
 
 
 
-### 10.1 Quick Demo (5 minutes)
+### 11.1 Quick Demo
 
 **Step 1: Basic Execution**
 ```bash
@@ -1558,7 +1558,7 @@ These quality assurance measures ensure:
 
 ## 11. Demonstration
 
-### 11.1 Q&A Preparation
+### 11.4 Q&A Preparation
 
 **Expected Questions and Answers**:
 

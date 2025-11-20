@@ -152,6 +152,9 @@ def run_many_experiments(
 ) -> List[AggregateStats]:
     """Run multiple Monte Carlo trials for each requested mode with visual progress."""
 
+    # Performance tracking
+    start_time = time.time()
+    
     master_rng = random.Random(seed)
     per_mode_stats = {
         mode: {
@@ -235,10 +238,30 @@ def run_many_experiments(
             )
         )
 
+    # Performance summary
+    end_time = time.time()
+    total_time = end_time - start_time
+    time_per_run = total_time / (len(modes) * runs) if runs > 0 else 0
+    
     if show_progress:
         print("\n" + "="*80)
         print("SIMULATION COMPLETE - FINAL RESULTS")
-        print("="*80 + "\n")
+        print("="*80)
+        print(f"\n⏱️  Performance Metrics:")
+        print(f"   ├─ Total Time: {total_time:.2f} seconds")
+        print(f"   ├─ Total Runs: {len(modes) * runs}")
+        print(f"   └─ Time per Run: {time_per_run*1000:.2f} ms\n")
+
+    # Store performance metrics in first aggregate (for later reference)
+    if aggregates:
+        aggregates[0] = dataclasses.replace(
+            aggregates[0],
+            metadata={
+                "total_time": total_time,
+                "time_per_run": time_per_run,
+                "total_runs": len(modes) * runs
+            }
+        )
 
     return aggregates
 

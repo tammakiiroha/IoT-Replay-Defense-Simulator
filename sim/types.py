@@ -124,9 +124,10 @@ class AggregateStats:
     num_legit: int
     num_replay: int
     attack_mode: AttackMode
+    metadata: Dict[str, float | int] = field(default_factory=dict)  # For performance metrics
 
     def as_dict(self) -> Dict[str, float | int | str]:
-        return {
+        result = {
             "mode": self.mode.value,
             "runs": self.runs,
             "avg_legit_rate": self.avg_legit_rate,
@@ -140,3 +141,6 @@ class AggregateStats:
             "num_replay": self.num_replay,
             "attack_mode": self.attack_mode.value,
         }
+        if self.metadata:
+            result.update(self.metadata)
+        return result

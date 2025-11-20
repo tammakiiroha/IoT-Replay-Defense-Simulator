@@ -68,8 +68,27 @@ TRANSLATIONS = {
         "confirm_stop": "Are you sure you want to stop the running experiment?",
         "no_results": "No results directory found. Please run experiments first.",
         "saved": "Output saved to",
-        "metrics_help": "Result Metrics Explanation",
-        "metrics_explanation": "• Avg Legit: Average legitimate acceptance rate (usability)\n• Std Legit: Standard deviation of legitimate acceptance\n• Avg Attack: Average attack success rate (security risk)\n• Std Attack: Standard deviation of attack success",
+        "metrics_help": "📊 Results Guide",
+        "metrics_explanation": "Avg Legit = usability | Std Legit = stability | Avg Attack = risk | Std Attack = variation",
+        "metrics_tooltip": """Result Metrics Explained:
+
+• Avg Legit: Average acceptance rate of legitimate packets
+  → Higher is better (closer to 100% = more usable)
+  → Example: 95% means legitimate packets are accepted 95% of the time
+
+• Std Legit: Standard deviation of legitimate acceptance
+  → Lower is better (closer to 0% = more stable)
+  → Example: 2% means results are consistent (stable system)
+  → Example: 15% means results vary wildly (unstable system)
+
+• Avg Attack: Average success rate of replay attacks
+  → Lower is better (closer to 0% = more secure)
+  → Example: 5% means only 5% of attacks succeed
+
+• Std Attack: Standard deviation of attack success
+  → Lower means defense performance is predictable
+
+Ideal System: High Avg Legit + Low Std Legit + Low Avg Attack ✓""",
     },
     "zh": {
         "title": "重放攻击防御评估",
@@ -125,8 +144,27 @@ TRANSLATIONS = {
         "confirm_stop": "确定要停止正在运行的实验吗？",
         "no_results": "未找到结果目录。请先运行实验。",
         "saved": "输出已保存到",
-        "metrics_help": "结果指标说明",
-        "metrics_explanation": "• Avg Legit: 正规流量平均接受率（可用性指标）\n• Std Legit: 正规流量接受率标准差（稳定性）\n• Avg Attack: 攻击平均成功率（安全风险）\n• Std Attack: 攻击成功率标准差（攻击稳定性）",
+        "metrics_help": "📊 结果指标",
+        "metrics_explanation": "Avg Legit = 可用性 | Std Legit = 稳定性 | Avg Attack = 风险 | Std Attack = 波动",
+        "metrics_tooltip": """结果指标详解：
+
+• 平均合法率 (Avg Legit): 合法包的平均接受率
+  → 越高越好（接近100% = 系统可用性高）
+  → 示例：95% 表示合法包有95%的概率被接受
+
+• 标准差合法率 (Std Legit): 合法包接受率的波动程度
+  → 越低越好（接近0% = 系统稳定）
+  → 示例：2% 表示结果一致，系统行为稳定
+  → 示例：15% 表示结果波动大，系统不稳定
+
+• 平均攻击率 (Avg Attack): 重放攻击的平均成功率
+  → 越低越好（接近0% = 安全性高）
+  → 示例：5% 表示只有5%的攻击成功
+
+• 标准差攻击率 (Std Attack): 攻击成功率的波动程度
+  → 越低表示防御性能越可预测
+
+理想系统：高平均合法率 + 低标准差 + 低攻击率 ✓""",
     },
     "ja": {
         "title": "リプレイ攻撃防御評価",
@@ -182,8 +220,27 @@ TRANSLATIONS = {
         "confirm_stop": "実行中の実験を停止してもよろしいですか？",
         "no_results": "結果ディレクトリが見つかりません。まず実験を実行してください。",
         "saved": "出力を保存しました：",
-        "metrics_help": "結果指標の説明",
-        "metrics_explanation": "• Avg Legit: 正規トラフィック平均受理率（ユーザビリティ）\n• Std Legit: 正規トラフィック受理率の標準偏差（安定性）\n• Avg Attack: 攻撃平均成功率（セキュリティリスク）\n• Std Attack: 攻撃成功率の標準偏差（攻撃の安定性）",
+        "metrics_help": "📊 結果指標",
+        "metrics_explanation": "Avg Legit = 利便性 | Std Legit = 安定性 | Avg Attack = リスク | Std Attack = 変動",
+        "metrics_tooltip": """結果指標の詳細：
+
+• 平均正規率 (Avg Legit): 正規パケットの平均受理率
+  → 高いほど良い（100%に近い = 可用性が高い）
+  → 例：95% は正規パケットの95%が受理されることを意味
+
+• 標準偏差正規率 (Std Legit): 正規パケット受理率の変動
+  → 低いほど良い（0%に近い = 安定）
+  → 例：2% は結果が一貫しており、システムが安定
+  → 例：15% は結果が大きく変動し、システムが不安定
+
+• 平均攻撃率 (Avg Attack): リプレイ攻撃の平均成功率
+  → 低いほど良い（0%に近い = セキュリティが高い）
+  → 例：5% は攻撃の5%のみが成功
+
+• 標準偏差攻撃率 (Std Attack): 攻撃成功率の変動
+  → 低いほど防御性能が予測可能
+
+理想的なシステム：高平均正規率 + 低標準偏差 + 低攻撃率 ✓""",
     }
 }
 
@@ -743,40 +800,70 @@ class SimulationGUI:
         card = SectionCard(parent, title=self.t("live_output"))
         card.pack(fill=tk.BOTH, expand=True)
         
-        # 指标说明面板（可折叠）
+        # 指标说明面板（紧凑设计）
         metrics_info = tk.Frame(card.content, bg=COLORS["bg_section"], bd=1, relief=tk.SOLID)
-        metrics_info.pack(fill=tk.X, padx=10, pady=(0, 10))
+        metrics_info.pack(fill=tk.X, padx=10, pady=(0, 8))
         
-        # 说明标题
-        info_header = tk.Frame(metrics_info, bg=COLORS["bg_section"], pady=8)
-        info_header.pack(fill=tk.X)
+        # 说明标题和内容在一行（更紧凑）
+        info_row = tk.Frame(metrics_info, bg=COLORS["bg_section"], padx=12, pady=8)
+        info_row.pack(fill=tk.X)
+        
+        # 左侧：标题
+        left_frame = tk.Frame(info_row, bg=COLORS["bg_section"])
+        left_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
         
         tk.Label(
-            info_header,
-            text="📊 " + self.t("metrics_help"),
-            font=FONTS["h3"],
+            left_frame,
+            text=self.t("metrics_help") + ":",
+            font=FONTS["body"],
             fg=COLORS["text_primary"],
             bg=COLORS["bg_section"]
-        ).pack(side=tk.LEFT, padx=10)
+        ).pack(side=tk.LEFT)
         
-        # 说明内容
-        info_content = tk.Frame(metrics_info, bg=COLORS["bg_section"], padx=15, pady=8)
-        info_content.pack(fill=tk.X)
-        
+        # 说明内容（缩短版本，适应英文）
         metrics_text = self.t("metrics_explanation")
         tk.Label(
-            info_content,
+            left_frame,
             text=metrics_text,
             font=FONTS["small"],
             fg=COLORS["text_secondary"],
             bg=COLORS["bg_section"],
             justify=tk.LEFT,
-            anchor="w"
-        ).pack(fill=tk.X)
+            wraplength=600  # 允许自动换行
+        ).pack(side=tk.LEFT, padx=(8, 0))
         
-        # 终端输出
+        # 右侧：帮助按钮（更醒目的设计）
+        help_btn = tk.Button(
+            info_row,
+            text="ⓘ",  # 使用信息图标
+            font=("Arial", 18, "bold"),
+            fg="#00d4ff",  # 亮青色，非常醒目
+            bg=COLORS["primary"],  # 使用深蓝色背景
+            activebackground="#4a5f8c",
+            activeforeground="#00ffff",  # 点击时更亮的青色
+            bd=0,
+            relief=tk.FLAT,
+            cursor="hand2",
+            command=self.show_metrics_help,
+            padx=10,
+            pady=5,
+            width=3,
+            height=1
+        )
+        help_btn.pack(side=tk.RIGHT, padx=(10, 5))
+        
+        # 鼠标悬停效果（更明显的视觉反馈）
+        def on_enter(e):
+            help_btn.config(bg="#5a7fb8", fg="#00ffff", relief=tk.RAISED)  # 悬停时更亮
+        def on_leave(e):
+            help_btn.config(bg=COLORS["primary"], fg="#00d4ff", relief=tk.FLAT)  # 恢复亮青色
+        
+        help_btn.bind("<Enter>", on_enter)
+        help_btn.bind("<Leave>", on_leave)
+        
+        # 终端输出（保证有足够展开空间）
         terminal_frame = tk.Frame(card.content, bg=COLORS["terminal_bg"], bd=0)
-        terminal_frame.pack(fill=tk.BOTH, expand=True)
+        terminal_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 0))
         
         self.output_text = scrolledtext.ScrolledText(
             terminal_frame,
@@ -1052,6 +1139,72 @@ class SimulationGUI:
     
     def clear_output(self):
         self.output_text.delete(1.0, tk.END)
+    
+    def show_metrics_help(self):
+        """显示详细的指标说明对话框"""
+        help_text = self.t("metrics_tooltip")
+        
+        # 创建自定义对话框
+        dialog = tk.Toplevel(self.root)
+        dialog.title(self.t("metrics_help"))
+        dialog.geometry("600x500")
+        dialog.configure(bg=COLORS["bg_main"])
+        
+        # 设置为模态对话框
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # 标题
+        title_frame = tk.Frame(dialog, bg=COLORS["primary"], padx=20, pady=15)
+        title_frame.pack(fill=tk.X)
+        
+        tk.Label(
+            title_frame,
+            text="📊 " + self.t("metrics_help"),
+            font=("Segoe UI", 16, "bold"),
+            fg="white",
+            bg=COLORS["primary"]
+        ).pack()
+        
+        # 内容区域
+        content_frame = tk.Frame(dialog, bg=COLORS["bg_main"], padx=20, pady=20)
+        content_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # 滚动文本框显示详细说明
+        text_widget = scrolledtext.ScrolledText(
+            content_frame,
+            wrap=tk.WORD,
+            font=("Segoe UI", 11),
+            bg=COLORS["bg_card"],
+            fg=COLORS["text_primary"],
+            padx=15,
+            pady=15,
+            borderwidth=0,
+            highlightthickness=1,
+            highlightbackground=COLORS["divider"]
+        )
+        text_widget.pack(fill=tk.BOTH, expand=True)
+        text_widget.insert(1.0, help_text)
+        text_widget.config(state=tk.DISABLED)  # 只读
+        
+        # 关闭按钮
+        btn_frame = tk.Frame(dialog, bg=COLORS["bg_main"], pady=15)
+        btn_frame.pack(fill=tk.X)
+        
+        AcademicButton(
+            btn_frame,
+            text="✓ " + ("Got it" if self.current_lang.get() == "en" else "了解" if self.current_lang.get() == "zh" else "理解しました"),
+            command=dialog.destroy,
+            style="accent",
+            height=40,
+            width=120
+        ).pack()
+        
+        # 居中显示
+        dialog.update_idletasks()
+        x = (dialog.winfo_screenwidth() // 2) - (dialog.winfo_width() // 2)
+        y = (dialog.winfo_screenheight() // 2) - (dialog.winfo_height() // 2)
+        dialog.geometry(f"+{x}+{y}")
     
     def set_status(self, is_running, text=None):
         if text:

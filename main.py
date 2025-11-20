@@ -42,8 +42,75 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def validate_parameters(args: argparse.Namespace) -> None:
+    """验证输入参数的合理性"""
+    errors = []
+    
+    # 验证概率参数 (0.0 ~ 1.0)
+    if not 0.0 <= args.p_loss <= 1.0:
+        errors.append(f"Invalid p_loss: {args.p_loss}. Must be between 0.0 and 1.0")
+    if not 0.0 <= args.p_reorder <= 1.0:
+        errors.append(f"Invalid p_reorder: {args.p_reorder}. Must be between 0.0 and 1.0")
+    if not 0.0 <= args.attacker_loss <= 1.0:
+        errors.append(f"Invalid attacker_loss: {args.attacker_loss}. Must be between 0.0 and 1.0")
+    if not 0.0 <= args.inline_attack_prob <= 1.0:
+        errors.append(f"Invalid inline_attack_prob: {args.inline_attack_prob}. Must be between 0.0 and 1.0")
+    
+    # 验证正整数参数
+    if args.runs <= 0:
+        errors.append(f"Invalid runs: {args.runs}. Must be positive integer")
+    if args.num_legit < 0:
+        errors.append(f"Invalid num_legit: {args.num_legit}. Must be non-negative integer")
+    if args.num_replay < 0:
+        errors.append(f"Invalid num_replay: {args.num_replay}. Must be non-negative integer")
+    if args.window_size <= 0:
+        errors.append(f"Invalid window_size: {args.window_size}. Must be positive integer")
+    if args.mac_length <= 0:
+        errors.append(f"Invalid mac_length: {args.mac_length}. Must be positive integer")
+    if args.inline_attack_burst <= 0:
+        errors.append(f"Invalid inline_attack_burst: {args.inline_attack_burst}. Must be positive integer")
+    if args.challenge_nonce_bits <= 0:
+        errors.append(f"Invalid challenge_nonce_bits: {args.challenge_nonce_bits}. Must be positive integer")
+    
+    # 验证文件路径
+    if args.commands_file and not Path(args.commands_file).exists():
+        errors.append(f"Commands file not found: {args.commands_file}")
+    
+    # 验证种子值
+    if args.seed is not None and args.seed < 0:
+        errors.append(f"Invalid seed: {args.seed}. Must be non-negative integer or None")
+    
+    # 合理性警告（不阻止运行，但给出提示）
+    warnings = []
+    if args.p_loss > 0.5:
+        warnings.append(f"Warning: High packet loss ({args.p_loss*100:.0f}%) may lead to low acceptance rates")
+    if args.runs < 10:
+        warnings.append(f"Warning: Low run count ({args.runs}) may not provide statistically reliable results")
+    if args.num_legit == 0 and args.num_replay == 0:
+        warnings.append("Warning: Both num_legit and num_replay are zero. No simulation will occur")
+    if args.window_size > 100:
+        warnings.append(f"Warning: Very large window size ({args.window_size}) may be unrealistic")
+    
+    # 打印错误和警告
+    if errors:
+        print("\n❌ Parameter Validation Failed:\n", file=sys.stderr)
+        for error in errors:
+            print(f"  • {error}", file=sys.stderr)
+        print("\nPlease fix the errors and try again.\n", file=sys.stderr)
+        sys.exit(1)
+    
+    if warnings and not args.quiet:
+        print("\n⚠️  Parameter Warnings:\n")
+        for warning in warnings:
+            print(f"  • {warning}")
+        print()  # Extra line for readability
+
+
 def main() -> None:
     args = parse_args()
+    
+    # Validate parameters first
+    validate_parameters(args)
     
     # Always show header unless in quiet mode
     if not args.quiet:
@@ -57,7 +124,12 @@ def main() -> None:
             valid = ", ".join(mode.value for mode in Mode)
             raise SystemExit(f"Unsupported mode '{token}'. Valid options: {valid}") from exc
 
-    command_sequence = load_command_sequence(args.commands_file) if args.commands_file else None
+    command_sequence = None
+    if args.commands_file:
+        try:
+            command_sequence = load_command_sequence(args.commands_file)
+        except Exception as exc:
+            raise SystemExit(f"Failed to load command sequence from '{args.commands_file}': {exc}") from exc
 
     try:
         attack_mode = AttackMode(args.attack_mode)
@@ -65,42 +137,57 @@ def main() -> None:
         valid = ", ".join(mode.value for mode in AttackMode)
         raise SystemExit(f"Unsupported attack mode '{args.attack_mode}'. Valid options: {valid}") from exc
 
-    base_config = SimulationConfig(
-        mode=Mode.NO_DEFENSE,
-        attack_mode=attack_mode,
-        num_legit=args.num_legit,
-        num_replay=args.num_replay,
-        p_loss=args.p_loss,
-        p_reorder=args.p_reorder,
-        window_size=args.window_size,
-        command_sequence=command_sequence,
-        command_set=DEFAULT_COMMANDS,
-        target_commands=args.target_commands,
-        rng_seed=args.seed,
-        mac_length=args.mac_length,
-        shared_key=args.shared_key,
-        attacker_record_loss=args.attacker_loss,
-        inline_attack_probability=args.inline_attack_prob,
-        inline_attack_burst=args.inline_attack_burst,
-        challenge_nonce_bits=args.challenge_nonce_bits,
-    )
+    try:
+        base_config = SimulationConfig(
+            mode=Mode.NO_DEFENSE,
+            attack_mode=attack_mode,
+            num_legit=args.num_legit,
+            num_replay=args.num_replay,
+            p_loss=args.p_loss,
+            p_reorder=args.p_reorder,
+            window_size=args.window_size,
+            command_sequence=command_sequence,
+            command_set=DEFAULT_COMMANDS,
+            target_commands=args.target_commands,
+            rng_seed=args.seed,
+            mac_length=args.mac_length,
+            shared_key=args.shared_key,
+            attacker_record_loss=args.attacker_loss,
+            inline_attack_probability=args.inline_attack_prob,
+            inline_attack_burst=args.inline_attack_burst,
+            challenge_nonce_bits=args.challenge_nonce_bits,
+        )
+    except Exception as exc:
+        raise SystemExit(f"Failed to create simulation configuration: {exc}") from exc
 
     # Run experiments with progress display (unless quiet mode)
-    stats = run_many_experiments(
-        base_config, 
-        modes=modes, 
-        runs=args.runs, 
-        seed=args.seed,
-        show_progress=not args.quiet
-    )
+    try:
+        stats = run_many_experiments(
+            base_config, 
+            modes=modes, 
+            runs=args.runs, 
+            seed=args.seed,
+            show_progress=not args.quiet
+        )
+    except Exception as exc:
+        print(f"\n❌ Simulation failed: {exc}", file=sys.stderr)
+        if not args.quiet:
+            import traceback
+            traceback.print_exc()
+        sys.exit(1)
     
     _print_table(stats)
 
     if args.output_json:
-        path = Path(args.output_json)
-        payload = [entry.as_dict() for entry in stats]
-        path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        print(f"\nSaved aggregate metrics to {path}")
+        try:
+            path = Path(args.output_json)
+            path.parent.mkdir(parents=True, exist_ok=True)  # Create directory if needed
+            payload = [entry.as_dict() for entry in stats]
+            path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            print(f"\n✓ Saved aggregate metrics to {path}")
+        except Exception as exc:
+            print(f"\n❌ Failed to save JSON output to '{args.output_json}': {exc}", file=sys.stderr)
+            sys.exit(1)
 
 
 def _print_table(stats) -> None:

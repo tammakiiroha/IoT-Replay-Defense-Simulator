@@ -22,16 +22,25 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--runs", type=int, default=200, help="Monte Carlo runs per condition")
     parser.add_argument("--num-legit", type=int, default=20, help="Legitimate transmissions per run")
     parser.add_argument("--num-replay", type=int, default=100, help="Replay attempts per run (post-attack mode)")
-    parser.add_argument("--modes", nargs="+", default=[Mode.ROLLING_MAC.value, Mode.WINDOW.value],
+    parser.add_argument("--modes", nargs="+", 
+                        default=[Mode.NO_DEFENSE.value, Mode.ROLLING_MAC.value, Mode.WINDOW.value, Mode.CHALLENGE.value],
                         help="Modes to include in the sweep outputs")
-    parser.add_argument("--p-loss-values", type=float, nargs="*", default=[0.0, 0.01, 0.05, 0.1, 0.2],
+    parser.add_argument("--p-loss-values", type=float, nargs="*", default=[0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30],
                         help="Packet-loss probabilities to evaluate")
-    parser.add_argument("--p-reorder-values", type=float, nargs="*", default=[0.0, 0.1, 0.3, 0.5, 0.7],
+    parser.add_argument("--p-reorder-values", type=float, nargs="*", default=[0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30],
                         help="Packet-reorder probabilities to evaluate")
-    parser.add_argument("--window-values", type=int, nargs="*", default=[1, 3, 5, 10],
+    parser.add_argument("--window-values", type=int, nargs="*", default=[1, 3, 5, 7, 9, 15, 20],
                         help="Window sizes to evaluate (applies to window mode)")
     parser.add_argument("--window-size-base", type=int, default=5,
                         help="Window size used in modes that rely on a fixed window during p_loss sweeps")
+    parser.add_argument("--fixed-p-loss", type=float, default=None,
+                        help="Fixed p_loss value for p_reorder sweep (default: 0.10 for isolating reorder effect)")
+    parser.add_argument("--fixed-p-reorder", type=float, default=None,
+                        help="Fixed p_reorder value for p_loss sweep (default: 0.0 for isolating loss effect)")
+    parser.add_argument("--window-p-loss", type=float, default=0.15,
+                        help="Fixed p_loss value for window size sweep (default: 0.15 for moderate stress)")
+    parser.add_argument("--window-p-reorder", type=float, default=0.15,
+                        help="Fixed p_reorder value for window size sweep (default: 0.15 for moderate stress)")
     parser.add_argument("--attack-mode", choices=[mode.value for mode in AttackMode], default=AttackMode.POST_RUN.value,
                         help="Replay scheduling strategy for all sweeps")
     parser.add_argument("--inline-attack-prob", type=float, default=0.3,
@@ -76,9 +85,13 @@ def main() -> None:
 
     requested_modes = _parse_modes(args.modes)
 
-    p_loss_records = _sweep_p_loss(base_config, requested_modes, args.p_loss_values, args.runs, args.seed)
-    p_reorder_records = _sweep_p_reorder(base_config, requested_modes, args.p_reorder_values, args.runs, args.seed)
-    window_records = _sweep_window(base_config, requested_modes, args.window_values, args.runs, args.seed)
+    # Apply fixed parameters for each sweep
+    fixed_p_reorder_for_loss = args.fixed_p_reorder if args.fixed_p_reorder is not None else 0.0
+    fixed_p_loss_for_reorder = args.fixed_p_loss if args.fixed_p_loss is not None else 0.10
+
+    p_loss_records = _sweep_p_loss(base_config, requested_modes, args.p_loss_values, args.runs, args.seed, fixed_p_reorder_for_loss)
+    p_reorder_records = _sweep_p_reorder(base_config, requested_modes, args.p_reorder_values, args.runs, args.seed, fixed_p_loss_for_reorder)
+    window_records = _sweep_window(base_config, requested_modes, args.window_values, args.runs, args.seed, args.window_p_loss, args.window_p_reorder)
 
     _write_json(Path(args.p_loss_output), p_loss_records)
     _write_json(Path(args.p_reorder_output), p_reorder_records)
@@ -106,10 +119,16 @@ def _sweep_p_loss(
     p_loss_values: Iterable[float],
     runs: int,
     seed: int | None,
+    fixed_p_reorder: float = 0.0,
 ) -> List[dict]:
+    """
+    Sweep packet loss rate while keeping reordering fixed.
+    
+    Default: p_reorder=0.0 to isolate packet loss effect.
+    """
     records: List[dict] = []
     for value in p_loss_values:
-        config = dataclasses.replace(base_config, p_loss=value)
+        config = dataclasses.replace(base_config, p_loss=value, p_reorder=fixed_p_reorder)
         stats = run_many_experiments(config, modes=modes, runs=runs, seed=seed)
         for entry in stats:
             record = entry.as_dict()
@@ -124,12 +143,17 @@ def _sweep_p_reorder(
     p_reorder_values: Iterable[float],
     runs: int,
     seed: int | None,
+    fixed_p_loss: float = 0.10,
 ) -> List[dict]:
+    """
+    Sweep packet reordering rate while keeping loss fixed.
+    
+    Default: p_loss=0.10 (typical IoT environment) to isolate reordering effect
+    following single-variable control principle.
+    """
     records: List[dict] = []
-    # For reorder sweep, we might want a small non-zero p_loss or just pure reorder.
-    # Let's assume pure reorder for now, or keep base_config's p_loss (default 0).
     for value in p_reorder_values:
-        config = dataclasses.replace(base_config, p_reorder=value)
+        config = dataclasses.replace(base_config, p_reorder=value, p_loss=fixed_p_loss)
         stats = run_many_experiments(config, modes=modes, runs=runs, seed=seed)
         for entry in stats:
             record = entry.as_dict()
@@ -144,13 +168,16 @@ def _sweep_window(
     window_values: Iterable[int],
     runs: int,
     seed: int | None,
+    stress_p_loss: float = 0.15,
+    stress_p_reorder: float = 0.15,
 ) -> List[dict]:
+    """
+    Sweep window size under moderate network stress.
+    
+    Default: p_loss=0.15, p_reorder=0.15 creates realistic challenging conditions
+    where the tradeoff between security and usability is most observable.
+    """
     records: List[dict] = []
-    # To show a meaningful tradeoff, we need a challenging environment.
-    # If p_loss=0 and p_reorder=0, any window size > 0 works perfectly.
-    # Let's inject some chaos:
-    stress_p_loss = 0.05
-    stress_p_reorder = 0.3
     
     for value in window_values:
         config = dataclasses.replace(

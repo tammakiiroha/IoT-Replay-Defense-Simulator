@@ -37,7 +37,8 @@ TRANSLATIONS = {
         "attack_mode": "Attack Mode",
         "post_run": "Post-run (replay after legitimate traffic)",
         "inline": "Inline (replay during legitimate traffic)",
-        "seed": "Random Seed (for reproducibility)",
+        "seed": "Random Seed (0 = random each time)",
+        "seed_hint": "Set to 0 for different results each run, or use a fixed number (e.g., 42) to get the same results every time",
         "attacker_loss": "Attacker Recording Loss Rate",
         "advanced": "Advanced Parameters",
         "start_sim": "▶  Run Simulation",
@@ -92,7 +93,8 @@ TRANSLATIONS = {
         "attack_mode": "攻击模式",
         "post_run": "事后攻击（正规流量后重放）",
         "inline": "内联攻击（正规流量中重放）",
-        "seed": "随机种子（可重现性）",
+        "seed": "随机种子 (0 = 每次不同)",
+        "seed_hint": "设为0则每次结果不同，设为固定数字(如42)则每次结果相同",
         "attacker_loss": "攻击者记录丢失率",
         "advanced": "高级参数",
         "start_sim": "▶  运行仿真",
@@ -147,7 +149,8 @@ TRANSLATIONS = {
         "attack_mode": "攻撃モード",
         "post_run": "事後攻撃（正規トラフィック後）",
         "inline": "インライン攻撃（正規トラフィック中）",
-        "seed": "ランダムシード（再現性）",
+        "seed": "ランダムシード (0 = 毎回異なる)",
+        "seed_hint": "0に設定すると毎回異なる結果、固定値(例:42)で毎回同じ結果",
         "attacker_loss": "攻撃者記録損失率",
         "advanced": "詳細設定",
         "start_sim": "▶  シミュレーション実行",
@@ -678,6 +681,14 @@ class SimulationGUI:
                 elif ival > 10:
                     text += " ⚠"  # 太大
             
+            # 为随机种子添加提示
+            elif label_key == "seed":
+                ival = int(val)
+                if ival == 0:
+                    text += " 🎲"  # 随机
+                else:
+                    text += " 🔒"  # 固定
+            
             value_label.config(text=text)
         
         variable.trace_add("write", update)
@@ -698,6 +709,21 @@ class SimulationGUI:
                 "en": "Recommended: 3-7 (balance security & usability)",
                 "zh": "推荐值：3-7（平衡安全性与可用性）",
                 "ja": "推奨値：3-7（セキュリティと使いやすさのバランス）"
+            }
+            tk.Label(
+                frame,
+                text=hint_text[self.current_lang.get()],
+                font=FONTS["small"],
+                fg=COLORS["text_muted"],
+                bg=COLORS["bg_card"]
+            ).pack(anchor="w", pady=(2, 0))
+        
+        # 为随机种子添加说明文本
+        elif label_key == "seed":
+            hint_text = {
+                "en": "0 = Random (different each time) | Fixed number = Same results",
+                "zh": "0 = 随机（每次不同） | 固定数字 = 结果可重现",
+                "ja": "0 = ランダム（毎回異なる） | 固定値 = 結果が再現可能"
             }
             tk.Label(
                 frame,

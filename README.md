@@ -75,8 +75,6 @@ Features:
 - 📊 Real-time output display
 - 🌏 Bilingual interface (EN/CN/JP)
 
-[📖 GUI User Guide](GUI_GUIDE.md)
-
 ### Option 2: Command Line (For automation and scripts)
 
 ```bash

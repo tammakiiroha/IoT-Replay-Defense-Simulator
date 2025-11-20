@@ -71,30 +71,7 @@ Features:
 
 [📖 GUI User Guide](GUI_GUIDE.md)
 
-### Option 2: Interactive Menu (For those who prefer terminal)
-
-**No need to remember parameters!** Just input numbers:
-
-```bash
-./run.sh
-```
-
-Or:
-
-```bash
-python interactive.py
-```
-
-Features:
-- 🎯 Quick demo scenarios
-- 🔧 Custom experiment with step-by-step guidance
-- 📊 Batch experiments
-- 📈 Data visualization
-- 🌏 Multi-language support (EN/JP/CN)
-
-[📖 Interactive Menu Guide](INTERACTIVE_GUIDE.md)
-
-### Option 3: Command Line (For automation)
+### Option 2: Command Line (For automation and scripts)
 
 ```bash
 python3 main.py --runs 200 --num-legit 20 --num-replay 100 --p-loss 0.05 --window-size 5

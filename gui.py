@@ -1,507 +1,629 @@
 #!/usr/bin/env python3
-"""GUI for Replay Attack Simulation with academic aesthetics and tri-lingual UI."""
+"""
+Graphical User Interface for Replay Attack Simulation
+学术风格界面 - Academic & Professional Design
+"""
 
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 import subprocess
 import threading
 import queue
+import sys
 import platform
 
 # --- 多语言文本配置 ---
 TRANSLATIONS = {
     "en": {
-        "title": "Replay Attack Simulation Toolkit",
-        "subtitle": "Defense Evaluation System",
-        "version": "Version",
-        "hero_desc": "Academic-grade console for replay attack defense research.",
-        "hero_badge_precision": "Statistical rigor",
-        "hero_badge_plots": "Publication-ready figures",
-        "hero_badge_demo": "Live demo friendly",
-        "hero_stat_runs": "Default Monte Carlo runs",
-        "hero_stat_loss": "Packet-loss sweep",
-        "hero_stat_reorder": "Reorder sweep",
-        "scenarios": "QUICK SCENARIOS",
-        "dashboard": "Dashboard / Control Panel",
-        "custom_exp": "Custom Experiment",
+        "title": "Replay Attack Defense Evaluation",
+        "subtitle": "Monte Carlo Simulation Framework",
+        "version": "v1.0",
+        "tagline": "Statistical analysis of defense mechanisms against replay attacks",
+        "scenarios": "Experimental Scenarios",
+        "dashboard": "Control Panel",
+        "custom_exp": "Custom Configuration",
         "defense_mech": "Defense Mechanisms",
-        "dashboard_hint": "Tune parameters to reproduce thesis-grade experiments with comparable rigor.",
-        "all": "All (Compare all)",
+        "all": "All Modes (Comparative Study)",
         "no_def": "No Defense (Baseline)",
         "rolling": "Rolling Counter + MAC",
         "window": "Sliding Window",
         "challenge": "Challenge-Response",
         "runs": "Monte Carlo Runs",
-        "p_loss": "Packet Loss Rate",
-        "p_reorder": "Reorder Rate",
-        "start_sim": "START SIMULATION",
-        "live_output": "Live Output",
+        "p_loss": "Packet Loss Rate (p_loss)",
+        "p_reorder": "Reordering Rate (p_reorder)",
+        "start_sim": "▶  Run Simulation",
+        "live_output": "Console Output",
         "status_ready": "Ready",
         "status_running": "Running",
-        "clear_output": "Clear Output",
-        "generate_plots": "Generate Plots",
+        "clear_output": "Clear",
+        "generate_plots": "Generate Figures",
         "export_tables": "Export Tables",
         "quick_test": "Quick Test",
-        "quick_desc": "30s test run",
-        "baseline": "Baseline",
-        "baseline_desc": "Compare all modes",
-        "packet_loss": "Packet Loss",
-        "loss_desc": "10% loss test",
-        "reorder": "Reordering",
-        "reorder_desc": "30% reorder test",
+        "quick_desc": "Fast validation run (30 iterations)",
+        "baseline": "Baseline Comparison",
+        "baseline_desc": "Ideal conditions (no loss/reorder)",
+        "packet_loss": "Packet Loss Impact",
+        "loss_desc": "10% packet loss scenario",
+        "reorder": "Reordering Impact",
+        "reorder_desc": "30% packet reordering",
         "harsh": "Harsh Network",
-        "harsh_desc": "Loss + Reorder",
-        "busy_msg": "An experiment is already running!",
-        "done": "DONE",
+        "harsh_desc": "Combined loss + reordering",
+        "busy_msg": "A simulation is already running.",
+        "done": "COMPLETED",
         "error": "ERROR",
         "language": "Language",
+        "params": "Parameters",
+        "desc": "Description",
     },
     "zh": {
-        "title": "重放攻击仿真工具包",
-        "subtitle": "防御机制评估系统",
-        "version": "版本",
-        "hero_desc": "面向毕业论文的学术级重放攻击防御仿真平台。",
-        "hero_badge_precision": "统计结果可信",
-        "hero_badge_plots": "论文级图表",
-        "hero_badge_demo": "现场演示友好",
-        "hero_stat_runs": "默认蒙特卡洛次数",
-        "hero_stat_loss": "丢包率扫描",
-        "hero_stat_reorder": "乱序率扫描",
-        "scenarios": "快速场景",
-        "dashboard": "仪表盘 / 控制面板",
-        "custom_exp": "自定义实验",
+        "title": "重放攻击防御评估",
+        "subtitle": "蒙特卡洛仿真框架",
+        "version": "v1.0 版本",
+        "tagline": "基于统计方法的防御机制评估研究",
+        "scenarios": "实验场景",
+        "dashboard": "控制面板",
+        "custom_exp": "自定义配置",
         "defense_mech": "防御机制",
-        "dashboard_hint": "调节参数以复现毕业论文级别的实验与严谨度。",
-        "all": "全部对比",
+        "all": "全部模式（对比研究）",
         "no_def": "无防御（基线）",
         "rolling": "滚动计数器 + MAC",
         "window": "滑动窗口",
         "challenge": "挑战-响应",
-        "runs": "运行次数（蒙特卡洛）",
-        "p_loss": "丢包率",
-        "p_reorder": "乱序率",
-        "start_sim": "开始仿真",
-        "live_output": "实时输出",
+        "runs": "蒙特卡洛运行次数",
+        "p_loss": "丢包率 (p_loss)",
+        "p_reorder": "乱序率 (p_reorder)",
+        "start_sim": "▶  运行仿真",
+        "live_output": "控制台输出",
         "status_ready": "就绪",
         "status_running": "运行中",
-        "clear_output": "清空输出",
+        "clear_output": "清空",
         "generate_plots": "生成图表",
         "export_tables": "导出表格",
         "quick_test": "快速测试",
-        "quick_desc": "30秒测试运行",
+        "quick_desc": "快速验证运行（30次迭代）",
         "baseline": "基线对比",
-        "baseline_desc": "对比所有模式",
-        "packet_loss": "丢包测试",
-        "loss_desc": "10%丢包测试",
-        "reorder": "乱序测试",
-        "reorder_desc": "30%乱序测试",
+        "baseline_desc": "理想条件（无丢包/乱序）",
+        "packet_loss": "丢包影响",
+        "loss_desc": "10% 丢包场景",
+        "reorder": "乱序影响",
+        "reorder_desc": "30% 数据包乱序",
         "harsh": "恶劣网络",
-        "harsh_desc": "丢包+乱序",
-        "busy_msg": "实验正在运行中！",
-        "done": "完成",
+        "harsh_desc": "丢包 + 乱序组合",
+        "busy_msg": "仿真正在运行中。",
+        "done": "已完成",
         "error": "错误",
         "language": "语言",
+        "params": "参数",
+        "desc": "描述",
     },
     "ja": {
-        "title": "リプレイ攻撃シミュレーションツールキット",
-        "subtitle": "防御メカニズム評価システム",
-        "version": "バージョン",
-        "hero_desc": "卒業研究向けの学術的なリプレイ攻撃防御コンソール。",
-        "hero_badge_precision": "統計的な厳密性",
-        "hero_badge_plots": "論文品質の図表",
-        "hero_badge_demo": "デモに最適",
-        "hero_stat_runs": "標準モンテカルロ回数",
-        "hero_stat_loss": "損失率スイープ",
-        "hero_stat_reorder": "並び替え率スイープ",
-        "scenarios": "クイックシナリオ",
-        "dashboard": "ダッシュボード / コントロールパネル",
-        "custom_exp": "カスタム実験",
+        "title": "リプレイ攻撃防御評価",
+        "subtitle": "モンテカルロシミュレーションフレームワーク",
+        "version": "v1.0 バージョン",
+        "tagline": "統計的手法による防御メカニズムの評価研究",
+        "scenarios": "実験シナリオ",
+        "dashboard": "コントロールパネル",
+        "custom_exp": "カスタム設定",
         "defense_mech": "防御メカニズム",
-        "dashboard_hint": "卒業論文レベルの再現実験が行えるようにパラメータを調整してください。",
-        "all": "すべて（比較）",
+        "all": "全モード（比較研究）",
         "no_def": "防御なし（ベースライン）",
         "rolling": "ローリングカウンタ + MAC",
         "window": "スライディングウィンドウ",
         "challenge": "チャレンジレスポンス",
-        "runs": "実行回数（モンテカルロ）",
-        "p_loss": "パケット損失率",
-        "p_reorder": "並び替え率",
-        "start_sim": "シミュレーション開始",
-        "live_output": "リアルタイム出力",
+        "runs": "モンテカルロ実行回数",
+        "p_loss": "パケット損失率 (p_loss)",
+        "p_reorder": "並び替え率 (p_reorder)",
+        "start_sim": "▶  シミュレーション実行",
+        "live_output": "コンソール出力",
         "status_ready": "準備完了",
         "status_running": "実行中",
-        "clear_output": "出力をクリア",
-        "generate_plots": "グラフ生成",
+        "clear_output": "クリア",
+        "generate_plots": "図表生成",
         "export_tables": "テーブル出力",
         "quick_test": "クイックテスト",
-        "quick_desc": "30秒テスト実行",
-        "baseline": "ベースライン",
-        "baseline_desc": "全モード比較",
-        "packet_loss": "パケット損失",
-        "loss_desc": "10%損失テスト",
-        "reorder": "並び替えテスト",
-        "reorder_desc": "30%並び替え",
+        "quick_desc": "高速検証実行（30回反復）",
+        "baseline": "ベースライン比較",
+        "baseline_desc": "理想条件（損失/並び替えなし）",
+        "packet_loss": "パケット損失影響",
+        "loss_desc": "10% 損失シナリオ",
+        "reorder": "並び替え影響",
+        "reorder_desc": "30% パケット並び替え",
         "harsh": "厳しいネットワーク",
-        "harsh_desc": "損失+並び替え",
-        "busy_msg": "実験はすでに実行中です！",
+        "harsh_desc": "損失 + 並び替え組み合わせ",
+        "busy_msg": "シミュレーションは既に実行中です。",
         "done": "完了",
         "error": "エラー",
         "language": "言語",
+        "params": "パラメータ",
+        "desc": "説明",
     }
 }
 
-# --- 色彩与字体配置 ---
+# --- 学术风格配色方案 ---
 COLORS = {
-    "bg_dark": "#131c2e",
-    "bg_medium": "#1f2c45",
-    "bg_light": "#f3f4f6",
-    "hero_bg": "#e8ecf6",
-    "card_bg": "#ffffff",
-    "card_border": "#d5dae6",
-    "accent": "#2b4c7e",
-    "accent_hover": "#1f3658",
-    "success": "#3c7a6b",
-    "success_hover": "#2f5c50",
-    "warning": "#b3752a",
-    "danger": "#8e2f3f",
-    "purple": "#5c4a72",
-    "text_light": "#ffffff",
-    "text_dark": "#1f2c45",
-    "text_muted": "#6d768a",
-    "badge_bg": "#fdfdfd",
-    "shadow": "#d6dae5"
+    # 主色调：深蓝色学术风格
+    "primary": "#1a3a52",           # 深海军蓝
+    "primary_light": "#2d5575",     # 浅海军蓝
+    "primary_dark": "#0f2537",      # 极深蓝
+    
+    # 背景色：纸质感
+    "bg_main": "#f8f9fa",           # 浅灰白（纸质）
+    "bg_card": "#ffffff",           # 纯白（卡片）
+    "bg_section": "#f0f2f5",        # 分区背景
+    
+    # 强调色：学术期刊风格
+    "accent": "#d4a574",            # 金褐色（强调）
+    "accent_hover": "#c4956a",      # 深金褐
+    
+    # 状态色：专业配色
+    "success": "#3a7d44",           # 深绿
+    "warning": "#b8860b",           # 深金黄
+    "danger": "#8b3a3a",            # 深红
+    "info": "#4a6fa5",              # 信息蓝
+    
+    # 文字颜色
+    "text_primary": "#1a1a1a",      # 主文字（近黑）
+    "text_secondary": "#4a5568",    # 次要文字（深灰）
+    "text_muted": "#718096",        # 弱化文字（中灰）
+    "text_light": "#ffffff",        # 白色文字
+    
+    # 边框与分割线
+    "border": "#d1d5db",            # 边框灰
+    "divider": "#e5e7eb",           # 分割线
+    "shadow": "#e8eaed",            # 阴影色
+    
+    # 终端配色
+    "terminal_bg": "#1e1e1e",       # 终端背景
+    "terminal_text": "#d4d4d4",     # 终端文字
 }
 
-SCENARIO_ACCENTS = {
-    "quick": "#2b4c7e",
-    "baseline": "#445a86",
-    "packet_loss": "#8c6a43",
-    "reorder": "#5f4e73",
-    "harsh": "#7c3642",
-}
-
+# --- 学术风格字体配置 ---
 if platform.system() == "Darwin":  # macOS
     FONTS = {
-        "hero": ("SF Pro Display", 30, "bold"),
-        "h1": ("SF Pro Display", 24, "bold"),
-        "h2": ("SF Pro Display", 18, "bold"),
-        "h3": ("SF Pro Display", 14, "bold"),
-        "body": ("SF Pro Text", 13),
-        "small": ("SF Pro Text", 11),
-        "mono": ("SF Mono", 11),
+        "title": ("Georgia", 28, "bold"),           # 衬线字体 - 标题
+        "subtitle": ("Georgia", 14),                # 衬线字体 - 副标题
+        "h1": ("Helvetica Neue", 20, "bold"),       # 无衬线 - 一级标题
+        "h2": ("Helvetica Neue", 16, "bold"),       # 二级标题
+        "h3": ("Helvetica Neue", 13, "bold"),       # 三级标题
+        "body": ("Helvetica Neue", 12),             # 正文
+        "small": ("Helvetica Neue", 11),            # 小字
+        "mono": ("Menlo", 11),                      # 等宽字体
+        "button": ("Helvetica Neue", 13, "bold"),   # 按钮
     }
 else:
     FONTS = {
-        "hero": ("Segoe UI", 24, "bold"),
-        "h1": ("Segoe UI", 22, "bold"),
-        "h2": ("Segoe UI", 16, "bold"),
-        "h3": ("Segoe UI", 12, "bold"),
-        "body": ("Segoe UI", 11),
+        "title": ("Georgia", 24, "bold"),
+        "subtitle": ("Georgia", 12),
+        "h1": ("Segoe UI", 18, "bold"),
+        "h2": ("Segoe UI", 14, "bold"),
+        "h3": ("Segoe UI", 11, "bold"),
+        "body": ("Segoe UI", 10),
         "small": ("Segoe UI", 9),
         "mono": ("Consolas", 10),
+        "button": ("Segoe UI", 11, "bold"),
     }
 
-
-class ModernButton(tk.Frame):
-    def __init__(self, parent, text, command, color=COLORS["accent"], hover_color=COLORS["accent_hover"], **kwargs):
-        super().__init__(parent, bg=color, cursor="hand2", highlightthickness=1, highlightbackground=COLORS["card_border"], bd=0, **kwargs)
+class AcademicButton(tk.Frame):
+    """学术风格按钮"""
+    def __init__(self, parent, text, command, style="primary", **kwargs):
+        colors = {
+            "primary": (COLORS["primary"], COLORS["primary_light"]),
+            "accent": (COLORS["accent"], COLORS["accent_hover"]),
+            "secondary": (COLORS["text_secondary"], COLORS["text_primary"]),
+        }
+        self.color, self.hover_color = colors.get(style, colors["primary"])
+        
+        super().__init__(parent, bg=self.color, cursor="hand2", bd=1, relief=tk.FLAT, **kwargs)
         self.command = command
-        self.color = color
-        self.hover_color = hover_color
         self.pack_propagate(False)
-
+        
         self.label = tk.Label(
             self,
             text=text,
-            bg=color,
-            fg="white",
-            font=FONTS["h3"],
+            bg=self.color,
+            fg=COLORS["text_light"],
+            font=FONTS["button"],
             cursor="hand2"
         )
         self.label.place(relx=0.5, rely=0.5, anchor="center")
-
-        for widget in (self, self.label):
-            widget.bind("<Enter>", self.on_enter)
-            widget.bind("<Leave>", self.on_leave)
-            widget.bind("<Button-1>", self.on_click)
-
-    def on_enter(self, _):
+        
+        for widget in [self, self.label]:
+            widget.bind("<Enter>", lambda e: self._on_enter())
+            widget.bind("<Leave>", lambda e: self._on_leave())
+            widget.bind("<Button-1>", lambda e: self._on_click())
+    
+    def _on_enter(self):
         self.configure(bg=self.hover_color)
         self.label.configure(bg=self.hover_color)
-
-    def on_leave(self, _):
+    
+    def _on_leave(self):
         self.configure(bg=self.color)
         self.label.configure(bg=self.color)
-
-    def on_click(self, _):
+    
+    def _on_click(self):
         if self.command:
             self.command()
 
-
-class CardFrame(tk.Frame):
-    def __init__(self, parent, title, **kwargs):
-        container = tk.Frame(parent, bg=COLORS["bg_light"])
-        container.pack(fill=tk.BOTH, expand=True, padx=1, pady=1)
-        super().__init__(
-            container,
-            bg=COLORS["card_bg"],
-            padx=22,
-            pady=22,
-            highlightthickness=1,
-            highlightbackground=COLORS["card_border"],
-            **kwargs,
-        )
-        self.pack(fill=tk.BOTH, expand=True)
-
+class SectionCard(tk.Frame):
+    """学术论文风格的章节卡片"""
+    def __init__(self, parent, title=None, subtitle=None, **kwargs):
+        super().__init__(parent, bg=COLORS["bg_card"], bd=1, relief=tk.SOLID, highlightbackground=COLORS["border"], highlightthickness=1, **kwargs)
+        self.pack_propagate(False)
+        
         if title:
-            title_label = tk.Label(self, text=title, font=FONTS["h2"], fg=COLORS["text_dark"], bg=COLORS["card_bg"])
-            title_label.pack(anchor="w")
-            tk.Frame(self, bg=COLORS["accent"], height=2, width=70).pack(anchor="w", pady=(6, 16))
-
+            header = tk.Frame(self, bg=COLORS["bg_card"], pady=18, padx=20)
+            header.pack(fill=tk.X)
+            
+            tk.Label(
+                header,
+                text=title,
+                font=FONTS["h2"],
+                fg=COLORS["text_primary"],
+                bg=COLORS["bg_card"]
+            ).pack(anchor="w")
+            
+            if subtitle:
+                tk.Label(
+                    header,
+                    text=subtitle,
+                    font=FONTS["small"],
+                    fg=COLORS["text_muted"],
+                    bg=COLORS["bg_card"]
+                ).pack(anchor="w", pady=(4, 0))
+            
+            # 分割线
+            tk.Frame(self, bg=COLORS["divider"], height=1).pack(fill=tk.X)
+        
+        # 内容区域
+        self.content = tk.Frame(self, bg=COLORS["bg_card"], padx=20, pady=18)
+        self.content.pack(fill=tk.BOTH, expand=True)
 
 class SimulationGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Replay Attack Simulation Toolkit")
-        self.root.geometry("1340x900")
-        self.root.configure(bg=COLORS["bg_light"])
-
+        self.root.title("Replay Attack Defense Evaluation System")
+        self.root.geometry("1400x900")
+        self.root.configure(bg=COLORS["bg_main"])
+        
         self.current_lang = tk.StringVar(value="en")
         self.output_queue = queue.Queue()
         self.running = False
-
+        
         self.setup_style()
         self.create_widgets()
         self.check_output()
-
+    
     def t(self, key):
+        """获取翻译"""
         return TRANSLATIONS[self.current_lang.get()].get(key, key)
-
+    
     def setup_style(self):
+        """配置样式"""
         style = ttk.Style()
-        style.theme_use("clam")
-        style.configure(".", background=COLORS["bg_light"])
-        style.configure(
-            "TRadiobutton",
-            background=COLORS["card_bg"],
-            font=FONTS["body"],
-            foreground=COLORS["text_dark"],
-        )
-        style.configure("TSeparator", background=COLORS["card_border"])
-        style.configure(
-            "Horizontal.TScale",
-            background=COLORS["card_bg"],
-            troughcolor="#e1e5f0",
-            thickness=6,
-            troughrelief="flat",
-        )
-
+        style.theme_use('clam')
+        
+        # 单选按钮样式
+        style.configure("Academic.TRadiobutton",
+                       background=COLORS["bg_card"],
+                       foreground=COLORS["text_primary"],
+                       font=FONTS["body"],
+                       borderwidth=0)
+        style.map("Academic.TRadiobutton",
+                 background=[('active', COLORS["bg_card"])],
+                 foreground=[('active', COLORS["primary"])])
+        
+        # 滑动条样式
+        style.configure("Academic.Horizontal.TScale",
+                       background=COLORS["bg_card"],
+                       troughcolor=COLORS["bg_section"],
+                       borderwidth=0,
+                       lightcolor=COLORS["accent"],
+                       darkcolor=COLORS["accent"])
+    
     def create_widgets(self):
-        self.root.configure(bg=COLORS["bg_light"])
-        self.create_topbar()
-        self.create_hero_section()
-        self.create_main_section()
-
-    def create_topbar(self):
-        topbar = tk.Frame(self.root, bg=COLORS["bg_dark"], height=70)
-        topbar.pack(fill=tk.X)
-        topbar.pack_propagate(False)
-
-        logo = tk.Frame(topbar, bg=COLORS["bg_dark"])
-        logo.pack(side=tk.LEFT, padx=30)
+        """创建主界面"""
+        
+        # === 顶部标题区（学术论文风格）===
+        header = tk.Frame(self.root, bg=COLORS["primary"], height=160)
+        header.pack(fill=tk.X)
+        header.pack_propagate(False)
+        
+        header_content = tk.Frame(header, bg=COLORS["primary"])
+        header_content.place(relx=0.5, rely=0.5, anchor="center")
+        
         tk.Label(
-            logo,
-            text="REPLAY SIMULATION",
-            font=FONTS["h1"],
-            fg="white",
-            bg=COLORS["bg_dark"],
-        ).pack(anchor="w")
+            header_content,
+            text=self.t("title"),
+            font=FONTS["title"],
+            fg=COLORS["text_light"],
+            bg=COLORS["primary"]
+        ).pack()
+        
         tk.Label(
-            logo,
+            header_content,
             text=self.t("subtitle"),
+            font=FONTS["subtitle"],
+            fg=COLORS["accent"],
+            bg=COLORS["primary"]
+        ).pack(pady=(8, 4))
+        
+        tk.Label(
+            header_content,
+            text=self.t("tagline"),
             font=FONTS["small"],
-            fg="#a7b3d1",
-            bg=COLORS["bg_dark"],
-        ).pack(anchor="w")
-
-        lang_frame = tk.Frame(topbar, bg=COLORS["bg_dark"])
-        lang_frame.pack(side=tk.RIGHT, padx=30)
+            fg=COLORS["text_light"],
+            bg=COLORS["primary"]
+        ).pack()
+        
+        # 语言切换器（右上角）
+        lang_frame = tk.Frame(header, bg=COLORS["primary"])
+        lang_frame.place(relx=0.95, rely=0.5, anchor="e")
+        
         tk.Label(
             lang_frame,
-            text=self.t("language") + ":",
+            text=self.t("language"),
             font=FONTS["small"],
-            bg=COLORS["bg_dark"],
-            fg="#a7b3d1",
-        ).pack(side=tk.LEFT, padx=(0, 10))
-
-        for code, name in [("en", "English"), ("zh", "中文"), ("ja", "日本語")]:
-            btn = tk.Button(
+            fg=COLORS["text_light"],
+            bg=COLORS["primary"]
+        ).pack(side=tk.LEFT, padx=(0, 8))
+        
+        for code, name in [("en", "EN"), ("zh", "中"), ("ja", "日")]:
+            is_active = self.current_lang.get() == code
+            btn = tk.Label(
                 lang_frame,
                 text=name,
                 font=FONTS["small"],
-                bg=COLORS["bg_medium"] if self.current_lang.get() == code else COLORS["bg_dark"],
-                fg="white",
-                activebackground=COLORS["bg_medium"],
-                activeforeground="white",
-                relief=tk.FLAT,
-                padx=16,
-                pady=6,
+                fg=COLORS["accent"] if is_active else COLORS["text_light"],
+                bg=COLORS["primary"],
                 cursor="hand2",
-                command=lambda lc=code: self.switch_language(lc),
+                padx=8,
+                pady=4
             )
-            btn.pack(side=tk.LEFT, padx=3)
-
-    def create_hero_section(self):
-        hero = tk.Frame(self.root, bg=COLORS["hero_bg"], padx=30, pady=26)
-        hero.pack(fill=tk.X, padx=20, pady=(16, 12))
-
-        left = tk.Frame(hero, bg=COLORS["hero_bg"])
-        left.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        tk.Label(left, text=self.t("title"), font=FONTS["hero"], fg=COLORS["text_dark"], bg=COLORS["hero_bg"]).pack(anchor="w")
-        tk.Label(left, text=self.t("hero_desc"), font=FONTS["body"], fg=COLORS["text_muted"], bg=COLORS["hero_bg"], wraplength=520, justify="left").pack(anchor="w", pady=(6, 12))
-
-        stats_frame = tk.Frame(left, bg=COLORS["hero_bg"])
-        stats_frame.pack(anchor="w")
-        stats = [
-            (self.t("hero_stat_runs"), "50"),
-            (self.t("hero_stat_loss"), "0.0 - 0.5"),
-            (self.t("hero_stat_reorder"), "0.0 - 0.5"),
-        ]
-        for label, value in stats:
-            card = tk.Frame(stats_frame, bg=COLORS["card_bg"], padx=14, pady=10, highlightthickness=1, highlightbackground=COLORS["card_border"])
-            card.pack(side=tk.LEFT, padx=6)
-            tk.Label(card, text=label, font=FONTS["small"], fg=COLORS["text_muted"], bg=COLORS["card_bg"]).pack(anchor="w")
-            tk.Label(card, text=value, font=FONTS["h3"], fg=COLORS["accent"], bg=COLORS["card_bg"]).pack(anchor="w")
-
-        right = tk.Frame(hero, bg=COLORS["hero_bg"])
-        right.pack(side=tk.RIGHT, padx=20)
-        badges = [
-            self.t("hero_badge_precision"),
-            self.t("hero_badge_plots"),
-            self.t("hero_badge_demo"),
-        ]
-        for text in badges:
-            badge = tk.Frame(right, bg=COLORS["badge_bg"], padx=18, pady=10, highlightthickness=1, highlightbackground=COLORS["card_border"])
-            badge.pack(fill=tk.X, pady=6)
-            tk.Label(badge, text=text, font=FONTS["body"], fg=COLORS["text_dark"], bg=COLORS["badge_bg"]).pack(anchor="w")
-
-    def create_main_section(self):
-        main_container = tk.Frame(self.root, bg=COLORS["bg_light"])
-        main_container.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
-
-        left_panel = tk.Frame(main_container, bg=COLORS["bg_light"], width=320)
-        left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 12))
-        left_panel.pack_propagate(False)
-
-        middle_panel = tk.Frame(main_container, bg=COLORS["bg_light"])
-        middle_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=12)
-
-        right_panel = tk.Frame(main_container, bg=COLORS["bg_light"])
-        right_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        self.create_scenario_panel(left_panel)
-        self.create_config_panel(middle_panel)
-        self.create_output_panel(right_panel)
-
+            btn.pack(side=tk.LEFT, padx=2)
+            if not is_active:
+                btn.bind("<Button-1>", lambda e, lc=code: self.switch_language(lc))
+        
+        # === 主内容区 ===
+        main = tk.Frame(self.root, bg=COLORS["bg_main"])
+        main.pack(fill=tk.BOTH, expand=True, padx=30, pady=25)
+        
+        # 左侧：实验场景 + 配置
+        left = tk.Frame(main, bg=COLORS["bg_main"], width=480)
+        left.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 15))
+        left.pack_propagate(False)
+        
+        # 右侧：输出
+        right = tk.Frame(main, bg=COLORS["bg_main"])
+        right.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        self.create_scenario_panel(left)
+        self.create_config_panel(left)
+        self.create_output_panel(right)
+    
     def create_scenario_panel(self, parent):
-        card = CardFrame(parent, self.t("scenarios"))
-        for key, desc_key, slug in [
-            ("quick_test", "quick_desc", "quick"),
-            ("baseline", "baseline_desc", "baseline"),
-            ("packet_loss", "loss_desc", "packet_loss"),
-            ("reorder", "reorder_desc", "reorder"),
-            ("harsh", "harsh_desc", "harsh"),
-        ]:
-            accent = SCENARIO_ACCENTS[slug]
-            scenario = tk.Frame(card, bg=COLORS["card_bg"], highlightthickness=1, highlightbackground=accent, height=78, cursor="hand2")
-            scenario.pack(fill=tk.X, pady=6)
-            scenario.pack_propagate(False)
-
-            bar = tk.Frame(scenario, bg=accent, width=5)
-            bar.pack(side=tk.LEFT, fill=tk.Y)
-
-            text_area = tk.Frame(scenario, bg=COLORS["card_bg"], padx=16, pady=12)
-            text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-            tk.Label(text_area, text=self.t(key), font=FONTS["h3"], fg=COLORS["text_dark"], bg=COLORS["card_bg"], anchor="w").pack(fill=tk.X)
-            tk.Label(text_area, text=self.t(desc_key), font=FONTS["small"], fg=COLORS["text_muted"], bg=COLORS["card_bg"], anchor="w").pack(fill=tk.X, pady=(4, 0))
-
-            for widget in (scenario, text_area, bar):
-                widget.bind("<Button-1>", lambda _, s=slug: self.run_scenario(s))
-
-        tk.Frame(card, bg=COLORS["card_bg"], height=16).pack()
-        ModernButton(card, text=self.t("generate_plots"), command=self.generate_plots, height=46).pack(fill=tk.X, pady=4)
-        ModernButton(card, text=self.t("export_tables"), command=self.export_tables, height=46).pack(fill=tk.X, pady=4)
-
+        """实验场景面板"""
+        card = SectionCard(parent, title=self.t("scenarios"))
+        card.pack(fill=tk.X, pady=(0, 15))
+        
+        scenarios = [
+            ("quick_test", "quick_desc", "quick", COLORS["info"]),
+            ("baseline", "baseline_desc", "baseline", COLORS["primary"]),
+            ("packet_loss", "loss_desc", "packet_loss", COLORS["warning"]),
+            ("reorder", "reorder_desc", "reorder", COLORS["info"]),
+            ("harsh", "harsh_desc", "harsh", COLORS["danger"]),
+        ]
+        
+        for title_key, desc_key, cmd, color in scenarios:
+            scenario_frame = tk.Frame(
+                card.content,
+                bg=COLORS["bg_section"],
+                cursor="hand2",
+                bd=1,
+                relief=tk.SOLID,
+                highlightbackground=COLORS["border"],
+                highlightthickness=0
+            )
+            scenario_frame.pack(fill=tk.X, pady=6)
+            
+            # 左侧色条
+            tk.Frame(scenario_frame, bg=color, width=4).pack(side=tk.LEFT, fill=tk.Y)
+            
+            # 内容区
+            content = tk.Frame(scenario_frame, bg=COLORS["bg_section"], padx=14, pady=12)
+            content.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            
+            tk.Label(
+                content,
+                text=self.t(title_key),
+                font=FONTS["h3"],
+                fg=COLORS["text_primary"],
+                bg=COLORS["bg_section"],
+                anchor="w"
+            ).pack(fill=tk.X)
+            
+            tk.Label(
+                content,
+                text=self.t(desc_key),
+                font=FONTS["small"],
+                fg=COLORS["text_muted"],
+                bg=COLORS["bg_section"],
+                anchor="w"
+            ).pack(fill=tk.X, pady=(4, 0))
+            
+            # 绑定点击
+            for widget in [scenario_frame, content]:
+                widget.bind("<Button-1>", lambda e, s=cmd: self.run_scenario(s))
+        
+        # 底部工具按钮
+        tool_frame = tk.Frame(card.content, bg=COLORS["bg_card"], pady=10)
+        tool_frame.pack(fill=tk.X)
+        
+        AcademicButton(
+            tool_frame,
+            text=self.t("generate_plots"),
+            command=self.generate_plots,
+            style="secondary",
+            height=40
+        ).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+        
+        AcademicButton(
+            tool_frame,
+            text=self.t("export_tables"),
+            command=self.export_tables,
+            style="secondary",
+            height=40
+        ).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5, 0))
+    
     def create_config_panel(self, parent):
-        card = CardFrame(parent, self.t("custom_exp"))
-        tk.Label(card, text=self.t("dashboard_hint"), font=FONTS["body"], fg=COLORS["text_muted"], bg=COLORS["card_bg"], wraplength=520, justify="left").pack(anchor="w", pady=(0, 18))
-
-        tk.Label(card, text=self.t("defense_mech"), font=FONTS["h3"], bg=COLORS["card_bg"], fg=COLORS["text_dark"]).pack(anchor="w", pady=(0, 6))
+        """配置面板"""
+        card = SectionCard(parent, title=self.t("custom_exp"))
+        card.pack(fill=tk.BOTH, expand=True)
+        
+        # 防御机制
+        tk.Label(
+            card.content,
+            text=self.t("defense_mech"),
+            font=FONTS["h3"],
+            fg=COLORS["text_primary"],
+            bg=COLORS["bg_card"]
+        ).pack(anchor="w", pady=(0, 10))
+        
         self.defense_var = tk.StringVar(value="all")
-        defense_frame = tk.Frame(card, bg=COLORS["card_bg"])
-        defense_frame.pack(fill=tk.X, pady=(0, 16))
+        
         for key in ["all", "no_def", "rolling", "window", "challenge"]:
-            ttk.Radiobutton(defense_frame, text=self.t(key), variable=self.defense_var, value=key).pack(anchor="w", pady=2)
-
+            ttk.Radiobutton(
+                card.content,
+                text=self.t(key),
+                variable=self.defense_var,
+                value=key,
+                style="Academic.TRadiobutton"
+            ).pack(anchor="w", pady=4)
+        
+        # 分割线
+        tk.Frame(card.content, bg=COLORS["divider"], height=1).pack(fill=tk.X, pady=18)
+        
+        # 参数配置
+        tk.Label(
+            card.content,
+            text=self.t("params"),
+            font=FONTS["h3"],
+            fg=COLORS["text_primary"],
+            bg=COLORS["bg_card"]
+        ).pack(anchor="w", pady=(0, 10))
+        
         self.runs_var = tk.IntVar(value=50)
         self.ploss_var = tk.DoubleVar(value=0.0)
         self.preorder_var = tk.DoubleVar(value=0.0)
-        self.create_slider(card, "runs", self.runs_var, 10, 200, False)
-        self.create_slider(card, "p_loss", self.ploss_var, 0.0, 0.5, True)
-        self.create_slider(card, "p_reorder", self.preorder_var, 0.0, 0.5, True)
-
-        tk.Frame(card, bg=COLORS["card_bg"], height=12).pack()
-        ModernButton(card, text=self.t("start_sim"), command=self.run_custom, color=COLORS["success"], hover_color=COLORS["success_hover"], height=56).pack(fill=tk.X)
-
+        
+        self.create_slider(card.content, "runs", self.runs_var, 10, 200, False)
+        self.create_slider(card.content, "p_loss", self.ploss_var, 0.0, 0.5, True)
+        self.create_slider(card.content, "p_reorder", self.preorder_var, 0.0, 0.5, True)
+        
+        # 运行按钮
+        tk.Frame(card.content, bg=COLORS["bg_card"], height=15).pack()
+        
+        AcademicButton(
+            card.content,
+            text=self.t("start_sim"),
+            command=self.run_custom,
+            style="accent",
+            height=50
+        ).pack(fill=tk.X)
+    
     def create_slider(self, parent, label_key, variable, min_val, max_val, is_float):
-        frame = tk.Frame(parent, bg=COLORS["card_bg"], pady=10)
+        """创建滑动条"""
+        frame = tk.Frame(parent, bg=COLORS["bg_card"], pady=10)
         frame.pack(fill=tk.X)
-        header = tk.Frame(frame, bg=COLORS["card_bg"])
+        
+        header = tk.Frame(frame, bg=COLORS["bg_card"])
         header.pack(fill=tk.X, pady=(0, 6))
-        tk.Label(header, text=self.t(label_key), font=FONTS["body"], fg=COLORS["text_muted"], bg=COLORS["card_bg"]).pack(side=tk.LEFT)
-        value_label = tk.Label(header, font=FONTS["h3"], fg=COLORS["accent"], bg=COLORS["card_bg"])
+        
+        tk.Label(
+            header,
+            text=self.t(label_key),
+            font=FONTS["body"],
+            fg=COLORS["text_secondary"],
+            bg=COLORS["bg_card"]
+        ).pack(side=tk.LEFT)
+        
+        value_label = tk.Label(
+            header,
+            font=FONTS["h3"],
+            fg=COLORS["accent"],
+            bg=COLORS["bg_card"]
+        )
         value_label.pack(side=tk.RIGHT)
-
-        def update(*_):
+        
+        def update(*args):
             val = variable.get()
             value_label.config(text=f"{val:.2f}" if is_float else f"{int(val)}")
-
+        
         variable.trace_add("write", update)
         update()
-        ttk.Scale(frame, from_=min_val, to=max_val, variable=variable, orient="horizontal").pack(fill=tk.X)
-
+        
+        ttk.Scale(
+            frame,
+            from_=min_val,
+            to=max_val,
+            variable=variable,
+            orient="horizontal",
+            style="Academic.Horizontal.TScale"
+        ).pack(fill=tk.X)
+    
     def create_output_panel(self, parent):
-        card = CardFrame(parent, self.t("live_output"))
-        tk.Label(card, text=self.t("dashboard"), font=FONTS["small"], fg=COLORS["text_muted"], bg=COLORS["card_bg"], anchor="w").pack(fill=tk.X)
-        text_container = tk.Frame(card, bg=COLORS["bg_dark"], relief=tk.FLAT)
-        text_container.pack(fill=tk.BOTH, expand=True, pady=(10, 6))
-
+        """输出面板"""
+        card = SectionCard(parent, title=self.t("live_output"))
+        card.pack(fill=tk.BOTH, expand=True)
+        
+        # 终端输出
+        terminal_frame = tk.Frame(card.content, bg=COLORS["terminal_bg"], bd=0)
+        terminal_frame.pack(fill=tk.BOTH, expand=True)
+        
         self.output_text = scrolledtext.ScrolledText(
-            text_container,
+            terminal_frame,
             wrap=tk.WORD,
             font=FONTS["mono"],
-            bg=COLORS["bg_dark"],
-            fg=COLORS["text_light"],
-            insertbackground="white",
-            padx=16,
-            pady=16,
+            bg=COLORS["terminal_bg"],
+            fg=COLORS["terminal_text"],
+            insertbackground=COLORS["accent"],
+            padx=15,
+            pady=15,
             borderwidth=0,
-            highlightthickness=0,
+            highlightthickness=0
         )
         self.output_text.pack(fill=tk.BOTH, expand=True)
-
-        toolbar = tk.Frame(card, bg=COLORS["card_bg"], height=48, pady=8)
+        
+        # 底部工具栏
+        toolbar = tk.Frame(card.content, bg=COLORS["bg_card"], pady=12)
         toolbar.pack(fill=tk.X)
-        self.status_label = tk.Label(toolbar, text=f"● {self.t('status_ready')}", font=FONTS["body"], fg=COLORS["success"], bg=COLORS["card_bg"])
+        
+        self.status_label = tk.Label(
+            toolbar,
+            text=f"● {self.t('status_ready')}",
+            font=FONTS["body"],
+            fg=COLORS["success"],
+            bg=COLORS["bg_card"]
+        )
         self.status_label.pack(side=tk.LEFT)
-        ModernButton(toolbar, text=self.t("clear_output"), command=self.clear_output, color=COLORS["bg_medium"], hover_color=COLORS["bg_dark"], height=38, width=150).pack(side=tk.RIGHT)
-
+        
+        AcademicButton(
+            toolbar,
+            text=self.t("clear_output"),
+            command=self.clear_output,
+            style="secondary",
+            height=32,
+            width=120
+        ).pack(side=tk.RIGHT)
+    
     def switch_language(self, lang_code):
+        """切换语言"""
         self.current_lang.set(lang_code)
         for widget in self.root.winfo_children():
             widget.destroy()
         self.create_widgets()
-
+    
+    # === 业务逻辑 ===
+    
     def run_scenario(self, scenario):
         scenarios = {
             "quick": ("Quick Test", "--modes window --runs 30 --num-legit 10 --num-replay 50 --p-loss 0.05"),
@@ -512,32 +634,31 @@ class SimulationGUI:
         }
         name, cmd = scenarios[scenario]
         self.run_command(cmd, name)
-
+    
     def run_custom(self):
         defense_map = {
             "all": "no_def rolling window challenge",
             "no_def": "no_def",
             "rolling": "rolling",
             "window": "window",
-            "challenge": "challenge",
+            "challenge": "challenge"
         }
         modes = defense_map[self.defense_var.get()]
-        cmd = (
-            f"--modes {modes} --runs {self.runs_var.get()} --num-legit 20 "
-            f"--num-replay 100 --p-loss {self.ploss_var.get()} --p-reorder {self.preorder_var.get()}"
-        )
+        cmd = f"--modes {modes} --runs {self.runs_var.get()} --num-legit 20 --num-replay 100 --p-loss {self.ploss_var.get()} --p-reorder {self.preorder_var.get()}"
         self.run_command(cmd, self.t("custom_exp"))
-
+    
     def run_command(self, args, description):
         if self.running:
             messagebox.showwarning("Busy", self.t("busy_msg"))
             return
+        
         self.running = True
         self.set_status(True, f"{self.t('status_running')}: {description}")
-        self.output_text.insert(tk.END, f"\n{'=' * 60}\n▶ START: {description}\n{'=' * 60}\n\n")
+        
+        self.output_text.insert(tk.END, f"\n{'='*70}\n▶ EXPERIMENT: {description}\n{'='*70}\n\n")
         self.output_text.see(tk.END)
-
-        def worker():
+        
+        def run_thread():
             try:
                 cmd = f"source .venv/bin/activate && python main.py {args}"
                 proc = subprocess.Popen(
@@ -547,60 +668,62 @@ class SimulationGUI:
                     stderr=subprocess.STDOUT,
                     text=True,
                     bufsize=1,
-                    executable="/bin/bash",
+                    executable='/bin/bash'
                 )
                 for line in proc.stdout:
                     self.output_queue.put(line)
                 proc.wait()
-                self.output_queue.put(f"\n✅ {self.t('done')}\n")
-            except Exception as exc:  # pylint: disable=broad-except
-                self.output_queue.put(f"\n❌ {self.t('error')}: {exc}\n")
+                self.output_queue.put(f"\n✓ {self.t('done')}\n")
+            except Exception as e:
+                self.output_queue.put(f"\n✗ {self.t('error')}: {e}\n")
             finally:
                 self.running = False
                 self.set_status(False)
-
-        threading.Thread(target=worker, daemon=True).start()
-
+        
+        threading.Thread(target=run_thread, daemon=True).start()
+    
     def generate_plots(self):
-        if self.running:
-            messagebox.showwarning("Busy", self.t("busy_msg"))
-            return
-        self.running = True
         self.set_status(True, self.t("generate_plots"))
-
-        def worker():
-            subprocess.run("source .venv/bin/activate && python scripts/plot_results.py", shell=True, executable="/bin/bash")
-            self.output_queue.put(f"✅ {self.t('generate_plots')} {self.t('done')}\n")
+        def run():
+            subprocess.run(
+                "source .venv/bin/activate && python scripts/plot_results.py",
+                shell=True,
+                executable='/bin/bash'
+            )
+            self.output_queue.put(f"✓ {self.t('generate_plots')} {self.t('done')}\n")
             self.running = False
             self.set_status(False)
-
-        threading.Thread(target=worker, daemon=True).start()
-
-    def export_tables(self):
-        if self.running:
-            messagebox.showwarning("Busy", self.t("busy_msg"))
-            return
         self.running = True
+        threading.Thread(target=run, daemon=True).start()
+    
+    def export_tables(self):
         self.set_status(True, self.t("export_tables"))
-
-        def worker():
-            subprocess.run("source .venv/bin/activate && python scripts/export_tables.py", shell=True, executable="/bin/bash")
-            self.output_queue.put(f"✅ {self.t('export_tables')} {self.t('done')}\n")
+        def run():
+            subprocess.run(
+                "source .venv/bin/activate && python scripts/export_tables.py",
+                shell=True,
+                executable='/bin/bash'
+            )
+            self.output_queue.put(f"✓ {self.t('export_tables')} {self.t('done')}\n")
             self.running = False
             self.set_status(False)
-
-        threading.Thread(target=worker, daemon=True).start()
-
+        self.running = True
+        threading.Thread(target=run, daemon=True).start()
+    
     def clear_output(self):
         self.output_text.delete(1.0, tk.END)
-
+    
     def set_status(self, is_running, text=None):
         if text:
             self.status_label.config(text=f"● {text}")
         else:
             self.status_label.config(text=f"● {self.t('status_ready')}")
-        self.status_label.config(fg=COLORS["warning"] if is_running else COLORS["success"])
-
+        
+        if is_running:
+            self.status_label.config(fg=COLORS["warning"])
+        else:
+            self.status_label.config(fg=COLORS["success"])
+    
     def check_output(self):
         try:
             while True:
@@ -609,14 +732,12 @@ class SimulationGUI:
                 self.output_text.see(tk.END)
         except queue.Empty:
             pass
-        self.root.after(120, self.check_output)
-
+        self.root.after(100, self.check_output)
 
 def main():
     root = tk.Tk()
-    SimulationGUI(root)
+    app = SimulationGUI(root)
     root.mainloop()
-
 
 if __name__ == "__main__":
     main()

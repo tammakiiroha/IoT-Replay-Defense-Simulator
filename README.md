@@ -62,6 +62,12 @@ Or:
 python gui.py
 ```
 
+**GUI Preview:**
+
+![GUI Screenshot](docs/gui_screenshot_EN.png)
+
+*Figure: Main interface with parameter controls and real-time output*
+
 Features:
 - 🖱️ **100% mouse operation** - Click buttons, drag sliders
 - 🎯 Quick scenario buttons (one-click run)

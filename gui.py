@@ -37,8 +37,7 @@ TRANSLATIONS = {
         "attack_mode": "Attack Mode",
         "post_run": "Post-run (replay after legitimate traffic)",
         "inline": "Inline (replay during legitimate traffic)",
-        "seed": "Random Seed (0 = random each time)",
-        "seed_hint": "Set to 0 for different results each run, or use a fixed number (e.g., 42) to get the same results every time",
+        "seed": "Random Seed",
         "attacker_loss": "Attacker Recording Loss Rate",
         "advanced": "Advanced Parameters",
         "start_sim": "▶  Run Simulation",
@@ -93,8 +92,7 @@ TRANSLATIONS = {
         "attack_mode": "攻击模式",
         "post_run": "事后攻击（正规流量后重放）",
         "inline": "内联攻击（正规流量中重放）",
-        "seed": "随机种子 (0 = 每次不同)",
-        "seed_hint": "设为0则每次结果不同，设为固定数字(如42)则每次结果相同",
+        "seed": "随机种子",
         "attacker_loss": "攻击者记录丢失率",
         "advanced": "高级参数",
         "start_sim": "▶  运行仿真",
@@ -149,8 +147,7 @@ TRANSLATIONS = {
         "attack_mode": "攻撃モード",
         "post_run": "事後攻撃（正規トラフィック後）",
         "inline": "インライン攻撃（正規トラフィック中）",
-        "seed": "ランダムシード (0 = 毎回異なる)",
-        "seed_hint": "0に設定すると毎回異なる結果、固定値(例:42)で毎回同じ結果",
+        "seed": "ランダムシード",
         "attacker_loss": "攻撃者記録損失率",
         "advanced": "詳細設定",
         "start_sim": "▶  シミュレーション実行",
@@ -721,9 +718,9 @@ class SimulationGUI:
         # 为随机种子添加说明文本
         elif label_key == "seed":
             hint_text = {
-                "en": "0 = Random (different each time) | Fixed number = Same results",
-                "zh": "0 = 随机（每次不同） | 固定数字 = 结果可重现",
-                "ja": "0 = ランダム（毎回異なる） | 固定値 = 結果が再現可能"
+                "en": "0=Random | Non-zero=Reproducible (e.g., 42 always gives same result)",
+                "zh": "0=随机 | 非0=可重现（如42每次结果相同）",
+                "ja": "0=ランダム | 非0=再現可能（例:42は毎回同じ結果）"
             }
             tk.Label(
                 frame,

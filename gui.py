@@ -68,6 +68,8 @@ TRANSLATIONS = {
         "confirm_stop": "Are you sure you want to stop the running experiment?",
         "no_results": "No results directory found. Please run experiments first.",
         "saved": "Output saved to",
+        "metrics_help": "Result Metrics Explanation",
+        "metrics_explanation": "• Avg Legit: Average legitimate acceptance rate (usability)\n• Std Legit: Standard deviation of legitimate acceptance\n• Avg Attack: Average attack success rate (security risk)\n• Std Attack: Standard deviation of attack success",
     },
     "zh": {
         "title": "重放攻击防御评估",
@@ -123,6 +125,8 @@ TRANSLATIONS = {
         "confirm_stop": "确定要停止正在运行的实验吗？",
         "no_results": "未找到结果目录。请先运行实验。",
         "saved": "输出已保存到",
+        "metrics_help": "结果指标说明",
+        "metrics_explanation": "• Avg Legit: 正规流量平均接受率（可用性指标）\n• Std Legit: 正规流量接受率标准差（稳定性）\n• Avg Attack: 攻击平均成功率（安全风险）\n• Std Attack: 攻击成功率标准差（攻击稳定性）",
     },
     "ja": {
         "title": "リプレイ攻撃防御評価",
@@ -178,6 +182,8 @@ TRANSLATIONS = {
         "confirm_stop": "実行中の実験を停止してもよろしいですか？",
         "no_results": "結果ディレクトリが見つかりません。まず実験を実行してください。",
         "saved": "出力を保存しました：",
+        "metrics_help": "結果指標の説明",
+        "metrics_explanation": "• Avg Legit: 正規トラフィック平均受理率（ユーザビリティ）\n• Std Legit: 正規トラフィック受理率の標準偏差（安定性）\n• Avg Attack: 攻撃平均成功率（セキュリティリスク）\n• Std Attack: 攻撃成功率の標準偏差（攻撃の安定性）",
     }
 }
 
@@ -736,6 +742,37 @@ class SimulationGUI:
         """输出面板"""
         card = SectionCard(parent, title=self.t("live_output"))
         card.pack(fill=tk.BOTH, expand=True)
+        
+        # 指标说明面板（可折叠）
+        metrics_info = tk.Frame(card.content, bg=COLORS["bg_section"], bd=1, relief=tk.SOLID)
+        metrics_info.pack(fill=tk.X, padx=10, pady=(0, 10))
+        
+        # 说明标题
+        info_header = tk.Frame(metrics_info, bg=COLORS["bg_section"], pady=8)
+        info_header.pack(fill=tk.X)
+        
+        tk.Label(
+            info_header,
+            text="📊 " + self.t("metrics_help"),
+            font=FONTS["h3"],
+            fg=COLORS["text_primary"],
+            bg=COLORS["bg_section"]
+        ).pack(side=tk.LEFT, padx=10)
+        
+        # 说明内容
+        info_content = tk.Frame(metrics_info, bg=COLORS["bg_section"], padx=15, pady=8)
+        info_content.pack(fill=tk.X)
+        
+        metrics_text = self.t("metrics_explanation")
+        tk.Label(
+            info_content,
+            text=metrics_text,
+            font=FONTS["small"],
+            fg=COLORS["text_secondary"],
+            bg=COLORS["bg_section"],
+            justify=tk.LEFT,
+            anchor="w"
+        ).pack(fill=tk.X)
         
         # 终端输出
         terminal_frame = tk.Frame(card.content, bg=COLORS["terminal_bg"], bd=0)

@@ -658,11 +658,11 @@ class SimulationGUI:
         
         value_label = tk.Label(
             header,
-            font=FONTS["h3"],
-            fg=COLORS["accent"],
+            font=FONTS["h2"],  # 增大字体从h3到h2
+            fg=COLORS["primary"],  # 改为深蓝色，更清晰
             bg=COLORS["bg_card"]
         )
-        value_label.pack(side=tk.RIGHT)
+        value_label.pack(side=tk.RIGHT, padx=10)  # 增加左边距
         
         def update(*args):
             val = variable.get()

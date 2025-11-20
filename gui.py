@@ -29,12 +29,17 @@ TRANSLATIONS = {
         "window": "Sliding Window",
         "challenge": "Challenge-Response",
         "runs": "Monte Carlo Runs",
+        "num_legit": "Legitimate Transmissions (per run)",
+        "num_replay": "Replay Attempts (per run)",
         "p_loss": "Packet Loss Rate (p_loss)",
         "p_reorder": "Reordering Rate (p_reorder)",
         "window_size": "Window Size (for Sliding Window)",
         "attack_mode": "Attack Mode",
         "post_run": "Post-run (replay after legitimate traffic)",
         "inline": "Inline (replay during legitimate traffic)",
+        "seed": "Random Seed (for reproducibility)",
+        "attacker_loss": "Attacker Recording Loss Rate",
+        "advanced": "Advanced Parameters",
         "start_sim": "▶  Run Simulation",
         "live_output": "Console Output",
         "status_ready": "Ready",
@@ -79,12 +84,17 @@ TRANSLATIONS = {
         "window": "滑动窗口",
         "challenge": "挑战-响应",
         "runs": "蒙特卡洛运行次数",
+        "num_legit": "正规传输次数（每次运行）",
+        "num_replay": "重放攻击次数（每次运行）",
         "p_loss": "丢包率 (p_loss)",
         "p_reorder": "乱序率 (p_reorder)",
         "window_size": "窗口大小（滑动窗口）",
         "attack_mode": "攻击模式",
         "post_run": "事后攻击（正规流量后重放）",
         "inline": "内联攻击（正规流量中重放）",
+        "seed": "随机种子（可重现性）",
+        "attacker_loss": "攻击者记录丢失率",
+        "advanced": "高级参数",
         "start_sim": "▶  运行仿真",
         "live_output": "控制台输出",
         "status_ready": "就绪",
@@ -129,12 +139,17 @@ TRANSLATIONS = {
         "window": "スライディングウィンドウ",
         "challenge": "チャレンジレスポンス",
         "runs": "モンテカルロ実行回数",
+        "num_legit": "正規送信回数（実行ごと）",
+        "num_replay": "リプレイ攻撃回数（実行ごと）",
         "p_loss": "パケット損失率 (p_loss)",
         "p_reorder": "並び替え率 (p_reorder)",
         "window_size": "ウィンドウサイズ（スライディング）",
         "attack_mode": "攻撃モード",
         "post_run": "事後攻撃（正規トラフィック後）",
         "inline": "インライン攻撃（正規トラフィック中）",
+        "seed": "ランダムシード（再現性）",
+        "attacker_loss": "攻撃者記録損失率",
+        "advanced": "詳細設定",
         "start_sim": "▶  シミュレーション実行",
         "live_output": "コンソール出力",
         "status_ready": "準備完了",
@@ -585,15 +600,34 @@ class SimulationGUI:
             bg=COLORS["bg_card"]
         ).pack(anchor="w", pady=(0, 10))
         
-        self.runs_var = tk.IntVar(value=50)
+        self.runs_var = tk.IntVar(value=100)
+        self.num_legit_var = tk.IntVar(value=20)
+        self.num_replay_var = tk.IntVar(value=100)
         self.ploss_var = tk.DoubleVar(value=0.0)
         self.preorder_var = tk.DoubleVar(value=0.0)
         self.window_size_var = tk.IntVar(value=5)
+        self.seed_var = tk.IntVar(value=0)
+        self.attacker_loss_var = tk.DoubleVar(value=0.0)
         
-        self.create_slider(scrollable_frame, "runs", self.runs_var, 10, 200, False)
+        self.create_slider(scrollable_frame, "runs", self.runs_var, 10, 500, False)
+        self.create_slider(scrollable_frame, "num_legit", self.num_legit_var, 5, 100, False)
+        self.create_slider(scrollable_frame, "num_replay", self.num_replay_var, 10, 500, False)
         self.create_slider(scrollable_frame, "p_loss", self.ploss_var, 0.0, 0.5, True)
         self.create_slider(scrollable_frame, "p_reorder", self.preorder_var, 0.0, 0.5, True)
         self.create_slider(scrollable_frame, "window_size", self.window_size_var, 1, 20, False)
+        
+        # 高级参数分割线
+        tk.Frame(scrollable_frame, bg=COLORS["divider"], height=1).pack(fill=tk.X, pady=18)
+        tk.Label(
+            scrollable_frame,
+            text=self.t("advanced"),
+            font=FONTS["h3"],
+            fg=COLORS["text_secondary"],
+            bg=COLORS["bg_card"]
+        ).pack(anchor="w", pady=(0, 10))
+        
+        self.create_slider(scrollable_frame, "seed", self.seed_var, 0, 9999, False)
+        self.create_slider(scrollable_frame, "attacker_loss", self.attacker_loss_var, 0.0, 0.5, True)
         
         # 运行按钮
         tk.Frame(scrollable_frame, bg=COLORS["bg_card"], height=15).pack()
@@ -767,7 +801,25 @@ class SimulationGUI:
             "challenge": "challenge"
         }
         modes = defense_map[self.defense_var.get()]
-        cmd = f"--modes {modes} --runs {self.runs_var.get()} --num-legit 20 --num-replay 100 --p-loss {self.ploss_var.get()} --p-reorder {self.preorder_var.get()} --window-size {self.window_size_var.get()} --attack-mode {self.attack_mode_var.get()}"
+        
+        # 构建命令
+        cmd_parts = [
+            f"--modes {modes}",
+            f"--runs {self.runs_var.get()}",
+            f"--num-legit {self.num_legit_var.get()}",
+            f"--num-replay {self.num_replay_var.get()}",
+            f"--p-loss {self.ploss_var.get()}",
+            f"--p-reorder {self.preorder_var.get()}",
+            f"--window-size {self.window_size_var.get()}",
+            f"--attack-mode {self.attack_mode_var.get()}",
+            f"--attacker-loss {self.attacker_loss_var.get()}",
+        ]
+        
+        # 只在非0时添加seed参数
+        if self.seed_var.get() != 0:
+            cmd_parts.append(f"--seed {self.seed_var.get()}")
+        
+        cmd = " ".join(cmd_parts)
         self.run_command(cmd, self.t("custom_exp"))
     
     def run_command(self, args, description):

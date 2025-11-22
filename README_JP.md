@@ -3,11 +3,13 @@
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.md)
 [![日本語](https://img.shields.io/badge/lang-日本語-red.svg)](README_JP.md)
 [![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)
-[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
 
 [English](README.md) | **日本語** | [中文](README_CH.md)
+
+**著者**: Romeitou (tammakiiroha)
 
 ---
 
@@ -35,7 +37,7 @@
 
 ## 動作環境
 
-- Python 3.11+ (CLI は標準ライブラリのみ、可視化には `matplotlib` を使用)
+- Python 3.9+ (CLI は標準ライブラリのみ、可視化には `matplotlib` を使用)
 - macOS 14.x (Apple Silicon) および Ubuntu 22.04 でテスト済み
 - 仮想環境の使用（推奨）:
   ```bash
@@ -82,7 +84,7 @@ python scripts/benchmark.py
 - **ロールモデル**: 送信者、損失/順序入れ替えチャネル、永続状態を持つ受信者、および観測フレームを記録・再生する攻撃者
 - **評価指標**: 各試行の正規受理率と攻撃成功率、モンテカルロ試行における平均値と標準偏差
 - **コマンドソース**: デフォルトのトイセットまたは実機コントローラから取得したトレースファイル
-- **攻撃スケジューリング**: ポストラン一括再生またはインライン挿入
+- **攻撃スケジューリング**: ポストラン一括再生またはリアルタイム混入（inline）挿入
 - **出力形式**: 標準出力への人間可読テーブル、下流解析用 JSON、パラメータスイープ自動化ヘルパー
 
 ## クイックスタート
@@ -137,9 +139,9 @@ python3 main.py --runs 200 --num-legit 20 --num-replay 100 --p-loss 0.05 --windo
 | `--shared-key` | 送信者/受信者が MAC 導出に使用する共有秘密鍵 |
 | `--attacker-loss` | 攻撃者が正規フレームの記録に失敗する確率 |
 | `--seed` | 再現性のためのグローバル RNG シード |
-| `--attack-mode` | 再生スケジューリング戦略: `post` または `inline` |
-| `--inline-attack-prob` | 正規フレームごとのインライン再生確率 |
-| `--inline-attack-burst` | 正規フレームごとの最大インライン再生試行回数 |
+| `--attack-mode` | 再生スケジューリング戦略: `post` または `inline`（リアルタイム混入） |
+| `--inline-attack-prob` | 正規フレームごとのリアルタイム混入（inline）再生確率 |
+| `--inline-attack-burst` | 正規フレームごとの最大リアルタイム混入（inline）再生試行回数 |
 | `--challenge-nonce-bits` | チャレンジレスポンスモードで使用されるノンス長（ビット） |
 | `--output-json` | 集計メトリクスを JSON 形式で保存するパス |
 
@@ -170,7 +172,7 @@ pip install -r requirements.txt
 ### ステップ 2: パラメータスイープの実行
 ```bash
 python3 scripts/run_sweeps.py \
-  --runs 300 \
+  --runs 200 \
   --modes no_def rolling window challenge \
   --p-loss-values 0 0.01 0.05 0.1 0.2 \
   --p-reorder-values 0 0.1 0.3 0.5 0.7 \
@@ -202,7 +204,7 @@ python -m pytest tests/ -v
 ## 実験の拡張
 
 - `scripts/run_sweeps.py` でシナリオを自動化、または `run_many_experiments` でカスタムスイープを作成
-- インライン攻撃確率/バーストを調整、または他の戦略のために `AttackMode` を拡張
+- リアルタイム混入（inline）攻撃の確率/バーストを調整、または他の戦略のために `AttackMode` を拡張
 - トレードオフを議論する際の高セキュリティ参照として `Mode.CHALLENGE` を使用
 
 ## プロジェクト構成
@@ -234,7 +236,7 @@ python -m pytest tests/ -v
 
 1. 実験パラメータを文書化（`num_legit`, `num_replay`, `p_loss`, `p_reorder`, `window_size`, MAC 長）
 2. テーブル出力または JSON 集計を論文のテーブルにコピー
-3. トレードオフを強調: パケット損失と順序入れ替え率にわたる `window` 構成を比較、インライン対ポストラン攻撃モデルを対比、上限参照として `challenge` を使用
+3. トレードオフを強調: パケット損失と順序入れ替え率にわたる `window` 構成を比較、リアルタイム混入（inline）対ポストラン攻撃モデルを対比、上限参照として `challenge` を使用
 
 ## 攻撃者モデルとランダム性に関する注意事項
 
@@ -249,7 +251,7 @@ flowchart TD
     B[シナリオの設定<br/>SimulationConfig パラメータ]
     C{モードループ<br/>no_def / rolling / window / challenge}
     D[正規トラフィックのシミュレート<br/>カウンタ、MAC、またはノンス]
-    E[攻撃者のスケジューリング<br/>インラインまたはポスト、共有 RNG シード]
+    E[攻撃者のスケジューリング<br/>リアルタイム混入（inline）またはポスト、共有 RNG シード]
     F[実行ごとの統計集計<br/>正規受理率と攻撃成功率]
     G[(results/*.json)]
     H[plot_results.py<br/>PNG/PDF 図の生成]
@@ -404,6 +406,8 @@ _厳しいチャネル条件下でのユーザビリティとセキュリティ�
 | 5        | 95.08%         | 0.30%          |
 | 10       | 95.22%         | 0.48%          |
 
+*注: 本表は追加スキャン条件（p_loss=0.05, p_reorder=0.3, post攻撃）による結果です。本文の実験3では、より厳しい条件 p_loss=0.15, p_reorder=0.15, リアルタイム混入（inline）攻撃を使用しています。詳細は PRESENTATION_JP.md を参照してください。*
+
 ### 理想的なチャネルベースライン（ポスト攻撃、runs = 500、p_loss = 0）
 
 _`results/ideal_p0.json` からの参照ベースライン_
@@ -432,7 +436,7 @@ _`results/ideal_p0.json` からの参照ベースライン_
 
 ```bibtex
 @software{replay_simulation_2025,
-  author = {Romeitou},
+  author = {Romeitou (tammakiiroha)},
   title = {Replay Attack Simulation Toolkit},
   year = {2025},
   publisher = {GitHub},
@@ -441,7 +445,7 @@ _`results/ideal_p0.json` からの参照ベースライン_
 ```
 
 またはプレーンテキスト形式:
-> Romeitou. (2025). Replay Attack Simulation Toolkit. GitHub. https://github.com/tammakiiroha/Replay-simulation
+> Romeitou (tammakiiroha). (2025). Replay Attack Simulation Toolkit. GitHub. https://github.com/tammakiiroha/Replay-simulation
 
 ## 参考文献
 

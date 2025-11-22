@@ -3,11 +3,13 @@
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.md)
 [![日本語](https://img.shields.io/badge/lang-日本語-red.svg)](README_JP.md)
 [![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)
-[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
 
 [English](README.md) | [日本語](README_JP.md) | **中文**
+
+**作者**: Romeitou (tammakiiroha)
 
 ---
 
@@ -35,7 +37,7 @@
 
 ## 运行环境
 
-- Python 3.11+（CLI 仅需标准库；可视化依赖 `matplotlib`）
+- Python 3.9+（CLI 仅需标准库；可视化依赖 `matplotlib`）
 - 已在 macOS 14.x (Apple Silicon) 和 Ubuntu 22.04 上测试
 - 推荐使用虚拟环境：
   ```bash
@@ -82,7 +84,7 @@ python scripts/benchmark.py
 - **角色模型**：发送方、有损/乱序信道、具有持久状态的接收方、以及记录并重放观察帧的攻击者
 - **评估指标**：每次运行的合法接受率和攻击成功率，以及蒙特卡洛试验中的平均值和标准差
 - **命令源**：默认玩具集或从真实控制器捕获的轨迹文件
-- **攻击调度**：后运行批量重放或内联注入
+- **攻击调度**：后运行批量重放或实时混入攻击（inline）
 - **输出格式**：标准输出的人类可读表格、用于下游分析的 JSON、参数扫描自动化助手
 
 ## 快速开始
@@ -138,8 +140,8 @@ python3 main.py --runs 200 --num-legit 20 --num-replay 100 --p-loss 0.05 --windo
 | `--attacker-loss` | 攻击者无法记录合法帧的概率 |
 | `--seed` | 用于可重现性的全局随机数生成器种子 |
 | `--attack-mode` | 重放调度策略：`post` 或 `inline` |
-| `--inline-attack-prob` | 每个合法帧的内联重放概率 |
-| `--inline-attack-burst` | 每个合法帧的最大内联重放尝试次数 |
+| `--inline-attack-prob` | 每个合法帧的实时混入重放概率 |
+| `--inline-attack-burst` | 每个合法帧的最大实时混入重放尝试次数 |
 | `--challenge-nonce-bits` | 挑战-响应模式使用的随机数长度（比特） |
 | `--output-json` | 保存聚合指标为 JSON 格式的路径 |
 
@@ -170,7 +172,7 @@ pip install -r requirements.txt
 ### 步骤 2：运行参数扫描
 ```bash
 python3 scripts/run_sweeps.py \
-  --runs 300 \
+  --runs 200 \
   --modes no_def rolling window challenge \
   --p-loss-values 0 0.01 0.05 0.1 0.2 \
   --p-reorder-values 0 0.1 0.3 0.5 0.7 \
@@ -202,7 +204,7 @@ python -m pytest tests/ -v
 ## 扩展实验
 
 - 通过 `scripts/run_sweeps.py` 自动化场景，或使用 `run_many_experiments` 创建自定义扫描
-- 调整内联攻击概率/突发次数，或为其他策略扩展 `AttackMode`
+- 调整实时混入攻击概率/突发次数，或为其他策略扩展 `AttackMode`
 - 在讨论权衡时，使用 `Mode.CHALLENGE` 作为高安全性参考
 
 ## 项目结构
@@ -234,7 +236,7 @@ python -m pytest tests/ -v
 
 1. 记录实验参数（`num_legit`、`num_replay`、`p_loss`、`p_reorder`、`window_size`、MAC 长度）
 2. 将表格输出或 JSON 聚合复制到论文表格中
-3. 突出权衡：跨数据包丢失和乱序率比较 `window` 配置，对比内联与后运行攻击模型，并使用 `challenge` 作为上限参考
+3. 突出权衡：跨数据包丢失和乱序率比较 `window` 配置，对比实时混入与后运行攻击模型，并使用 `challenge` 作为上限参考
 
 ## 关于攻击者模型和随机性的说明
 
@@ -249,7 +251,7 @@ flowchart TD
     B[配置场景<br/>SimulationConfig 参数]
     C{模式循环<br/>no_def / rolling / window / challenge}
     D[模拟合法流量<br/>计数器、MAC 或随机数]
-    E[调度攻击者<br/>内联或后运行，共享随机种子]
+    E[调度攻击者<br/>实时混入或后运行，共享随机种子]
     F[聚合每次运行统计<br/>合法接受率和攻击成功率]
     G[(results/*.json)]
     H[plot_results.py<br/>生成 PNG/PDF 图表]
@@ -427,6 +429,8 @@ _在恶劣信道条件下比较可用性与安全性的权衡。_
 | 5        | 95.08%         | 0.30%          |
 | 10       | 95.22%         | 0.48%          |
 
+*注：本表来自附加扫描条件（p_loss=0.05, p_reorder=0.3, post攻击）。主文实验3的严格条件为p_loss=0.15, p_reorder=0.15, 实时混入攻击，详见PRESENTATION_CH.md。*
+
 ### 理想信道基线（后运行攻击，runs = 500，p_loss = 0）
 
 _来自 `results/ideal_p0.json` 的参考基线_
@@ -455,7 +459,7 @@ _来自 `results/ideal_p0.json` 的参考基线_
 
 ```bibtex
 @software{replay_simulation_2025,
-  author = {Romeitou},
+  author = {Romeitou (tammakiiroha)},
   title = {Replay Attack Simulation Toolkit},
   year = {2025},
   publisher = {GitHub},
@@ -464,7 +468,7 @@ _来自 `results/ideal_p0.json` 的参考基线_
 ```
 
 或纯文本格式：
-> Romeitou. (2025). Replay Attack Simulation Toolkit. GitHub. https://github.com/tammakiiroha/Replay-simulation
+> Romeitou (tammakiiroha). (2025). Replay Attack Simulation Toolkit. GitHub. https://github.com/tammakiiroha/Replay-simulation
 
 ## 参考文献
 

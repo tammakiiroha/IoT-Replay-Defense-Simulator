@@ -3,13 +3,13 @@
 **Version**: 1.0  
 **Last Updated**: 2024  
 **Related Code**: [`scripts/experiment_config.py`](scripts/experiment_config.py)  
-**Technical Details**: [`PRESENTATION_EN.md` Lines 710-829](PRESENTATION_EN.md#L710-L829)
+**Technical Details**: See [`PRESENTATION_EN.md`](PRESENTATION_EN.md#6-technical-implementation-details)
 
 ---
 
 ## Overview
 
-This document provides a comprehensive specification of all experimental parameters used in this study. The parameter choices are designed to systematically evaluate defense mechanisms across a range of network conditions, from ideal to challenging scenarios.
+This document provides a comprehensive specification of all experimental parameters used in this study. The parameter choices are designed to systematically evaluate defense mechanisms across a range of network conditions, from ideal to challenging scenarios. All scripts and tooling are validated on **Python 3.9+** in macOS 14.x and Ubuntu 22.04 environments.
 
 ---
 
@@ -23,7 +23,7 @@ This document provides a comprehensive specification of all experimental paramet
 | `num_legit` | 20 | Legitimate packets per run (typical IoT communication cycle) |
 | `num_replay` | 100 | Replay attack attempts per run (5:1 attack ratio) |
 | `seed` | 42 | Fixed random seed for reproducibility |
-| `attack_mode` | `post` | Post-run attack scheduling (Experiments 1-2) |
+| `attack_mode` | `post` | Post-run attack scheduling (Experiments 1-2); Experiment 3 uses `inline` (real-time injection) for stricter evaluation |
 | `attacker_loss` | 0.0 | Ideal attacker assumption (no recording loss) |
 
 ### Variable Parameters (Experiment-Specific)
@@ -59,7 +59,7 @@ seed = 42
 | 0.10 (10%) | Typical | Common IoT deployment scenario |
 | 0.15 (15%) | Degraded | Moderate interference present |
 | 0.20 (20%) | Poor | Industrial environment with obstacles |
-| 0.25 (25%) | Severe | Heavy electromagnetic interference |
+| 0.25 (25%) | Severe | Heavy electromagnetic interference / congestion |
 | 0.30 (30%) | Stress test | Upper bound for practical evaluation |
 
 **Rationale for 0-30% Range**:
@@ -173,10 +173,12 @@ Moderate network stress (15% loss and reordering) creates realistic challenging 
 | 15 | Low | Very High | Window too large, replay window increases |
 | 20 | Very Low | Highest | Approaches no-defense scenario |
 
-**Expected Results**:
-- Avg Legit: Increases with window size (W=1: ~80%, W=5: ~95%, W=20: ~98%)
-- Avg Attack: Increases with window size (W=1: ~2%, W=5: ~5%, W=20: ~15%)
-- Optimal Balance: W = 5-7 (Usability >95%, Attack Rate <10%)
+**Expected Results (Qualitative)**:
+- Usability improves as the window grows (small windows reject delayed packets)
+- Attack success also increases with larger windows (more replay opportunities)
+- There exists an optimal window range balancing both (empirically W=3-7)
+
+*Note: These qualitative expectations guided the design stage. Actual measured results for p_loss=15%, p_reorder=15%, inline (real-time) attacks appear in PRESENTATION_EN.md Section 8.4.*
 
 **Reproduction**:
 ```bash
@@ -227,7 +229,7 @@ python scripts/run_sweeps.py \
 - BLE: Gomez et al. (2012) - 2.4GHz interference effects
 - Industrial WSN: Sha et al. (2017) - factory reliability studies
 
-Detailed discussion: [`PRESENTATION_EN.md` Lines 710-829](PRESENTATION_EN.md#L710-L829)
+Detailed discussion: see [`PRESENTATION_EN.md`](PRESENTATION_EN.md#6-technical-implementation-details)
 
 ---
 

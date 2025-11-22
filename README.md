@@ -3,11 +3,13 @@
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.md)
 [![日本語](https://img.shields.io/badge/lang-日本語-red.svg)](README_JP.md)
 [![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)
-[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
 
 **English** | [日本語](README_JP.md) | [中文](README_CH.md)
+
+**Author**: Romeitou (tammakiiroha)
 
 ---
 
@@ -34,7 +36,7 @@
 This toolkit reproduces the replay-attack evaluation plan described in the project brief. It models multiple receiver configurations under a record-and-replay adversary and reports both security (attack success) and usability (legitimate acceptance) metrics.
 
 ## Requirements
-- Python 3.11+ (stdlib only for the CLI; optional helpers rely on `matplotlib`)
+- Python 3.9+ (stdlib only for the CLI; optional helpers rely on `matplotlib`)
 - Tested on macOS 14.x (Apple Silicon) and Ubuntu 22.04
 - Optional virtualenv:
   ```bash
@@ -80,7 +82,7 @@ python scripts/benchmark.py
 - **Role models**: sender, lossy/reordering channel, receiver with persistent state, and an attacker that records and replays observed frames.
 - **Metrics**: per-run legitimate acceptance rate and attack success rate, plus aggregated averages and standard deviations across Monte Carlo runs.
 - **Command sources**: random commands from a default toy set or a trace file captured from a real controller.
-- **Attacker scheduling**: choose between post-run burst replay or inline injection during legitimate traffic.
+- **Attacker scheduling**: choose between post-run burst replay or inline (real-time) injection during legitimate traffic.
 - **Outputs**: human-readable tables on stdout, JSON dumps for downstream analysis, and automation helpers for parameter sweeps.
 
 ## Quick start
@@ -134,9 +136,9 @@ python3 main.py --runs 200 --num-legit 20 --num-replay 100 --p-loss 0.05 --windo
 | `--shared-key` | Shared secret used by sender/receiver to derive MACs. |
 | `--attacker-loss` | Probability that the attacker fails to record a legitimate frame. |
 | `--seed` | Global RNG seed for reproducibility. |
-| `--attack-mode` | Replay scheduling strategy: `post` or `inline`. |
-| `--inline-attack-prob` | Inline replay probability per legitimate frame. |
-| `--inline-attack-burst` | Maximum inline replay attempts per legitimate frame. |
+| `--attack-mode` | Replay scheduling strategy: `post` or `inline` (real-time). |
+| `--inline-attack-prob` | Inline (real-time) replay probability per legitimate frame. |
+| `--inline-attack-burst` | Maximum inline (real-time) replay attempts per legitimate frame. |
 | `--challenge-nonce-bits` | Nonce length (bits) used by the challenge-response mode. |
 | `--output-json` | Path to save aggregate metrics in JSON form. |
 
@@ -166,7 +168,7 @@ pip install -r requirements.txt
 ### Step 2: Run parameter sweeps
 ```bash
 python3 scripts/run_sweeps.py \
-  --runs 300 \
+  --runs 200 \
   --modes no_def rolling window challenge \
   --p-loss-values 0 0.01 0.05 0.1 0.2 \
   --p-reorder-values 0 0.1 0.3 0.5 0.7 \
@@ -197,7 +199,7 @@ python -m pytest tests/ -v
 
 ## Extending experiments
 - Automate scenarios via `scripts/run_sweeps.py` or craft custom sweeps with `run_many_experiments`.
-- Adjust inline attack probabilities/bursts or extend `AttackMode` for other strategies.
+- Adjust inline (real-time) attack probabilities/bursts or extend `AttackMode` for other strategies.
 - Use `Mode.CHALLENGE` as a high-security reference when discussing trade-offs.
 
 ## Project structure
@@ -226,7 +228,7 @@ python -m pytest tests/ -v
 ## Using the results in the thesis
 1. Document the experimental parameters (`num_legit`, `num_replay`, `p_loss`, `p_reorder`, `window_size`, MAC length).
 2. Copy the table outputs or the JSON aggregates into your thesis tables.
-3. Highlight trade-offs: compare `window` configurations across packet-loss and reordering rates, contrast inline vs post-run attack models, and use `challenge` as an upper-bound reference.
+3. Highlight trade-offs: compare `window` configurations across packet-loss and reordering rates, contrast inline (real-time) vs post-run attack models, and use `challenge` as an upper-bound reference.
 
 ## Notes on attacker model and randomness
 - By default the attacker is modeled with a perfect recorder (`attacker_record_loss=0`); set it equal to `p_loss` if you want the attacker to experience the same losses as the legitimate link.
@@ -239,7 +241,7 @@ flowchart TD
     B[Configure scenario<br/>SimulationConfig parameters]
     C{Mode loop<br/>no_def / rolling / window / challenge}
     D[Simulate legitimate traffic<br/>Counters, MACs, or nonce]
-    E[Schedule attacker<br/>Inline or post, shared RNG seed]
+    E[Schedule attacker<br/>Inline (real-time) or post, shared RNG seed]
     F[Aggregate per-run stats<br/>Legitimate & attack rates]
     G[(results/*.json)]
     H[plot_results.py<br/>Generate PNG/PDF figures]
@@ -413,6 +415,8 @@ Related data files:
 | 5        | 95.08%         | 0.30%              |
 | 10       | 95.22%         | 0.49%              |
 
+*Note: This table comes from an additional sweep (p_loss=0.05, p_reorder=0.3, post attack). The main text’s Experiment 3 uses the stricter condition p_loss=0.15, p_reorder=0.15 with inline (real-time) attacks—see PRESENTATION_EN.md for details.*
+
 ### Ideal channel baseline (post attack, runs = 500, p_loss = 0)
 *Reference baseline from `results/ideal_p0.json`*
 
@@ -439,7 +443,7 @@ If you use this simulation toolkit in your research or thesis, please cite:
 
 ```bibtex
 @software{replay_simulation_2025,
-  author = {Romeitou},
+  author = {Romeitou (tammakiiroha)},
   title = {Replay Attack Simulation Toolkit},
   year = {2025},
   publisher = {GitHub},
@@ -448,7 +452,7 @@ If you use this simulation toolkit in your research or thesis, please cite:
 ```
 
 Or in plain text:
-> Romeitou. (2025). Replay Attack Simulation Toolkit. GitHub. https://github.com/tammakiiroha/Replay-simulation
+> Romeitou (tammakiiroha). (2025). Replay Attack Simulation Toolkit. GitHub. https://github.com/tammakiiroha/Replay-simulation
 
 ## References
 

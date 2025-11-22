@@ -63,7 +63,13 @@ git shortlog -sn --all
 
 ### 声明
 
-本プロジェクトの全体的な設計、実験計画、および主要な実装は著者によって行われました。Git コミット履歴は開発プロセスの一つの証拠として参照できますが、最終的な著作権の証明は、著者がコードの詳細を説明できること、および現場でコードを修正・拡張できることによって示されます。
+本プロジェクトの目的は、2.4GHz 帯無線リモコンシステムを対象として、リプレイ攻撃に対する防御手法を評価するための実験用シミュレーション環境を構築することである。
+
+システム全体の設計（モジュール構成・データフロー）、攻撃・防御モデルおよび実験条件・評価指標の設計、主要なアルゴリズムや実装コードは、著者自身によって行われた。
+
+開発の過程では、ChatGPT などの AI ベースのツールを、主にバグ調査、コードの改善提案、ドキュメントの推敲といった補助的な用途で利用している。AI ツールは一部コード片の修正や書き換えに貢献しているが、システム設計やコアロジックの実装方針は著者が決定している。
+
+Git コミット履歴は開発プロセスの一つの証拠として参照できるが、最終的には、著者が本システムの設計意図と主要な処理の挙動を説明し、必要に応じて実験条件や実装を修正・拡張できることによって、本プロジェクトへの実質的な貢献を示すものとする。
 
 **著者**: Romeitou (tammakiiroha)  
 **日付**: 2025年11月  
@@ -130,7 +136,13 @@ Referenced materials and code are properly cited in comments or documentation wh
 
 ### Declaration
 
-The overall design, experimental planning, and primary implementation of this project were conducted by the author. While Git commit history serves as one form of evidence for the development process, the ultimate proof of authorship lies in the author's ability to explain code details and modify/extend the code on demand.
+The goal of this project is to build an experimental simulation environment for evaluating replay-attack defense mechanisms on low-cost 2.4 GHz wireless remote systems.
+
+The overall system design (module structure and data flow), the attack/defense models, the experimental conditions and evaluation metrics, and the main algorithms and implementation code were created by the author.
+
+During development, AI-based tools such as ChatGPT were used in a supportive manner, mainly for bug investigation, code improvement suggestions, and documentation polishing. These tools helped fix or rewrite some code fragments, but the system architecture and core implementation decisions were made by the author.
+
+The Git commit history can be used as one form of evidence of the development process. Ultimately, the author's substantive contribution is demonstrated by being able to explain the system design and the behavior of the main components, and by being able to adjust or extend the experiments and implementation when necessary.
 
 **Author**: Romeitou (tammakiiroha)  
 **Date**: November 2025

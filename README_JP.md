@@ -251,7 +251,7 @@ flowchart TD
     B[シナリオの設定<br/>SimulationConfig パラメータ]
     C{モードループ<br/>no_def / rolling / window / challenge}
     D[正規トラフィックのシミュレート<br/>カウンタ、MAC、またはノンス]
-    E[攻撃者のスケジューリング<br/>リアルタイム混入（inline）またはポスト、共有 RNG シード]
+    E[攻撃者のスケジューリング<br/>inline またはポスト、共有 RNG シード]
     F[実行ごとの統計集計<br/>正規受理率と攻撃成功率]
     G[(results/*.json)]
     H[plot_results.py<br/>PNG/PDF 図の生成]

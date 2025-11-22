@@ -1,22 +1,22 @@
 # 重放攻击仿真工具包
 
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.md)
-[![日本語](https://img.shields.io/badge/lang-日本語-red.svg)](README.ja.md)
-[![中文](https://img.shields.io/badge/lang-中文-green.svg)](README.zh.md)
+[![日本語](https://img.shields.io/badge/lang-日本語-red.svg)](README_JP.md)
+[![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
 
-[English](README.md) | [日本語](README.ja.md) | **中文**
+[English](README.md) | [日本語](README_JP.md) | **中文**
 
 ---
 
 > 📚 **需要更详细的信息？** 本README提供快速概览。如需深入的技术解释、实现细节和完整的实验分析，请参阅我们的综合演示文档：
 > 
 > **详细技术演示文档**（1000+行）：
-> - 📄 [English Version](PRESENTATION.en.md) - Complete technical documentation
-> - 📄 [日本語版](PRESENTATION.md) - 詳細な技術ドキュメント
-> - 📄 [中文版](PRESENTATION.zh.md) - 完整技术文档
+> - 📄 [English Version](PRESENTATION_EN.md) - Complete technical documentation
+> - 📄 [日本語版](PRESENTATION_JP.md) - 詳細な技術ドキュメント
+> - 📄 [中文版](PRESENTATION_CH.md) - 完整技术文档
 >
 > 这些文档包含：
 > - 带代码示例的详细防御机制实现
@@ -25,9 +25,9 @@
 > - 技术术语表和问答部分
 >
 > **实验参数配置说明**：
-> - 📊 [English](EXPERIMENTAL_PARAMETERS.md) - Complete parameter specifications
-> - 📊 [日本語](EXPERIMENTAL_PARAMETERS.ja.md) - パラメータ設定の詳細
-> - 📊 [中文](EXPERIMENTAL_PARAMETERS.zh.md) - 完整参数配置说明
+> - 📊 [English](EXPERIMENTAL_PARAMETERS_EN.md) - Complete parameter specifications
+> - 📊 [日本語](EXPERIMENTAL_PARAMETERS_JP.md) - パラメータ設定の詳細
+> - 📊 [中文](EXPERIMENTAL_PARAMETERS_CH.md) - 完整参数配置说明
 
 ---
 
@@ -286,7 +286,7 @@ python scripts/plot_results.py --formats png
 | **实验2** | p_reorder: 0-30% | p_loss=10% | 7点×4模式=28条 | `p_reorder_legit.png` |
 | **实验3** | window_size: 1-20 | p_loss=15%, p_reorder=15% | 7个窗口大小 | `window_tradeoff.png` |
 
-完整参数配置详见：[实验参数配置文档](EXPERIMENTAL_PARAMETERS.zh.md)
+完整参数配置详见：[实验参数配置文档](EXPERIMENTAL_PARAMETERS_CH.md)
 
 ### 实验1：丢包率对防御机制的影响
 
@@ -379,7 +379,7 @@ python scripts/plot_results.py --formats png
 - ✅ 所有数据基于**200次蒙特卡洛运行**，达到95%置信度
 - ✅ 使用**固定随机种子(42)**，结果完全可重现
 - ✅ 单次运行平均耗时**26-30ms**，高效验证
-- ✅ 实验参数符合**EXPERIMENTAL_PARAMETERS.md**标准配置
+- ✅ 实验参数符合**EXPERIMENTAL_PARAMETERS_CH.md**标准配置
 - ✅ 完整源代码和测试用例可供审计
 
 相关数据文件：

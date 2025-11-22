@@ -3,7 +3,7 @@
 **版本**: 1.0  
 **最后更新**: 2024  
 **相关代码**: [`scripts/experiment_config.py`](scripts/experiment_config.py)  
-**技术细节**: [`PRESENTATION.zh.md` 第710-829行](PRESENTATION.zh.md#L710-L829)
+**技术细节**: [`PRESENTATION_CH.md` 第710-829行](PRESENTATION_CH.md#L710-L829)
 
 ---
 
@@ -228,7 +228,7 @@ python scripts/run_sweeps.py \
 - BLE：Gomez et al. (2012) - 2.4GHz干扰影响
 - 工业WSN：Sha et al. (2017) - 工厂可靠性研究
 
-详细讨论：[`PRESENTATION.zh.md` 第710-829行](PRESENTATION.zh.md#L710-L829)
+详细讨论：[`PRESENTATION_CH.md` 第710-829行](PRESENTATION_CH.md#L710-L829)
 
 ---
 
@@ -270,7 +270,7 @@ python scripts/experiment_config.py  # 打印参数摘要
 ## 参考文献
 
 详细技术实现和理论背景，请参考：
-- 主要文档：[`PRESENTATION.zh.md`](PRESENTATION.zh.md)
-- 项目README：[`README.zh.md`](README.zh.md)
+- 主要文档：[`PRESENTATION_CH.md`](PRESENTATION_CH.md)
+- 项目README：[`README_CH.md`](README_CH.md)
 - 代码仓库：[GitHub](https://github.com/tammakiiroha/Replay-simulation)
 

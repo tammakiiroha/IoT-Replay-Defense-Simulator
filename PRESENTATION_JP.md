@@ -452,7 +452,7 @@ else:
 
 ### 6.2 チャネルモデル
 
-チャネルパラメータ（パケット損失率、順序入れ替え確率）の設定については、[実験パラメータ設定ガイド](EXPERIMENTAL_PARAMETERS.ja.md)を参照してください。
+チャネルパラメータ（パケット損失率、順序入れ替え確率）の設定については、[実験パラメータ設定ガイド](EXPERIMENTAL_PARAMETERS_JP.md)を参照してください。
 
 ---
 
@@ -867,7 +867,7 @@ for mode in [no_def, rolling, window, challenge]:
 - **固定ランダムシード42**（完全再現可能）
 - **統一ベースライン**：実行ごとに20個の正規送信、100回のリプレイ試行
 
-完全なパラメータ構成：[EXPERIMENTAL_PARAMETERS.ja.md](EXPERIMENTAL_PARAMETERS.ja.md)
+完全なパラメータ構成：[EXPERIMENTAL_PARAMETERS_JP.md](EXPERIMENTAL_PARAMETERS_JP.md)
 
 | 実験 | 可変パラメータ | 固定パラメータ | テストモード | データポイント |
 |------|--------------|--------------|-------------|-------------|
@@ -1087,7 +1087,7 @@ for mode in [no_def, rolling, window, challenge]:
 ✅ **実験透明性**：
 - 完全なソースコード：[GitHub](https://github.com/tammakiiroha/Replay-simulation)
 - 生データ：`results/*.json`
-- パラメータ構成：[EXPERIMENTAL_PARAMETERS.ja.md](EXPERIMENTAL_PARAMETERS.ja.md)
+- パラメータ構成：[EXPERIMENTAL_PARAMETERS_JP.md](EXPERIMENTAL_PARAMETERS_JP.md)
 ## 9. プロジェクト品質保証
 
 ### 9.1 テストカバレッジ
@@ -1511,9 +1511,9 @@ def send(self, frame):
 Replay-simulation/
 ├── main.py                 # CLI エントリーポイント
 ├── README.md               # メインドキュメント（英語）
-├── README.ja.md            # 日本語ドキュメント
-├── README.zh.md            # 中国語ドキュメント
-├── PRESENTATION.md         # 本プレゼンテーション資料
+├── README_JP.md            # 日本語ドキュメント
+├── README_CH.md            # 中国語ドキュメント
+├── PRESENTATION_JP.md      # 本プレゼンテーション資料
 ├── requirements.txt        # Python 依存関係
 ├── LICENSE                 # MIT ライセンス
 │

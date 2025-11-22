@@ -3,7 +3,7 @@
 **バージョン**: 1.0  
 **最終更新**: 2024  
 **関連コード**: [`scripts/experiment_config.py`](scripts/experiment_config.py)  
-**技術詳細**: [`PRESENTATION.md` 710-829行目](PRESENTATION.md#L710-L829)
+**技術詳細**: [`PRESENTATION_JP.md` 710-829行目](PRESENTATION_JP.md#L710-L829)
 
 ---
 
@@ -227,7 +227,7 @@ python scripts/run_sweeps.py \
 - BLE：Gomez et al. (2012) - 2.4GHz干渉の影響
 - 産業WSN：Sha et al. (2017) - 工場信頼性研究
 
-詳細な議論：[`PRESENTATION.md` 710-829行目](PRESENTATION.md#L710-L829)
+詳細な議論：[`PRESENTATION_JP.md` 710-829行目](PRESENTATION_JP.md#L710-L829)
 
 ---
 
@@ -269,7 +269,7 @@ python scripts/experiment_config.py  # パラメータ概要を出力
 ## 参考文献
 
 詳細な技術実装と理論的背景については、以下を参照してください：
-- メインドキュメント：[`PRESENTATION.md`](PRESENTATION.md)
-- プロジェクトREADME：[`README.ja.md`](README.ja.md)
+- メインドキュメント：[`PRESENTATION_JP.md`](PRESENTATION_JP.md)
+- プロジェクトREADME：[`README_JP.md`](README_JP.md)
 - コードリポジトリ：[GitHub](https://github.com/tammakiiroha/Replay-simulation)
 

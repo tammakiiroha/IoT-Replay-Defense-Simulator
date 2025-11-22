@@ -3,7 +3,7 @@
 **Version**: 1.0  
 **Last Updated**: 2024  
 **Related Code**: [`scripts/experiment_config.py`](scripts/experiment_config.py)  
-**Technical Details**: [`PRESENTATION.zh.md` Lines 710-829](PRESENTATION.zh.md#L710-L829)
+**Technical Details**: [`PRESENTATION_EN.md` Lines 710-829](PRESENTATION_EN.md#L710-L829)
 
 ---
 
@@ -227,7 +227,7 @@ python scripts/run_sweeps.py \
 - BLE: Gomez et al. (2012) - 2.4GHz interference effects
 - Industrial WSN: Sha et al. (2017) - factory reliability studies
 
-Detailed discussion: [`PRESENTATION.zh.md` Lines 710-829](PRESENTATION.zh.md#L710-L829)
+Detailed discussion: [`PRESENTATION_EN.md` Lines 710-829](PRESENTATION_EN.md#L710-L829)
 
 ---
 
@@ -269,6 +269,6 @@ python scripts/experiment_config.py  # Prints parameter summary
 ## References
 
 For detailed technical implementation and theoretical background, refer to:
-- Main Documentation: [`PRESENTATION.zh.md`](PRESENTATION.zh.md)
+- Main Documentation: [`PRESENTATION_EN.md`](PRESENTATION_EN.md)
 - Project README: [`README.md`](README.md)
 - Code Repository: [GitHub](https://github.com/tammakiiroha/Replay-simulation)

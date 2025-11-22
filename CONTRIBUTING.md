@@ -168,7 +168,7 @@ def test_window_accepts_reordered_frames():
 1. Add configuration to `scripts/experiment_config.py`
 2. Implement sweep logic in `scripts/run_sweeps.py`
 3. Add plotting function in `scripts/plot_results.py`
-4. Document parameters in `EXPERIMENTAL_PARAMETERS.md`
+4. Document parameters in `EXPERIMENTAL_PARAMETERS_EN.md`
 
 ## Documentation Updates
 
@@ -176,8 +176,8 @@ When updating documentation:
 
 1. **Maintain consistency** across all language versions:
    - `README.md` (English)
-   - `README.zh.md` (Chinese)
-   - `README.ja.md` (Japanese)
+   - `README_CH.md` (Chinese)
+   - `README_JP.md` (Japanese)
 
 2. **Update all relevant files**:
    - Main README files
@@ -210,7 +210,7 @@ test: add tests for attacker replay logic
 
 If you have questions:
 
-1. Check the [README](README.md) and [PRESENTATION](PRESENTATION.zh.md) documents
+1. Check the [README](README.md) and [PRESENTATION](PRESENTATION_EN.md) documents
 2. Look at existing code for examples
 3. Open an issue for discussion
 

@@ -1230,7 +1230,7 @@ for mode in [no_def, rolling, window, challenge]:
 ✅ **实验透明性**：
 - 完整源代码：[GitHub](https://github.com/tammakiiroha/Replay-simulation)
 - 原始数据：`results/*.json`
-- 参数配置：[EXPERIMENTAL_PARAMETERS.zh.md](EXPERIMENTAL_PARAMETERS.zh.md)
+- 参数配置：[EXPERIMENTAL_PARAMETERS_CH.md](EXPERIMENTAL_PARAMETERS_CH.md)
 ## 9. 项目质量保证
 
 ### 9.1 测试覆盖率
@@ -1653,11 +1653,11 @@ def send(self, frame):
 Replay-simulation/
 ├── main.py                 # CLI入口点
 ├── README.md               # 主文档（英文）
-├── README.ja.md            # 日文文档
-├── README.zh.md            # 中文文档
-├── PRESENTATION.md         # 本演示（日文）
-├── PRESENTATION.en.md      # 本演示（英文）
-├── PRESENTATION.zh.md      # 本演示（中文）
+├── README_JP.md            # 日文文档
+├── README_CH.md            # 中文文档
+├── PRESENTATION_JP.md      # 本演示（日文）
+├── PRESENTATION_EN.md      # 本演示（英文）
+├── PRESENTATION_CH.md      # 本演示（中文）
 ├── requirements.txt        # Python依赖
 ├── LICENSE                 # MIT许可证
 │

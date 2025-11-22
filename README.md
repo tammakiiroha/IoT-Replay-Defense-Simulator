@@ -1,22 +1,22 @@
 # Replay Attack Simulation Toolkit
 
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.md)
-[![日本語](https://img.shields.io/badge/lang-日本語-red.svg)](README.ja.md)
-[![中文](https://img.shields.io/badge/lang-中文-green.svg)](README.zh.md)
+[![日本語](https://img.shields.io/badge/lang-日本語-red.svg)](README_JP.md)
+[![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
 
-**English** | [日本語](README.ja.md) | [中文](README.zh.md)
+**English** | [日本語](README_JP.md) | [中文](README_CH.md)
 
 ---
 
 > 📚 **Need more details?** This README provides a quick overview. For in-depth technical explanations, implementation details, and complete experimental analysis, please refer to our comprehensive presentation documents:
 > 
 > **Detailed Technical Presentation** (1000+ lines):
-> - 📄 [English Version](PRESENTATION.en.md) - Complete technical documentation
-> - 📄 [日本語版](PRESENTATION.md) - 詳細な技術ドキュメント
-> - 📄 [中文版](PRESENTATION.zh.md) - 完整技术文档
+> - 📄 [English Version](PRESENTATION_EN.md) - Complete technical documentation
+> - 📄 [日本語版](PRESENTATION_JP.md) - 詳細な技術ドキュメント
+> - 📄 [中文版](PRESENTATION_CH.md) - 完整技术文档
 >
 > These documents include:
 > - Detailed defense mechanism implementations with code examples
@@ -25,9 +25,9 @@
 > - Technical glossary and Q&A sections
 >
 > **Experimental Parameters Configuration**:
-> - 📊 [English](EXPERIMENTAL_PARAMETERS.md) - Complete parameter specifications
-> - 📊 [日本語](EXPERIMENTAL_PARAMETERS.ja.md) - パラメータ設定の詳細
-> - 📊 [中文](EXPERIMENTAL_PARAMETERS.zh.md) - 完整参数配置说明
+> - 📊 [English](EXPERIMENTAL_PARAMETERS_EN.md) - Complete parameter specifications
+> - 📊 [日本語](EXPERIMENTAL_PARAMETERS_JP.md) - パラメータ設定の詳細
+> - 📊 [中文](EXPERIMENTAL_PARAMETERS_CH.md) - 完整参数配置说明
 
 ---
 
@@ -275,7 +275,7 @@ This project systematically evaluates four replay attack defense mechanisms thro
 | **Exp. 2** | p_reorder: 0-30% | p_loss=10% | 7 points × 4 modes = 28 records | `p_reorder_legit.png` |
 | **Exp. 3** | window_size: 1-20 | p_loss=15%, p_reorder=15% | 7 window sizes | `window_tradeoff.png` |
 
-Full parameter configuration: [Experimental Parameters Documentation](EXPERIMENTAL_PARAMETERS.md)
+Full parameter configuration: [Experimental Parameters Documentation](EXPERIMENTAL_PARAMETERS_EN.md)
 
 ### Experiment 1: Impact of Packet Loss on Defense Mechanisms
 
@@ -368,7 +368,7 @@ Based on 200 Monte Carlo simulations under **moderate network conditions (p_loss
 - ✅ All data based on **200 Monte Carlo runs**, achieving 95% confidence level
 - ✅ Uses **fixed random seed (42)**, results fully reproducible
 - ✅ Average run time **26-30ms**, efficient verification
-- ✅ Experimental parameters conform to **EXPERIMENTAL_PARAMETERS.md** standard configuration
+- ✅ Experimental parameters conform to **EXPERIMENTAL_PARAMETERS_EN.md** standard configuration
 - ✅ Complete source code and test cases available for audit
 
 Related data files:

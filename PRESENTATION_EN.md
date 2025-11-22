@@ -901,7 +901,7 @@ This project systematically evaluates four replay attack defense mechanisms thro
 - **Fixed random seed 42** (fully reproducible)
 - **Unified baseline**: 20 legitimate transmissions, 100 replay attempts per run
 
-Full parameter configuration: [EXPERIMENTAL_PARAMETERS.md](EXPERIMENTAL_PARAMETERS.md)
+Full parameter configuration: [EXPERIMENTAL_PARAMETERS_EN.md](EXPERIMENTAL_PARAMETERS_EN.md)
 
 | Experiment | Variable Parameter | Fixed Parameters | Tested Modes | Data Points |
 |------------|-------------------|------------------|--------------|-------------|
@@ -1175,7 +1175,7 @@ Start Choosing Defense Mechanism
 ✅ **Experimental Transparency**:
 - Complete source code: [GitHub](https://github.com/tammakiiroha/Replay-simulation)
 - Raw data: `results/*.json`
-- Parameter configuration: [EXPERIMENTAL_PARAMETERS.md](EXPERIMENTAL_PARAMETERS.md)
+- Parameter configuration: [EXPERIMENTAL_PARAMETERS_EN.md](EXPERIMENTAL_PARAMETERS_EN.md)
 
 ---
   - p_loss=0.20: Both at 79.53%
@@ -1604,11 +1604,11 @@ def send(self, frame):
 Replay-simulation/
 ├── main.py                 # CLI entry point
 ├── README.md               # Main documentation (English)
-├── README.ja.md            # Japanese documentation
-├── README.zh.md            # Chinese documentation
-├── PRESENTATION.md         # This presentation (Japanese)
-├── PRESENTATION.en.md      # This presentation (English)
-├── PRESENTATION.zh.md      # This presentation (Chinese)
+├── README_JP.md            # Japanese documentation
+├── README_CH.md            # Chinese documentation
+├── PRESENTATION_JP.md      # This presentation (Japanese)
+├── PRESENTATION_EN.md      # This presentation (English)
+├── PRESENTATION_CH.md      # This presentation (Chinese)
 ├── requirements.txt        # Python dependencies
 ├── LICENSE                 # MIT License
 │

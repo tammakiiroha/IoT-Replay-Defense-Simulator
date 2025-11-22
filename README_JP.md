@@ -1,22 +1,22 @@
 # リプレイ攻撃シミュレーションツールキット
 
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.md)
-[![日本語](https://img.shields.io/badge/lang-日本語-red.svg)](README.ja.md)
-[![中文](https://img.shields.io/badge/lang-中文-green.svg)](README.zh.md)
+[![日本語](https://img.shields.io/badge/lang-日本語-red.svg)](README_JP.md)
+[![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
 
-[English](README.md) | **日本語** | [中文](README.zh.md)
+[English](README.md) | **日本語** | [中文](README_CH.md)
 
 ---
 
 > 📚 **より詳しい情報が必要ですか？** このREADMEは概要を提供します。技術的な詳細説明、実装の詳細、完全な実験分析については、包括的なプレゼンテーション資料をご参照ください：
 > 
 > **詳細な技術プレゼンテーション**（1000行以上）：
-> - 📄 [English Version](PRESENTATION.en.md) - Complete technical documentation
-> - 📄 [日本語版](PRESENTATION.md) - 詳細な技術ドキュメント
-> - 📄 [中文版](PRESENTATION.zh.md) - 完整技术文档
+> - 📄 [English Version](PRESENTATION_EN.md) - Complete technical documentation
+> - 📄 [日本語版](PRESENTATION_JP.md) - 詳細な技術ドキュメント
+> - 📄 [中文版](PRESENTATION_CH.md) - 完整技术文档
 >
 > これらの資料には以下が含まれます：
 > - コード例を含む防御メカニズムの詳細実装
@@ -25,9 +25,9 @@
 > - 技術用語集とQ&Aセクション
 >
 > **実験パラメータ設定書**：
-> - 📊 [English](EXPERIMENTAL_PARAMETERS.md) - Complete parameter specifications
-> - 📊 [日本語](EXPERIMENTAL_PARAMETERS.ja.md) - パラメータ設定の詳細
-> - 📊 [中文](EXPERIMENTAL_PARAMETERS.zh.md) - 完整参数配置说明
+> - 📊 [English](EXPERIMENTAL_PARAMETERS_EN.md) - Complete parameter specifications
+> - 📊 [日本語](EXPERIMENTAL_PARAMETERS_JP.md) - パラメータ設定の詳細
+> - 📊 [中文](EXPERIMENTAL_PARAMETERS_CH.md) - 完整参数配置说明
 
 ---
 
@@ -286,7 +286,7 @@ python scripts/plot_results.py --formats png
 | **実験2** | p_reorder: 0-30% | p_loss=10% | 7点×4モード=28記録 | `p_reorder_legit.png` |
 | **実験3** | window_size: 1-20 | p_loss=15%, p_reorder=15% | 7ウィンドウサイズ | `window_tradeoff.png` |
 
-完全なパラメータ構成：[実験パラメータ文書](EXPERIMENTAL_PARAMETERS.ja.md)
+完全なパラメータ構成：[実験パラメータ文書](EXPERIMENTAL_PARAMETERS_JP.md)
 
 ### 実験1：パケット損失が防御メカニズムに与える影響
 
@@ -357,7 +357,7 @@ python scripts/plot_results.py --formats png
 - ✅ すべてのデータは**200回のモンテカルロ実行**に基づく、95%信頼水準
 - ✅ **固定ランダムシード(42)**使用、結果完全再現可能
 - ✅ 実行時間平均**26-30ms**、効率的検証
-- ✅ 実験パラメータは**EXPERIMENTAL_PARAMETERS.md**標準構成に準拠
+- ✅ 実験パラメータは**EXPERIMENTAL_PARAMETERS_JP.md**標準構成に準拠
 
 関連データファイル：
 - `results/p_loss_sweep.json` - 実験1生データ

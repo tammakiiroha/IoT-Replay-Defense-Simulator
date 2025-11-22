@@ -9,7 +9,7 @@
 ### 基本情報
 
 **プロジェクト名**: IoT Replay Attack Defense Simulator  
-**著者**: Romeitou (tammakiiroha)  
+**氏名**: 盧 銘騰（Romeitou / LU MINGTENG）  
 **GitHub**: https://github.com/tammakiiroha  
 **メール**: lumingteng9@gmail.com  
 **リポジトリ**: https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator  
@@ -24,7 +24,7 @@
 **研究分野**: ネットワークセキュリティ、IoTセキュリティ
 
 **開発履歴**:
-- 2024-2025年: 初期実験とプロトタイプ実装（旧リポジトリ `Replay-simulation` にて）
+- 2024-2025年: 初期実験とプロトタイプ実装（旧リポジトリ [`Replay-simulation`](https://github.com/tammakiiroha/Replay-simulation) にて）
 - 2025年11月18日以降: 本リポジトリにてコード整理、文書化、実験スクリプト追加
 
 ### 開発証明
@@ -50,8 +50,8 @@ git shortlog -sn --all
 - モンテカルロシミュレーション実験フレームワーク（200回実行）
 
 **主要な研究成果**:
-1. Rolling Counter メカニズムがパケット順序入れ替え下で顕著な制約を持つことを発見
-2. Sliding Window の最適パラメータ設定（W=3-7）を提案
+1. Rolling Counter メカニズムがパケット順序入れ替え下で顕著な制約を持つことを観察
+2. 本シミュレーション条件下で Sliding Window の適切なパラメータ範囲（W=3-7）を示唆
 3. 3種類の系統的実験を設計・実行
 
 ### 参考資料と引用
@@ -77,7 +77,7 @@ git shortlog -sn --all
 ### Basic Information
 
 **Project Name**: IoT Replay Attack Defense Simulator  
-**Author**: Romeitou (tammakiiroha)  
+**Full Name**: LU MINGTENG (Romeitou)  
 **GitHub**: https://github.com/tammakiiroha  
 **Email**: lumingteng9@gmail.com  
 **Repository**: https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator  
@@ -92,7 +92,7 @@ This project was developed as part of the following thesis research:
 **Research Area**: Network Security, IoT Security
 
 **Development Timeline**:
-- 2024-2025: Initial experiments and prototype implementation (in previous repository `Replay-simulation`)
+- 2024-2025: Initial experiments and prototype implementation (in previous repository [`Replay-simulation`](https://github.com/tammakiiroha/Replay-simulation))
 - From November 18, 2025: Code restructuring, documentation, and experimental scripts in this repository
 
 ### Development Evidence
@@ -118,8 +118,8 @@ git shortlog -sn --all
 - Monte Carlo simulation framework (200 runs per experiment)
 
 **Key Research Contributions**:
-1. Discovered significant limitations of Rolling Counter mechanism under packet reordering
-2. Proposed optimal Sliding Window parameter configuration (W=3-7)
+1. Observed that Rolling Counter mechanism has significant limitations under packet reordering in our simulation settings
+2. Suggested that Sliding Window with W=3-7 may offer a good trade-off between usability and security under our experimental conditions
 3. Designed and executed 3 systematic experiments
 
 ### References and Citations

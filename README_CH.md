@@ -1,15 +1,64 @@
-# 重放攻击仿真工具包
+# 🔒 物联网重放攻击防御模拟器
+
+<div align="center">
 
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.md)
 [![日本語](https://img.shields.io/badge/lang-日本語-red.svg)](README_JP.md)
 [![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-85+-brightgreen.svg)](tests/)
+[![Monte Carlo](https://img.shields.io/badge/runs-200-orange.svg)](EXPERIMENTAL_PARAMETERS_CH.md)
+[![Confidence](https://img.shields.io/badge/confidence-95%25-success.svg)](PRESENTATION_CH.md)
+[![RFC Compliant](https://img.shields.io/badge/RFC-6479%2F2104-blue.svg)](PRESENTATION_CH.md)
+
+**严格的蒙特卡洛仿真工具包，用于评估无线控制系统中的重放攻击防御机制**
+
+[📖 快速开始](#快速开始) • [🎯 核心结果](#实验结果与数据分析) • [📊 质量指标](#项目质量指标) • [🤝 贡献指南](CONTRIBUTING.md) • [📚 完整文档](PRESENTATION_CH.md)
+
+</div>
+
+---
 
 [English](README.md) | [日本語](README_JP.md) | **中文**
 
 **作者**: Romeitou (tammakiiroha)
+
+---
+
+## 🌟 项目亮点
+
+- 🔬 **严格评估**：每个实验 200 次蒙特卡洛运行，95% 置信水平
+- 🛡️ **4 种防御机制**：无防御、滚动计数器 + MAC、滑动窗口、挑战-响应
+- 📡 **真实信道模型**：丢包（0-30%）和乱序（0-30%）仿真
+- 📊 **全面指标**：安全性（攻击成功率）与可用性（合法接受率）
+- ⚡ **高性能**：每次运行 26-30ms，吞吐量约 38 次/秒
+- 🔄 **完全可重现**：固定随机种子（42），完整参数文档
+- 🧪 **充分测试**：85+ 测试用例，约 70% 代码覆盖率，符合 RFC 6479/2104
+- 🌐 **多语言**：完整文档支持 English、日本語 和中文
+
+---
+
+## 🎯 解决什么问题？
+
+在无线控制系统（物联网设备、智能家居、工业控制）中，**重放攻击**是一个严重威胁：
+
+```
+┌─────────────────────────────────────────────────┐
+│ 攻击者记录"解锁"命令                              │
+│         ↓                                        │
+│ 稍后重放该命令                                    │
+│         ↓                                        │
+│ 门被打开了！🚨                                    │
+└─────────────────────────────────────────────────┘
+```
+
+**挑战**：在真实世界条件下（丢包、乱序），哪种防御机制效果最好？
+
+**我们的解决方案**：通过蒙特卡洛仿真进行定量评估，揭示：
+- ✅ **滚动计数器**在包乱序下失效（30% 乱序时可用性下降 13.5%）
+- ✅ **滑动窗口**在所有条件下保持鲁棒性（推荐 W=3-7）
+- ✅ **挑战-响应**提供最高安全性但需要双向通信
 
 ---
 

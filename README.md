@@ -1,11 +1,24 @@
-# Replay Attack Simulation Toolkit
+# 🔒 IoT Replay Attack Defense Simulator
+
+<div align="center">
 
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.md)
 [![日本語](https://img.shields.io/badge/lang-日本語-red.svg)](README_JP.md)
 [![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-85+-brightgreen.svg)](tests/)
+[![Monte Carlo](https://img.shields.io/badge/runs-200-orange.svg)](EXPERIMENTAL_PARAMETERS_EN.md)
+[![Confidence](https://img.shields.io/badge/confidence-95%25-success.svg)](PRESENTATION_EN.md)
+[![RFC Compliant](https://img.shields.io/badge/RFC-6479%2F2104-blue.svg)](PRESENTATION_EN.md)
+
+**A rigorous Monte Carlo simulation toolkit for evaluating replay attack defenses in wireless control systems**
+
+[📖 Quick Start](#quick-start) • [🎯 Key Results](#experimental-results-and-data-analysis) • [📊 Quality Metrics](#project-quality-metrics) • [🤝 Contributing](CONTRIBUTING.md) • [📚 Full Documentation](PRESENTATION_EN.md)
+
+</div>
+
+---
 
 **English** | [日本語](README_JP.md) | [中文](README_CH.md)
 
@@ -13,35 +26,75 @@
 
 ---
 
-> 📚 **Need more details?** This README provides a quick overview. For in-depth technical explanations, implementation details, and complete experimental analysis, please refer to our comprehensive presentation documents:
-> 
-> **Detailed Technical Presentation** (1000+ lines):
-> - 📄 [English Version](PRESENTATION_EN.md) - Complete technical documentation
-> - 📄 [日本語版](PRESENTATION_JP.md) - 詳細な技術ドキュメント
-> - 📄 [中文版](PRESENTATION_CH.md) - 完整技术文档
->
-> These documents include:
-> - Detailed defense mechanism implementations with code examples
-> - Complete experimental methodology and statistical analysis
-> - In-depth result interpretation with figures
-> - Technical glossary and Q&A sections
->
-> **Experimental Parameters Configuration**:
-> - 📊 [English](EXPERIMENTAL_PARAMETERS_EN.md) - Complete parameter specifications
-> - 📊 [日本語](EXPERIMENTAL_PARAMETERS_JP.md) - パラメータ設定の詳細
-> - 📊 [中文](EXPERIMENTAL_PARAMETERS_CH.md) - 完整参数配置说明
+## 🌟 Highlights
+
+- 🔬 **Rigorous Evaluation**: 200 Monte Carlo runs per experiment, 95% confidence level
+- 🛡️ **4 Defense Mechanisms**: No Defense, Rolling Counter + MAC, Sliding Window, Challenge-Response
+- 📡 **Realistic Channel Model**: Packet loss (0-30%) and reordering (0-30%) simulation
+- 📊 **Comprehensive Metrics**: Security (attack success rate) vs. Usability (legitimate acceptance rate)
+- ⚡ **High Performance**: 26-30ms per run, ~38 runs/second throughput
+- 🔄 **Fully Reproducible**: Fixed random seed (42), complete parameter documentation
+- 🧪 **Well Tested**: 85+ test cases, ~70% code coverage, RFC 6479/2104 compliant
+- 🌐 **Multilingual**: Complete documentation in English, 日本語, and 中文
 
 ---
 
-This toolkit reproduces the replay-attack evaluation plan described in the project brief. It models multiple receiver configurations under a record-and-replay adversary and reports both security (attack success) and usability (legitimate acceptance) metrics.
+## 🎯 What Problem Does This Solve?
 
-## Requirements
-- Python 3.9+ (stdlib only for the CLI; optional helpers rely on `matplotlib`)
-- Tested on macOS 14.x (Apple Silicon) and Ubuntu 22.04
-- Optional virtualenv:
+In wireless control systems (IoT devices, smart homes, industrial control), **replay attacks** are a critical threat:
+
+```
+┌─────────────────────────────────────────────────┐
+│ Attacker records "UNLOCK" command               │
+│         ↓                                        │
+│ Replays it later                                 │
+│         ↓                                        │
+│ Door opens! 🚨                                   │
+└─────────────────────────────────────────────────┘
+```
+
+**The Challenge**: Which defense mechanism works best under real-world conditions (packet loss, reordering)?
+
+**Our Solution**: Quantitative evaluation through Monte Carlo simulation, revealing:
+- ✅ **Rolling Counter** fails under packet reordering (13.5% usability drop at 30% reorder)
+- ✅ **Sliding Window** maintains robustness across all conditions (W=3-7 recommended)
+- ✅ **Challenge-Response** offers highest security but requires bidirectional communication
+
+---
+
+## 📚 Documentation Structure
+
+This README provides a **quick overview** and **getting started guide**. For comprehensive technical details:
+
+| Document | Purpose | Length | Languages |
+|----------|---------|--------|-----------|
+| 📄 **[PRESENTATION](PRESENTATION_EN.md)** | Complete technical deep-dive, implementation details, full experimental analysis | 2000+ lines | [EN](PRESENTATION_EN.md) / [日本語](PRESENTATION_JP.md) / [中文](PRESENTATION_CH.md) |
+| 📊 **[EXPERIMENTAL_PARAMETERS](EXPERIMENTAL_PARAMETERS_EN.md)** | Detailed parameter specifications and rationale | ~280 lines | [EN](EXPERIMENTAL_PARAMETERS_EN.md) / [日本語](EXPERIMENTAL_PARAMETERS_JP.md) / [中文](EXPERIMENTAL_PARAMETERS_CH.md) |
+| 🤝 **[CONTRIBUTING](CONTRIBUTING.md)** | Development guidelines, code style, how to contribute | ~200 lines | EN |
+
+**What's in PRESENTATION documents:**
+- 🔍 Defense mechanism implementations with code examples
+- 📈 Complete experimental methodology and statistical analysis
+- 📊 In-depth result interpretation with figures and tables
+- 📖 Technical glossary and Q&A sections
+- 🎓 Academic-quality documentation for thesis/paper reference
+
+> 💡 **First time here?** Start with this README, then dive into [PRESENTATION_EN.md](PRESENTATION_EN.md) for detailed analysis.
+
+---
+
+## 🔬 Overview
+
+This toolkit provides a **rigorous Monte Carlo simulation framework** for evaluating replay attack defenses in wireless control systems. It models multiple receiver configurations under a record-and-replay adversary and reports both **security** (attack success rate) and **usability** (legitimate acceptance rate) metrics.
+
+## 💻 Requirements
+
+- **Python 3.9+** (stdlib only for CLI; visualization requires `matplotlib`)
+- **Tested on**: macOS 14.x (Apple Silicon), Ubuntu 22.04, Windows 10/11 (WSL)
+- **Optional virtualenv** (recommended):
   ```bash
   python3 -m venv .venv
-  source .venv/bin/activate
+  source .venv/bin/activate  # Windows: .venv\Scripts\activate
   pip install -r requirements.txt
   ```
 
@@ -77,15 +130,33 @@ Run benchmarks yourself:
 python scripts/benchmark.py
   ```
 
-## Features
-- **Protocol variants**: no defense, rolling counter + MAC, rolling counter + acceptance window, and a nonce-based challenge-response baseline.
-- **Role models**: sender, lossy/reordering channel, receiver with persistent state, and an attacker that records and replays observed frames.
-- **Metrics**: per-run legitimate acceptance rate and attack success rate, plus aggregated averages and standard deviations across Monte Carlo runs.
-- **Command sources**: random commands from a default toy set or a trace file captured from a real controller.
-- **Attacker scheduling**: choose between post-run burst replay or inline (real-time) injection during legitimate traffic.
-- **Outputs**: human-readable tables on stdout, JSON dumps for downstream analysis, and automation helpers for parameter sweeps.
+## ✨ Features
 
-## Quick start
+### 🛡️ Defense Mechanisms
+- 🚫 **No Defense** - Baseline for comparison
+- 🔢 **Rolling Counter + MAC** - Sequential counter with HMAC-SHA256
+- 🪟 **Sliding Window** - Bitmask-based reordering tolerance (RFC 6479)
+- 🔐 **Challenge-Response** - Nonce-based authentication
+
+### 🔬 Simulation Components
+- 📤 **Sender**: Frame generation with counter/MAC/nonce
+- 📡 **Channel**: Realistic packet loss and reordering simulation
+- 📥 **Receiver**: Stateful verification with 4 defense modes
+- 👤 **Attacker**: Record-and-replay adversary (Dolev-Yao model)
+
+### 📊 Evaluation & Output
+- 📈 **Metrics**: Legitimate acceptance rate (usability) & Attack success rate (security)
+- 🎲 **Monte Carlo**: 200 runs per experiment, 95% confidence intervals
+- 📊 **Visualization**: Publication-quality figures (PNG/PDF)
+- 💾 **Data Export**: JSON format for downstream analysis
+- 🔄 **Reproducibility**: Fixed random seed, complete parameter logging
+
+### ⚔️ Attack Models
+- ⏱️ **Post-run Attack**: Bulk replay after legitimate traffic
+- 🔴 **Inline Attack**: Real-time injection during communication
+- 🎯 **Selective Replay**: Target specific commands (e.g., "UNLOCK", "FIRE")
+
+## 🚀 Quick Start
 
 ### Option 1: Graphical Interface (Easiest, recommended for demos)
 

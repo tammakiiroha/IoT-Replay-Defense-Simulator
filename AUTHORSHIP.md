@@ -4,11 +4,10 @@
 
 **项目名称 / Project Name**: IoT Replay Attack Defense Simulator  
 **作者 / Author**: Romeitou (tammakiiroha)  
-**GitHub 用户名 / GitHub Username**: tammakiiroha  
+**GitHub**: https://github.com/tammakiiroha  
 **邮箱 / Email**: lumingteng9@gmail.com  
-**GitHub 账号 / GitHub Account**: https://github.com/tammakiiroha  
 **项目仓库 / Repository**: https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator  
-**创建时间 / Creation Date**: 2025-11-22  
+**创建时间 / Creation Date**: 2025-11-18  
 **许可证 / License**: MIT License
 
 ---
@@ -27,11 +26,10 @@ git log --all --author="tammakiiroha"
 git shortlog -sn --all
 ```
 
-**关键提交**：
-- 初始提交：2025-11-22
-- 所有提交者：tammakiiroha <lumingteng9@gmail.com>
-- 提交总数：76+ commits
-- 代码行数：~3000+ lines (Python, Markdown)
+**关键信息**：
+- 首次提交：2025-11-18
+- 提交者：tammakiiroha <lumingteng9@gmail.com>
+- 提交总数：94+ commits
 
 ### 2. GitHub 账号验证 / GitHub Account Verification
 
@@ -50,8 +48,7 @@ git shortlog -sn --all
 ### 4. 时间戳证明 / Timestamp Proof
 
 所有提交都包含不可篡改的时间戳：
-- 首次提交：2025-11-22 11:22:30 +0900
-- 最新提交：2025-11-23 07:47:26 +0900
+- 首次提交：2025-11-18 03:16:45 +0900
 - 开发时区：+0900 (日本标准时间)
 
 ---
@@ -100,12 +97,9 @@ git shortlog -sn --all
 ### 代码统计 / Code Statistics
 
 ```bash
-# 代码行数统计
+# 查看代码统计
 find . -name "*.py" -not -path "./.venv/*" | xargs wc -l
-# Python 代码：~3000+ lines
-
 find . -name "*.md" | xargs wc -l
-# Markdown 文档：~10000+ lines
 ```
 
 ---
@@ -115,74 +109,33 @@ find . -name "*.md" | xargs wc -l
 本项目作为我的毕业论文/研究项目的一部分：
 
 **论文信息 / Thesis Information**:
-- 标题：IoT 设备重放攻击防御机制的量化评估
+- 标题：リプレイ攻撃（Replay Attack）に対する防御手法の検討と評価
 - 作者：Romeitou (tammakiiroha)
-- 学年：2024-2025
-- 研究方向：网络安全、物联网安全、密码学
+- 学年：2025
+- 研究方向：网络安全、物联网安全
 
 **研究贡献 / Research Contributions**:
 1. 实现了 4 种重放攻击防御机制的完整仿真
 2. 设计并执行了 3 组系统性实验（200 次蒙特卡洛运行）
 3. 发现了 Rolling Counter 机制在包乱序下的显著局限性
 4. 提供了 Sliding Window 最优参数配置建议（W=3-7）
-5. 创建了完整的三语技术文档（6000+ lines）
 
 ---
 
 ## 🔍 验证方法 / Verification Methods
 
-### 方法 1: GitHub 提交历史验证
+### GitHub 在线验证
 
-访问以下链接查看完整提交历史：
-```
-https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/commits/main
-```
+- **提交历史**: https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/commits/main
+- **贡献统计**: https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/graphs/contributors
 
-每个提交都包含：
-- 提交者姓名和邮箱
-- 提交时间（精确到秒）
-- 提交内容和代码变更
-- GPG 签名（如果启用）
+### Git 本地验证
 
-### 方法 2: GitHub Insights 验证
-
-访问以下链接查看贡献统计：
-```
-https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/graphs/contributors
-```
-
-显示：
-- 代码提交数量
-- 代码行数变更
-- 提交时间分布
-- 贡献者列表
-
-### 方法 3: Git 本地验证
-
-克隆仓库后执行：
 ```bash
 git clone https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator.git
 cd IoT-Replay-Defense-Simulator
-
-# 查看所有提交者
-git log --format='%aN <%aE>' | sort -u
-
-# 查看提交统计
+git log --all --author="tammakiiroha"
 git shortlog -sn --all
-
-# 查看详细历史
-git log --all --graph --decorate --oneline
-```
-
-### 方法 4: 文件元数据验证
-
-所有文件的创建和修改时间都有记录：
-```bash
-# 查看文件创建时间
-git log --diff-filter=A --follow --format=%aI -- <filename>
-
-# 查看文件修改历史
-git log --follow -- <filename>
 ```
 
 ---
@@ -207,26 +160,15 @@ copies or substantial portions of the Software.
 
 ## 🌐 在线身份验证 / Online Identity Verification
 
-### GitHub Profile
-- **用户名**: tammakiiroha
-- **URL**: https://github.com/tammakiiroha
-- **User ID**: 153071074
-- **加入时间**: 可在 GitHub 个人主页查看
-
-### 项目链接
-- **主仓库**: https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator
-- **Issues**: https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/issues
-- **Pull Requests**: https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/pulls
+- **GitHub Profile**: https://github.com/tammakiiroha (User ID: 153071074)
+- **项目仓库**: https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator
 
 ---
 
 ## 📧 联系方式 / Contact Information
 
-如需验证项目所有权或有任何疑问，请通过以下方式联系：
-
 - **GitHub**: [@tammakiiroha](https://github.com/tammakiiroha)
 - **Email**: lumingteng9@gmail.com
-- **项目 Issues**: https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/issues
 
 ---
 

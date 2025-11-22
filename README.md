@@ -522,7 +522,7 @@ Thanks to all contributors who have helped improve this project!
 
 Made with [contrib.rocks](https://contrib.rocks).
 
-## Star History
+## ⭐ Star History
 
 <div align="center">
 
@@ -530,7 +530,7 @@ Made with [contrib.rocks](https://contrib.rocks).
 
 </div>
 
-> ⭐ **Like this project?** Give it a star to show your support and help others discover it!
+> **Like this project?** Give it a star to show your support and help others discover it!
 
 ## Citation
 

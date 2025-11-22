@@ -23,7 +23,7 @@
 **研究分野**: ネットワークセキュリティ、IoTセキュリティ
 
 **開発履歴**:
-- 2024-2025年: 初期実験とプロトタイプ実装（旧リポジトリ [`Replay-simulation`](https://github.com/tammakiiroha/Replay-simulation) にて）
+- 2025年4月～: 卒業設計の実験と設計を開始（旧リポジトリ [`Replay-simulation`](https://github.com/tammakiiroha/Replay-simulation) にて初期実装）
 - 2025年11月18日以降: 本リポジトリにてコード整理、文書化、実験スクリプト追加
 
 ### 開発証明
@@ -90,7 +90,7 @@ This project was developed as part of the following thesis research:
 **Research Area**: Network Security, IoT Security
 
 **Development Timeline**:
-- 2024-2025: Initial experiments and prototype implementation (in previous repository [`Replay-simulation`](https://github.com/tammakiiroha/Replay-simulation))
+- From April 2025: Started thesis experiments and design (initial implementation in previous repository [`Replay-simulation`](https://github.com/tammakiiroha/Replay-simulation))
 - From November 18, 2025: Code restructuring, documentation, and experimental scripts in this repository
 
 ### Development Evidence

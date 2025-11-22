@@ -1,15 +1,64 @@
-# リプレイ攻撃シミュレーションツールキット
+# 🔒 IoT リプレイ攻撃防御シミュレータ
+
+<div align="center">
 
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.md)
 [![日本語](https://img.shields.io/badge/lang-日本語-red.svg)](README_JP.md)
 [![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-85+-brightgreen.svg)](tests/)
+[![Monte Carlo](https://img.shields.io/badge/runs-200-orange.svg)](EXPERIMENTAL_PARAMETERS_JP.md)
+[![Confidence](https://img.shields.io/badge/confidence-95%25-success.svg)](PRESENTATION_JP.md)
+[![RFC Compliant](https://img.shields.io/badge/RFC-6479%2F2104-blue.svg)](PRESENTATION_JP.md)
+
+**無線制御システムにおけるリプレイ攻撃防御を評価する厳密なモンテカルロシミュレーションツールキット**
+
+[📖 クイックスタート](#クイックスタート) • [🎯 主要結果](#実験結果とデータ分析) • [📊 品質指標](#プロジェクト品質指標) • [🤝 コントリビューション](CONTRIBUTING.md) • [📚 完全ドキュメント](PRESENTATION_JP.md)
+
+</div>
+
+---
 
 [English](README.md) | **日本語** | [中文](README_CH.md)
 
 **著者**: Romeitou (tammakiiroha)
+
+---
+
+## 🌟 ハイライト
+
+- 🔬 **厳密な評価**：実験ごとに 200 回のモンテカルロ実行、95% 信頼水準
+- 🛡️ **4 つの防御メカニズム**：無防御、ローリングカウンタ + MAC、スライディングウィンドウ、チャレンジ-レスポンス
+- 📡 **リアルなチャネルモデル**：パケット損失（0-30%）と順序入れ替え（0-30%）のシミュレーション
+- 📊 **包括的メトリクス**：セキュリティ（攻撃成功率）対ユーザビリティ（正規受理率）
+- ⚡ **高性能**：1 回あたり 26-30ms、スループット約 38 回/秒
+- 🔄 **完全再現可能**：固定ランダムシード（42）、完全なパラメータドキュメント
+- 🧪 **十分なテスト**：85+ テストケース、約 70% コードカバレッジ、RFC 6479/2104 準拠
+- 🌐 **多言語対応**：English、日本語、中文の完全ドキュメント
+
+---
+
+## 🎯 解決する問題
+
+無線制御システム（IoT デバイス、スマートホーム、産業制御）において、**リプレイ攻撃**は深刻な脅威です：
+
+```
+┌─────────────────────────────────────────────────┐
+│ 攻撃者が「UNLOCK」コマンドを記録                  │
+│         ↓                                        │
+│ 後でそれを再生                                    │
+│         ↓                                        │
+│ ドアが開く！🚨                                    │
+└─────────────────────────────────────────────────┘
+```
+
+**課題**：実世界の条件（パケット損失、順序入れ替え）下で、どの防御メカニズムが最も効果的か？
+
+**私たちの解決策**：モンテカルロシミュレーションによる定量的評価により明らかに：
+- ✅ **ローリングカウンタ**はパケット順序入れ替えで失敗（30% 順序入れ替えで可用性 13.5% 低下）
+- ✅ **スライディングウィンドウ**はすべての条件で堅牢性を維持（W=3-7 推奨）
+- ✅ **チャレンジ-レスポンス**は最高のセキュリティを提供するが双方向通信が必要
 
 ---
 

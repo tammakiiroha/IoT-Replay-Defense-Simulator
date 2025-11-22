@@ -516,9 +516,11 @@ _来自 `results/ideal_p0.json` 的参考基线_
 
 由 [contrib.rocks](https://contrib.rocks) 生成。
 
-## Star 历史
+<!-- ## Star 历史
 
-[![Star History Chart](https://api.star-history.com/svg?repos=tammakiiroha/IoT-Replay-Defense-Simulator&type=Date)](https://star-history.com/#tammakiiroha/IoT-Replay-Defense-Simulator&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=tammakiiroha/IoT-Replay-Defense-Simulator&type=Date)](https://star-history.com/#tammakiiroha/IoT-Replay-Defense-Simulator&Date) -->
+
+<!-- 项目获得更多 Star 后将显示 Star 历史图表 -->
 
 ## 引用
 

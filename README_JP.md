@@ -493,9 +493,11 @@ _`results/ideal_p0.json` からの参照ベースライン_
 
 [contrib.rocks](https://contrib.rocks) で生成。
 
-## Star 履歴
+<!-- ## Star 履歴
 
-[![Star History Chart](https://api.star-history.com/svg?repos=tammakiiroha/IoT-Replay-Defense-Simulator&type=Date)](https://star-history.com/#tammakiiroha/IoT-Replay-Defense-Simulator&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=tammakiiroha/IoT-Replay-Defense-Simulator&type=Date)](https://star-history.com/#tammakiiroha/IoT-Replay-Defense-Simulator&Date) -->
+
+<!-- プロジェクトがより多くの Star を獲得した後に Star 履歴グラフが表示されます -->
 
 ## 引用
 

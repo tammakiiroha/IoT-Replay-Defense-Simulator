@@ -250,8 +250,8 @@ flowchart TD
     A[捕获命令序列<br/>轨迹文件或默认集]
     B[配置场景<br/>SimulationConfig 参数]
     C{模式循环<br/>no_def / rolling / window / challenge}
-    D[模拟合法流量<br/>计数器、MAC 或随机数]
-    E[调度攻击者<br/>实时混入或后运行，共享随机种子]
+    D[模拟合法流量<br/>计数器、MAC 或 nonce]
+    E[调度攻击者<br/>inline 或 post 模式，共享随机种子]
     F[聚合每次运行统计<br/>合法接受率和攻击成功率]
     G[(results/*.json)]
     H[plot_results.py<br/>生成 PNG/PDF 图表]

@@ -241,7 +241,7 @@ flowchart TD
     B[Configure scenario<br/>SimulationConfig parameters]
     C{Mode loop<br/>no_def / rolling / window / challenge}
     D[Simulate legitimate traffic<br/>Counters, MACs, or nonce]
-    E[Schedule attacker<br/>Inline (real-time) or post, shared RNG seed]
+    E[Schedule attacker<br/>Inline or post, shared RNG seed]
     F[Aggregate per-run stats<br/>Legitimate & attack rates]
     G[(results/*.json)]
     H[plot_results.py<br/>Generate PNG/PDF figures]

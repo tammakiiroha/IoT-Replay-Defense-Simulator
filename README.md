@@ -522,11 +522,15 @@ Thanks to all contributors who have helped improve this project!
 
 Made with [contrib.rocks](https://contrib.rocks).
 
-<!-- ## Star History
+## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=tammakiiroha/IoT-Replay-Defense-Simulator&type=Date)](https://star-history.com/#tammakiiroha/IoT-Replay-Defense-Simulator&Date) -->
+<div align="center">
 
-<!-- Star History will be displayed once the project gains more stars -->
+[![Star History Chart](https://api.star-history.com/svg?repos=tammakiiroha/IoT-Replay-Defense-Simulator&type=Date)](https://star-history.com/#tammakiiroha/IoT-Replay-Defense-Simulator&Date)
+
+</div>
+
+> ⭐ **Like this project?** Give it a star to show your support and help others discover it!
 
 ## Citation
 

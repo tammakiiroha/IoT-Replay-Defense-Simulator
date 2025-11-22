@@ -493,11 +493,15 @@ _`results/ideal_p0.json` からの参照ベースライン_
 
 [contrib.rocks](https://contrib.rocks) で生成。
 
-<!-- ## Star 履歴
+## Star 履歴
 
-[![Star History Chart](https://api.star-history.com/svg?repos=tammakiiroha/IoT-Replay-Defense-Simulator&type=Date)](https://star-history.com/#tammakiiroha/IoT-Replay-Defense-Simulator&Date) -->
+<div align="center">
 
-<!-- プロジェクトがより多くの Star を獲得した後に Star 履歴グラフが表示されます -->
+[![Star History Chart](https://api.star-history.com/svg?repos=tammakiiroha/IoT-Replay-Defense-Simulator&type=Date)](https://star-history.com/#tammakiiroha/IoT-Replay-Defense-Simulator&Date)
+
+</div>
+
+> ⭐ **このプロジェクトが気に入りましたか？** Star を付けてサポートを示し、他の人が発見できるようにしてください！
 
 ## 引用
 

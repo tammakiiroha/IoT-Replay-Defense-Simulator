@@ -516,7 +516,7 @@ _来自 `results/ideal_p0.json` 的参考基线_
 
 由 [contrib.rocks](https://contrib.rocks) 生成。
 
-## Star 历史
+## ⭐ Star 历史
 
 <div align="center">
 
@@ -524,7 +524,7 @@ _来自 `results/ideal_p0.json` 的参考基线_
 
 </div>
 
-> ⭐ **喜欢这个项目？** 给它一个 Star 以表示支持，帮助更多人发现它！
+> **喜欢这个项目？** 给它一个 Star 以表示支持，帮助更多人发现它！
 
 ## 引用
 

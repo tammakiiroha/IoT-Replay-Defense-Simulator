@@ -493,7 +493,7 @@ _`results/ideal_p0.json` からの参照ベースライン_
 
 [contrib.rocks](https://contrib.rocks) で生成。
 
-## Star 履歴
+## ⭐ Star 履歴
 
 <div align="center">
 
@@ -501,7 +501,7 @@ _`results/ideal_p0.json` からの参照ベースライン_
 
 </div>
 
-> ⭐ **このプロジェクトが気に入りましたか？** Star を付けてサポートを示し、他の人が発見できるようにしてください！
+> **このプロジェクトが気に入りましたか？** Star を付けてサポートを示し、他の人が発見できるようにしてください！
 
 ## 引用
 

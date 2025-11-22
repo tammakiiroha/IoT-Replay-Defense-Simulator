@@ -35,12 +35,16 @@ env/
 .DS_Store
 
 # Generated figures (can be regenerated with scripts/plot_results.py)
-figures/*.png
+# But keep key demonstration figures for quick preview
 figures/*.pdf
 figures/*.pgf
 
+# Keep PNG figures for README and quick viewing
+# figures/*.png  # Commented out to keep PNGs
+
 # Generated results (can be regenerated with scripts/run_sweeps.py)
-results/*.json
+# But keep key results for validation and comparison
+# results/*.json  # Commented out to keep results
 
 # Keep only the figures directory structure and README
 !figures/.gitkeep

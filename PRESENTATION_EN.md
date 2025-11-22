@@ -1585,11 +1585,7 @@ Issue tracker: https://github.com/tammakiiroha/Replay-simulation/issues
 
 ## 12. Demonstration
 
----
-
-
-
-### 11.1 Quick Demo
+### 12.1 Quick Demo
 
 **Step 1: Basic Execution**
 ```bash
@@ -1631,7 +1627,7 @@ window   10    post    0.30       5        99.50%      0.00%
 
 ---
 
-### 11.2 Figure Demonstration
+### 12.2 Figure Demonstration
 
 **Figure 1: Packet Reordering Impact**
 ```bash
@@ -1660,7 +1656,7 @@ open figures/window_tradeoff.png
 
 ---
 
-### 11.3 Code Demonstration
+### 12.3 Code Demonstration
 
 **Demo 1: Sliding Window Operation**
 
@@ -1707,7 +1703,7 @@ def send(self, frame):
 ---
 
 
-### 11.4 Q&A Preparation
+### 12.4 Q&A Preparation
 
 **Expected Questions and Answers**:
 

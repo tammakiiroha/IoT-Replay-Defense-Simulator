@@ -28,6 +28,8 @@
 
 **作者**: Romeitou (tammakiiroha)
 
+> 关于本项目的作者声明和开发背景，请参见 [AUTHORSHIP.md](AUTHORSHIP.md)。
+
 ---
 
 ## 🌟 项目亮点

@@ -28,6 +28,8 @@
 
 **Author**: Romeitou (tammakiiroha)
 
+> For detailed authorship declaration and development background, see [AUTHORSHIP.md](AUTHORSHIP.md).
+
 ---
 
 ## 🌟 Highlights

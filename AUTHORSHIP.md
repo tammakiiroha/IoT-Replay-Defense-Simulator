@@ -11,7 +11,6 @@
 **プロジェクト名**: IoT Replay Attack Defense Simulator  
 **氏名**: 盧 銘騰（Romeitou / LU MINGTENG）  
 **GitHub**: https://github.com/tammakiiroha  
-**メール**: lumingteng9@gmail.com  
 **リポジトリ**: https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator  
 **ライセンス**: MIT License
 
@@ -79,7 +78,6 @@ git shortlog -sn --all
 **Project Name**: IoT Replay Attack Defense Simulator  
 **Full Name**: LU MINGTENG (Romeitou)  
 **GitHub**: https://github.com/tammakiiroha  
-**Email**: lumingteng9@gmail.com  
 **Repository**: https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator  
 **License**: MIT License
 
@@ -135,8 +133,7 @@ Referenced materials and code are properly cited in comments or documentation wh
 The overall design, experimental planning, and primary implementation of this project were conducted by the author. While Git commit history serves as one form of evidence for the development process, the ultimate proof of authorship lies in the author's ability to explain code details and modify/extend the code on demand.
 
 **Author**: Romeitou (tammakiiroha)  
-**Date**: November 2025  
-**Contact**: lumingteng9@gmail.com
+**Date**: November 2025
 
 ---
 

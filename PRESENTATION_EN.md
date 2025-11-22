@@ -2,7 +2,7 @@
 
 **Presenter**: Romeitou  
 **Project URL**: https://github.com/tammakiiroha/Replay-simulation  
-**Language**: Python 3.11+  
+**Language**: Python 3.9+  
 **License**: MIT
 
 ---
@@ -17,9 +17,10 @@
 6. [Technical Implementation Details](#6-technical-implementation-details)
 7. [Experimental Design and Methodology](#7-experimental-design-and-methodology)
 8. [Key Experimental Results](#8-key-experimental-results)
-9. [Project Quality Assurance](#9-project-quality-assurance) ⭐ New
-10. [Glossary](#10-glossary)
-11. [Demonstration](#11-demonstration)
+9. [Project Quality Assurance](#9-project-quality-assurance)
+10. [Limitations and Future Work](#10-limitations-and-future-work) ⭐ New
+11. [Glossary](#11-glossary)
+12. [Demonstration](#12-demonstration)
 
 ---
 
@@ -1414,7 +1415,155 @@ These quality assurance measures ensure:
 
 ---
 
-## 10. Glossary
+## 10. Limitations and Future Work
+
+### 10.1 Current Limitations
+
+#### 10.1.1 Simplified Channel Model
+**Current implementation**
+- i.i.d packet-loss model
+- Simple random delay queue to create reordering
+
+**Limitations**
+- No burst-loss behavior (real wireless links often lose packets in bursts)
+- Reordering events are independent; correlated jitter or routing churn are not modeled
+- Delay distributions are simplistic (no long-tail latency)
+
+**Impact**
+- Qualitative trends are robust (e.g., rolling is sensitive to reordering, window is robust), but absolute percentages may differ in real deployments
+- Relative comparisons remain valid because all mechanisms share the same model
+
+**Future improvements**
+- Implement Gilbert-Elliott two-state burst-loss model
+- Add Markov-based correlated reordering
+- Support trace-driven simulations using real packet traces
+
+---
+
+#### 10.1.2 Attack Model Coverage
+**Current scope**
+- Focus on replay attacks with two schedulers: post-run and inline (real-time) injection
+
+**Not covered**
+1. **Relay attacks** – real-time forwarding to extend range without cryptanalysis  
+2. **Signal manipulation** – jamming, power analysis, timing side channels  
+3. **Protocol-level exploits** – session hijacking, downgrade attacks, key leakage
+
+**Scope statement**  
+This study targets replay attacks because they represent the most common threat in low-power wireless control. Other adversaries require different threat models.
+
+**Future extensions**
+- Implement relay-attack simulations with distance bounding
+- Combine replay with physical-layer attacks
+- Evaluate composed attack scenarios (e.g., jitter + relay + replay)
+
+---
+
+#### 10.1.3 Cryptographic Implementation
+**Current implementation**
+- HMAC-SHA256 truncated to 32 bits (8 hex chars), pre-shared key model
+
+**Limitations**
+- 32-bit MAC space (~4.3 billion) may be insufficient for high-assurance deployments
+- No key-rotation or key-establishment process modeled
+
+**Clarifications**
+- All mechanisms use the same MAC length, so relative ordering is unaffected
+- Section 6.4 already recommends 64–128 bit MACs for production use
+
+**Future improvements**
+- Configurable MAC length per experiment
+- Key rotation / rekeying workflows
+- Support for alternative AEAD algorithms (AES-GCM, ChaCha20-Poly1305)
+
+---
+
+#### 10.1.4 Lack of Physical Validation
+**Current status**
+- Pure software simulation with fixed random seed
+- Parameter sweeps (0–30% loss/reorder) for systematic coverage
+
+**Missing pieces**
+- RF hardware tests (ESP32, nRF52, CC2652, etc.)
+- Measurements of real latency, jitter, power consumption
+- Impact of environmental factors (multipath, interference sources)
+
+**Simulation strengths**
+- Fully reproducible
+- Cheap to run and iterate
+- Easy to control single variables
+
+**Research positioning**
+- Serves as a parameterized evaluation between theory and physical demos
+- Provides design guidance rather than exact performance prediction
+
+---
+
+### 10.2 Future Work Directions
+
+#### 10.2.1 Short-Term (6–12 months)
+**1. Physical experiment validation**
+- Hardware: ESP32 (Wi-Fi), nRF52840 (BLE), CC2652 (Zigbee)
+- Reproduce the three core experiments on real links
+- Compare simulation vs. measurement to identify deviations
+
+**2. Enhanced channel models**
+- Gilbert-Elliott burst-loss states derived from IEEE 802.15.4 literature
+- Correlated reordering via Markov processes
+- Trace-driven simulation pipeline accepting PCAP logs
+
+---
+
+#### 10.2.2 Mid-Term (1–2 years)
+**3. Expanded attack models**
+```python
+class RelayAttacker:
+    """Real-time forwarding without modification"""
+    def relay(self, frame):
+        return frame  # forward immediately to receiver
+```
+- Study challenge-response under relay attacks
+- Explore distance-bounding countermeasures
+
+**4. Multi-protocol support**
+- TLS 1.3 / DTLS performance for constrained IoT
+- MQTT-SN security extensions
+- CoAP + DTLS with block transfer and confirmable messages
+
+---
+
+#### 10.2.3 Long-Term (2–5 years)
+**5. Hardware acceleration and optimization**
+- FPGA implementation of sliding-window bitmaps
+- Microcontroller optimization (memory footprint, power modes)
+- Real-time benchmarks on Cortex-M4/M7 platforms
+
+**6. Standardization contributions**
+- Share datasets with IETF IoT working groups
+- Publish best-practice guidance (BCP)
+- Conference tutorials / workshops (IEEE INFOCOM, ACM SenSys)
+
+---
+
+### 10.3 Contributions Welcome
+- **Experimental data** – run the workloads on your own hardware and share JSON outputs
+- **Code contributions** – new defenses, channel models, optimizations
+- **Documentation** – translations, tutorials, walkthroughs
+- **Research collaborations** – joint papers, dataset exchanges, reproduction studies
+
+Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)  
+Issue tracker: https://github.com/tammakiiroha/Replay-simulation/issues
+
+---
+
+### 10.4 Acknowledgments
+- Channel-range design inspired by IEEE 802.15.4 / BLE / LoRaWAN reliability studies
+- Tooling made possible by the Python ecosystem (numpy, matplotlib, pytest)
+- Thanks to the GitHub community and open-source contributors
+
+---
+
+## 11. Glossary
 
 <details>
 <summary>Expand Glossary</summary>
@@ -1434,7 +1583,7 @@ These quality assurance measures ensure:
 
 ---
 
-## 11. Demonstration
+## 12. Demonstration
 
 ---
 

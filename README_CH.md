@@ -2,6 +2,10 @@
 
 <div align="center">
 
+<img src="figures/logo.png" alt="IoT Replay Attack Defense Simulator" width="400">
+
+<br>
+
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.md)
 [![日本語](https://img.shields.io/badge/lang-日本語-red.svg)](README_JP.md)
 [![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)

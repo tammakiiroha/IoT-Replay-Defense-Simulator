@@ -3,40 +3,90 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Virtual Environment
-.venv/
+# Virtual environments
 venv/
-env/
 ENV/
+env/
+.venv
 
 # IDEs
 .vscode/
 .idea/
-.DS_Store
 *.swp
 *.swo
+*~
+.DS_Store
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-
-# Results and Figures (Optional: keep if you want to showcase them on GitHub)
-# results/
-# But usually we ignore intermediate data
-# data/
-
-# Figure formats (keep PNG for GitHub, ignore others)
+# Generated figures (can be regenerated with scripts/plot_results.py)
+figures/*.png
 figures/*.pdf
 figures/*.pgf
 
-# Jupyter Notebooks (if you add any)
-.ipynb_checkpoints/
-*.ipynb
+# Generated results (can be regenerated with scripts/run_sweeps.py)
+results/*.json
 
-# Build artifacts
-*.egg-info/
-dist/
-build/
+# Keep only the figures directory structure and README
+!figures/.gitkeep
+!results/.gitkeep
+
+# LaTeX temporary files
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+
+# Test files
+test_*.pdf
+test_*.tex
+test_*.aux
+test_*.log
+
+# Presentation files (if generated)
+*.pptx
+
+# Personal documents
+卒論.docx
+seminar/
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride

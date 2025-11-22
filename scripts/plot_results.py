@@ -114,6 +114,11 @@ def percent_series(entries: Iterable[Dict], key: str) -> List[float]:
     return [entry[key] * 100 for entry in entries]
 
 
+def standard_error_series(entries: Iterable[Dict], std_key: str, n: int = 200) -> List[float]:
+    """Convert standard deviation to standard error (std/sqrt(n)) and scale to percent."""
+    return [entry[std_key] * 100 / math.sqrt(n) for entry in entries]
+
+
 def save_figure(fig, fig_dir: Path, stem: str, formats: Sequence[str], dpi: int) -> None:
     for ext in {fmt.lower() for fmt in formats}:
         target = fig_dir / f"{stem}.{ext}"
@@ -131,7 +136,7 @@ def plot_baseline(data: List[Dict], width: float, save_kwargs: dict) -> None:
     data.sort(key=lambda e: ORDER.index(e["mode"]))
     modes = [entry["mode"] for entry in data]
     attack = percent_series(data, "avg_attack_rate")
-    attack_std = percent_series(data, "std_attack_rate")
+    attack_std = standard_error_series(data, "std_attack_rate")
     
     # Use colors from STYLE_MAP
     colors = [STYLE_MAP.get(mode, {}).get("color", "#666666") for mode in modes]
@@ -187,7 +192,7 @@ def plot_ploss_curves(data: List[Dict], width: float, save_kwargs: dict, layout:
         xs = [x + offset for x in raw_xs]
         
         ys = percent_series(entries, "avg_legit_rate")
-        yerr = percent_series(entries, "std_legit_rate")
+        yerr = standard_error_series(entries, "std_legit_rate")
         
         style = STYLE_MAP.get(mode, {})
         
@@ -197,12 +202,14 @@ def plot_ploss_curves(data: List[Dict], width: float, save_kwargs: dict, layout:
             linestyle=style.get("linestyle", "-"),
             color=style.get("color", "#777"),
             label=style.get("label", mode),
-            linewidth=2.0, markersize=6, capsize=3, alpha=0.9
+            linewidth=2.5, markersize=9, 
+            capsize=5, capthick=2.0, elinewidth=2.0, 
+            markeredgewidth=1.5, alpha=0.9, zorder=3
         )
         
     ax.set_xlabel("Packet loss probability")
     ax.set_ylabel("Legitimate acceptance [%]")
-    ax.set_ylim(75, 102)
+    ax.set_ylim(65, 102)  # Adjusted to show all data points including p_loss=0.3
     ax.set_title("Packet loss vs legitimate acceptance")
     ax.legend(ncol=2, loc="lower left", frameon=True, framealpha=0.9)
     apply_axes_style(ax)
@@ -219,7 +226,7 @@ def plot_ploss_curves(data: List[Dict], width: float, save_kwargs: dict, layout:
         xs = [x + offset for x in raw_xs]
         
         ys = [max(entry["avg_attack_rate"] * 100, 1e-3) for entry in entries]
-        yerr = percent_series(entries, "std_attack_rate")
+        yerr = standard_error_series(entries, "std_attack_rate")
         
         style = STYLE_MAP.get(mode, {})
         
@@ -229,7 +236,9 @@ def plot_ploss_curves(data: List[Dict], width: float, save_kwargs: dict, layout:
             linestyle=style.get("linestyle", "-"),
             color=style.get("color", "#777"),
             label=style.get("label", mode),
-            linewidth=2.0, markersize=6, capsize=3, alpha=0.9
+            linewidth=2.5, markersize=9, 
+            capsize=5, capthick=2.0, elinewidth=2.0, 
+            markeredgewidth=1.5, alpha=0.9, zorder=3
         )
         
     ax.set_xlabel("Packet loss probability")
@@ -272,7 +281,7 @@ def plot_preorder_curves(data: List[Dict], width: float, save_kwargs: dict) -> N
         xs = [x + offset for x in raw_xs]
         
         ys = percent_series(entries, "avg_legit_rate")
-        yerr = percent_series(entries, "std_legit_rate")
+        yerr = standard_error_series(entries, "std_legit_rate")
         
         style = STYLE_MAP.get(mode, {})
         
@@ -282,7 +291,9 @@ def plot_preorder_curves(data: List[Dict], width: float, save_kwargs: dict) -> N
             linestyle=style.get("linestyle", "-"),
             color=style.get("color", "#777"),
             label=style.get("label", mode),
-            linewidth=2.0, markersize=6, capsize=3, alpha=0.9
+            linewidth=2.5, markersize=9, 
+            capsize=5, capthick=2.0, elinewidth=2.0, 
+            markeredgewidth=1.5, alpha=0.9, zorder=3
         )
         
     ax.set_xlabel("Packet reordering probability")
@@ -307,9 +318,9 @@ def plot_window_tradeoff(data: List[Dict], width: float, save_kwargs: dict) -> N
     xs = range(len(x_values))
     
     legit = percent_series(subset, "avg_legit_rate")
-    legit_std = percent_series(subset, "std_legit_rate")
+    legit_std = standard_error_series(subset, "std_legit_rate")
     attack = percent_series(subset, "avg_attack_rate")
-    attack_std = percent_series(subset, "std_attack_rate")
+    attack_std = standard_error_series(subset, "std_attack_rate")
 
     # Adjusted figsize to reduce bottom whitespace
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(width, width * 0.42), sharex=True, layout="constrained")
@@ -346,7 +357,7 @@ def plot_window_tradeoff(data: List[Dict], width: float, save_kwargs: dict) -> N
         
     apply_axes_style(ax2)
 
-    fig.suptitle("Window size vs usability & security (p_loss=0.05, p_reorder=0.3)", fontsize=11)
+    fig.suptitle("Window size vs usability and security (p_loss=0.05, p_reorder=0.3)", fontsize=11)
     save_figure(fig, stem="window_tradeoff", **save_kwargs)
 
 

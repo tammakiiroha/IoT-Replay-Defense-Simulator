@@ -506,6 +506,20 @@ _来自 `results/ideal_p0.json` 的参考基线_
 
 欢迎贡献！有关开发环境设置、代码风格指南以及如何提交更改，请参阅 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
+## 贡献者
+
+感谢所有帮助改进此项目的贡献者！
+
+<a href="https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=tammakiiroha/IoT-Replay-Defense-Simulator" />
+</a>
+
+由 [contrib.rocks](https://contrib.rocks) 生成。
+
+## Star 历史
+
+[![Star History Chart](https://api.star-history.com/svg?repos=tammakiiroha/IoT-Replay-Defense-Simulator&type=Date)](https://star-history.com/#tammakiiroha/IoT-Replay-Defense-Simulator&Date)
+
 ## 引用
 
 如果您在研究或论文中使用此仿真工具包，请引用：

@@ -162,7 +162,7 @@ python scripts/benchmark.py
 - 🔴 **Inline Attack**: Real-time injection during communication
 - 🎯 **Selective Replay**: Target specific commands (e.g., "UNLOCK", "FIRE")
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Option 1: Graphical Interface (Easiest, recommended for demos)
 

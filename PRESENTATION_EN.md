@@ -367,21 +367,33 @@ Attack success rate = 2/100 = 2%
 
 ### 5.3 Tradeoff Visualization
 
+**Ideal Region**: Top-left (High usability + Low attack success rate)
+
 ```
-┌────────────────────────────────────────────────┐
-│                                                │
-│  100%  ●                           ● Challenge│
-│   Leg  │ ╲                    ╱              │
-│   Acc  │   ╲                ╱                │
-│   Rate │     ● Window     ●                  │
-│        │      (W=5)   Rolling                │
-│        │                                     │
-│    0%  ●──────────────────────────────────── │
-│       0%     Attack Success Rate     100%    │
-│                                                │
-│   Ideal: Top-left (High usability, Low attack)│
-└────────────────────────────────────────────────┘
+Usability
+(Legit Accept Rate)
+    ↑
+100%│ ● Challenge (Most secure)
+    │ ● Window (Best balance)
+    │ ● Rolling (Reorder-sensitive)
+ 90%│
+    │
+    │
+  0%│ ● No Defense (Unprotected)
+    └─────────────────────────→ Attack Success Rate
+     0%                    100%
 ```
+
+**Performance Positioning of Four Mechanisms**:
+
+| Mechanism | Usability | Attack Rate | Position |
+|-----------|-----------|-------------|----------|
+| **Challenge** | ~90-100% | <0.1%-0.3% | ✅ Top-left: Best security |
+| **Window (W=5)** | ~85-90% | 0.5-7.7% | ✅ Top-left to center: Best balance |
+| **Rolling** | ~76-90% | 0.1% | ⚠️ Left-center: Usability drops with reordering |
+| **No Defense** | ~90% | 89.6% | ❌ Right side: Completely unprotected |
+
+**Note**: Specific values depend on network conditions (packet loss, reordering) and attack mode
 
 ---
 

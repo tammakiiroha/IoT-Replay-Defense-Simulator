@@ -18,7 +18,7 @@
 
 **A rigorous Monte Carlo simulation toolkit for evaluating replay attack defenses in wireless control systems**
 
-[📖 Quick Start](#quick-start) • [🎯 Key Results](#experimental-results-and-data-analysis) • [📊 Quality Metrics](#project-quality-metrics) • [🤝 Contributing](CONTRIBUTING.md) • [📚 Full Documentation](PRESENTATION_EN.md)
+[📖 Quick Start](#-quick-start) • [🎯 Key Results](#experimental-results-and-data-analysis) • [📊 Quality Metrics](#project-quality-metrics) • [🤝 Contributing](CONTRIBUTING.md) • [📚 Full Documentation](PRESENTATION_EN.md)
 
 </div>
 

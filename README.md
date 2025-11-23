@@ -11,14 +11,12 @@
 [![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-85+-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-80+-brightgreen.svg)](tests/)
 [![Monte Carlo](https://img.shields.io/badge/runs-200-orange.svg)](EXPERIMENTAL_PARAMETERS_EN.md)
-[![Confidence](https://img.shields.io/badge/confidence-95%25-success.svg)](PRESENTATION_EN.md)
-[![RFC Compliant](https://img.shields.io/badge/RFC-6479%2F2104-blue.svg)](PRESENTATION_EN.md)
 
-**A rigorous Monte Carlo simulation toolkit for evaluating replay attack defenses in wireless control systems**
+**A Monte Carlo–based simulator for evaluating replay attack defense mechanisms in 2.4 GHz wireless control systems (graduation thesis research tool)**
 
-[📖 Quick Start](#quick-start) • [🎯 Key Results](#experimental-results-and-data-analysis) • [📊 Quality Metrics](#project-quality-metrics) • [🤝 Contributing](CONTRIBUTING.md) • [📚 Full Documentation](PRESENTATION_EN.md)
+[📖 Quick Start](#quick-start) • [🎯 Key Results](#experimental-results-and-data-analysis) • [📊 Quality & Tests](#project-quality-and-tests) • [🤝 Contributing](CONTRIBUTING.md) • [📚 Full Documentation](PRESENTATION_EN.md)
 
 </div>
 
@@ -34,14 +32,14 @@
 
 ## 🌟 Highlights
 
-- 🔬 **Rigorous Evaluation**: 200 Monte Carlo runs per experiment, 95% confidence level
+- 🔬 **Monte Carlo Evaluation**: 200 simulation runs per experiment for stable statistics
 - 🛡️ **4 Defense Mechanisms**: No Defense, Rolling Counter + MAC, Sliding Window, Challenge-Response
-- 📡 **Realistic Channel Model**: Packet loss (0-30%) and reordering (0-30%) simulation
-- 📊 **Comprehensive Metrics**: Security (attack success rate) vs. Usability (legitimate acceptance rate)
-- ⚡ **High Performance**: 26-30ms per run, ~38 runs/second throughput
-- 🔄 **Fully Reproducible**: Fixed random seed (42), complete parameter documentation
-- 🧪 **Well Tested**: 85+ test cases, ~70% code coverage, RFC 6479/2104 compliant
-- 🌐 **Multilingual**: Complete documentation in English, 日本語, and 中文
+- 📡 **Realistic Channel Model**: Packet loss (0–30%) and reordering (0–30%) simulation
+- 📊 **Clear Metrics**: Security (attack success rate) vs. usability (legitimate acceptance rate)
+- ⚡ **Fast Enough for Experiments**: Runs complete in a few seconds for typical configurations on a laptop-class machine
+- 🔄 **Reproducible**: Fixed random seed and documented parameter sets
+- 🧪 **Well Tested**: 80+ unit tests covering sender, receiver, channel, attacker, and experiment logic
+- 🌐 **Multilingual**: Documentation in English, 日本語, and 中文
 
 ---
 
@@ -91,7 +89,7 @@ This README provides a **quick overview** and **getting started guide**. For com
 
 ## 🔬 Overview
 
-This toolkit provides a **rigorous Monte Carlo simulation framework** for evaluating replay attack defenses in wireless control systems. It models multiple receiver configurations under a record-and-replay adversary and reports both **security** (attack success rate) and **usability** (legitimate acceptance rate) metrics.
+This toolkit provides a **Monte Carlo–based simulation framework** for evaluating replay attack defenses in wireless control systems. It models multiple receiver configurations under a record-and-replay adversary and reports both **security** (attack success rate) and **usability** (legitimate acceptance rate) metrics.
 
 ## 💻 Requirements
 
@@ -104,37 +102,31 @@ This toolkit provides a **rigorous Monte Carlo simulation framework** for evalua
   pip install -r requirements.txt
   ```
 
-## Project Quality Metrics
+## Project Quality and Tests
 
-### 🧪 Test Coverage
-- **Test Files**: 5 comprehensive test suites
-  - `test_receiver.py` - Defense mechanism verification (5 tests)
-  - `test_sender.py` - Frame generation & MAC correctness (20+ tests)
-  - `test_channel.py` - Channel simulation statistics (15+ tests)
-  - `test_attacker.py` - Dolev-Yao model compliance (25+ tests)
-  - `test_experiment.py` - Monte Carlo statistics (20+ tests)
-- **Total Test Cases**: 85+ tests covering core functionality
-- **Coverage**: ~70% code coverage of critical modules
-- **RFC Compliance**: Tests verify RFC 6479 (Sliding Window), RFC 2104 (HMAC)
+### 🧪 Tests
 
-### ⚡ Performance Benchmarks
-Measured on MacBook Pro (Apple M1, 16GB RAM):
+This repository includes unit tests for all core simulation components:
 
-| Configuration | Runs | Time | Throughput |
-|--------------|------|------|------------|
-| Single Defense Mode | 200 | ~5.3s | ~38 runs/s |
-| All 4 Modes | 200 each | ~22s | ~36 runs/s |
-| Parameter Sweep (5×5) | 25 each | ~31s | - |
+- `test_receiver.py` – defense mechanism behavior
+- `test_sender.py` – frame generation and MAC calculation
+- `test_channel.py` – packet loss / reordering statistics
+- `test_attacker.py` – replay attacker behavior
+- `test_experiment.py` – Monte Carlo experiment driver
 
-**Key Findings**:
-- Average time per run: **26-30 ms**
-- Monte Carlo with 200 runs provides **95% confidence**
-- Defense mode overhead: Challenge-Response (+5%), Window (+2%), Rolling (+1%)
+In total there are more than 80 test cases covering sender, receiver, channel, attacker, and experiment logic.
 
-Run benchmarks yourself:
+You can run all tests with:
+
 ```bash
-python scripts/benchmark.py
-  ```
+pytest
+```
+
+Sliding-window behavior is designed with RFC 6479 as a reference, and HMAC results are checked against RFC 2104 test vectors, but this simulator is not intended to be a full standards-compliant implementation.
+
+### ⚡ Performance (indicative)
+
+On a laptop-class machine (e.g., Apple M1 with Python 3.11), a typical configuration with 200 runs per mode finishes in a few seconds. The goal of this project is research evaluation, so performance is tuned to be "fast enough" for parameter sweeps and repeated experiments, rather than to provide precise benchmarking numbers.
 
 ## ✨ Features
 
@@ -148,11 +140,11 @@ python scripts/benchmark.py
 - 📤 **Sender**: Frame generation with counter/MAC/nonce
 - 📡 **Channel**: Realistic packet loss and reordering simulation
 - 📥 **Receiver**: Stateful verification with 4 defense modes
-- 👤 **Attacker**: Record-and-replay adversary (Dolev-Yao model)
+- 👤 **Attacker**: Record-and-replay adversary
 
 ### 📊 Evaluation & Output
 - 📈 **Metrics**: Legitimate acceptance rate (usability) & Attack success rate (security)
-- 🎲 **Monte Carlo**: 200 runs per experiment, 95% confidence intervals
+- 🎲 **Monte Carlo**: 200 runs per experiment for stable estimates
 - 📊 **Visualization**: Publication-quality figures (PNG/PDF)
 - 💾 **Data Export**: JSON format for downstream analysis
 - 🔄 **Reproducibility**: Fixed random seed, complete parameter logging
@@ -161,6 +153,33 @@ python scripts/benchmark.py
 - ⏱️ **Post-run Attack**: Bulk replay after legitimate traffic
 - 🔴 **Inline Attack**: Real-time injection during communication
 - 🎯 **Selective Replay**: Target specific commands (e.g., "UNLOCK", "FIRE")
+
+## Threat Model and Assumptions
+
+**Adversary capabilities**
+
+- Can passively eavesdrop on all wireless frames on the channel
+- Can record any observed frame without loss (ideal recorder)
+- Can later inject previously recorded frames at arbitrary times (post-run bulk replay or inline real-time injection)
+- Can selectively replay only specific commands (e.g., "UNLOCK", "FIRE")
+
+**Adversary limitations**
+
+- Cannot forge valid MACs without the shared secret key
+- Does not break cryptographic primitives (HMAC-SHA256 is assumed secure)
+- Does not perform lower-layer attacks such as jamming, RF fingerprint spoofing, or precise timing manipulation
+
+**Channel assumptions**
+
+- Packet loss is modeled as an independent Bernoulli process with probability `p_loss`
+- Packet reordering is modeled as an independent event with probability `p_reorder`
+- Detailed physical-layer effects (fading, multipath, burst loss, time correlation) are **not** modeled
+
+**Scope**
+
+The simulator focuses on the logical behavior of the defense mechanisms and the security–usability trade-off under the above assumptions. Physical-layer details, hardware constraints, and energy consumption are considered out of scope.
+
+---
 
 ## Quick Start
 
@@ -444,9 +463,9 @@ Based on 200 Monte Carlo simulations under **moderate network conditions (p_loss
 
 ### Data Reliability Statement
 
-- ✅ All data based on **200 Monte Carlo runs**, achieving 95% confidence level
+- ✅ All data based on **200 Monte Carlo runs** per configuration, providing stable statistics
 - ✅ Uses **fixed random seed (42)**, results fully reproducible
-- ✅ Average run time **26-30ms**, efficient verification
+- ✅ Runs complete in a few seconds on typical laptop hardware
 - ✅ Experimental parameters conform to **EXPERIMENTAL_PARAMETERS_EN.md** standard configuration
 - ✅ Complete source code and test cases available for audit
 
@@ -539,17 +558,17 @@ Made with [contrib.rocks](https://contrib.rocks).
 If you use this simulation toolkit in your research or thesis, please cite:
 
 ```bibtex
-@software{replay_simulation_2025,
-  author = {Romeitou (tammakiiroha)},
-  title = {Replay Attack Simulation Toolkit},
-  year = {2025},
+@software{iot_replay_defense_simulator_2025,
+  author    = {Romeitou (tammakiiroha)},
+  title     = {IoT Replay Attack Defense Simulator},
+  year      = {2025},
   publisher = {GitHub},
-  url = {https://github.com/tammakiiroha/Replay-simulation}
+  url       = {https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator}
 }
 ```
 
 Or in plain text:
-> Romeitou (tammakiiroha). (2025). Replay Attack Simulation Toolkit. GitHub. https://github.com/tammakiiroha/Replay-simulation
+> Romeitou (tammakiiroha). (2025). IoT Replay Attack Defense Simulator. GitHub. https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator
 
 ## References
 

@@ -11,14 +11,12 @@
 [![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-85+-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-80+-brightgreen.svg)](tests/)
 [![Monte Carlo](https://img.shields.io/badge/runs-200-orange.svg)](EXPERIMENTAL_PARAMETERS_CH.md)
-[![Confidence](https://img.shields.io/badge/confidence-95%25-success.svg)](PRESENTATION_CH.md)
-[![RFC Compliant](https://img.shields.io/badge/RFC-6479%2F2104-blue.svg)](PRESENTATION_CH.md)
 
-**严格的蒙特卡洛仿真工具包，用于评估无线控制系统中的重放攻击防御机制**
+**基于蒙特卡洛方法的模拟器，用于评估 2.4 GHz 无线控制系统中的重放攻击防御机制（毕业论文研究工具）**
 
-[📖 快速开始](#快速开始) • [🎯 核心结果](#实验结果与数据分析) • [📊 质量指标](#项目质量指标) • [🤝 贡献指南](CONTRIBUTING.md) • [📚 完整文档](PRESENTATION_CH.md)
+[📖 快速开始](#快速开始) • [🎯 核心结果](#实验结果与数据分析) • [📊 质量与测试](#项目质量与测试) • [🤝 贡献指南](CONTRIBUTING.md) • [📚 完整文档](PRESENTATION_CH.md)
 
 </div>
 
@@ -34,13 +32,13 @@
 
 ## 🌟 项目亮点
 
-- 🔬 **严格评估**：每个实验 200 次蒙特卡洛运行，95% 置信水平
+- 🔬 **蒙特卡洛评估**：每个实验 200 次模拟运行，获得稳定统计结果
 - 🛡️ **4 种防御机制**：无防御、滚动计数器 + MAC、滑动窗口、挑战-响应
 - 📡 **真实信道模型**：丢包（0-30%）和乱序（0-30%）仿真
-- 📊 **全面指标**：安全性（攻击成功率）与可用性（合法接受率）
-- ⚡ **高性能**：每次运行 26-30ms，吞吐量约 38 次/秒
-- 🔄 **完全可重现**：固定随机种子（42），完整参数文档
-- 🧪 **充分测试**：85+ 测试用例，约 70% 代码覆盖率，符合 RFC 6479/2104
+- 📊 **清晰指标**：安全性（攻击成功率）与可用性（合法接受率）
+- ⚡ **实验速度充足**：在普通笔记本电脑上数秒内完成典型配置
+- 🔄 **可重现**：固定随机种子和文档化的参数集
+- 🧪 **充分测试**：80+ 单元测试覆盖发送者、接收者、信道、攻击者和实验逻辑
 - 🌐 **多语言**：完整文档支持 English、日本語 和中文
 
 ---
@@ -101,38 +99,32 @@
   pip install -r requirements.txt
   ```
 
-<a id="项目质量指标"></a>
-## 项目质量指标
+<a id="项目质量与测试"></a>
+## 项目质量与测试
 
-### 🧪 测试覆盖率
-- **测试文件**: 5个全面的测试套件
-  - `test_receiver.py` - 防御机制验证（5个测试）
-  - `test_sender.py` - 帧生成与MAC正确性（20+测试）
-  - `test_channel.py` - 信道模拟统计特性（15+测试）
-  - `test_attacker.py` - Dolev-Yao模型符合性（25+测试）
-  - `test_experiment.py` - 蒙特卡洛统计验证（20+测试）
-- **测试用例总数**: 85+个测试覆盖核心功能
-- **覆盖率**: 关键模块代码覆盖率约70%
-- **RFC符合性**: 测试验证RFC 6479（滑动窗口）、RFC 2104（HMAC）
+### 🧪 测试
 
-### ⚡ 性能基准
-在 MacBook Pro (Apple M1, 16GB RAM) 上测量：
+本仓库包含所有核心仿真组件的单元测试：
 
-| 配置 | 运行次数 | 时间 | 吞吐量 |
-|------|---------|------|--------|
-| 单个防御模式 | 200 | ~5.3秒 | ~38次/秒 |
-| 全部4种模式 | 各200次 | ~22秒 | ~36次/秒 |
-| 参数扫描 (5×5) | 各25次 | ~31秒 | - |
+- `test_receiver.py` – 防御机制行为
+- `test_sender.py` – 帧生成和MAC计算
+- `test_channel.py` – 丢包/乱序统计特性
+- `test_attacker.py` – 重放攻击者行为
+- `test_experiment.py` – 蒙特卡洛实验驱动
 
-**关键发现**：
-- 每次运行平均时间：**26-30毫秒**
-- 200次蒙特卡洛运行提供**95%置信度**
-- 防御机制开销：挑战-响应（+5%）、滑动窗口（+2%）、滚动计数器（+1%）
+总共有 80 多个测试用例覆盖发送者、接收者、信道、攻击者和实验逻辑。
 
-运行基准测试：
+运行所有测试：
+
 ```bash
-python scripts/benchmark.py
+pytest
 ```
+
+滑动窗口行为参考 RFC 6479 设计，HMAC 结果与 RFC 2104 测试向量进行比对，但本模拟器并非完全符合标准的实现。
+
+### ⚡ 性能（参考值）
+
+在笔记本电脑级别的机器上（例如配备 Python 3.11 的 Apple M1），200 次运行的典型配置在几秒内完成。本项目的目标是研究评估，因此性能调整为"足够快"以进行参数扫描和重复实验，而不是提供精确的基准数字。
 
 ## 功能特性
 
@@ -436,9 +428,9 @@ python scripts/plot_results.py --formats png
 
 ### 数据可靠性声明
 
-- ✅ 所有数据基于**200次蒙特卡洛运行**，达到95%置信度
+- ✅ 所有数据基于每个配置**200次蒙特卡洛运行**，提供稳定统计结果
 - ✅ 使用**固定随机种子(42)**，结果完全可重现
-- ✅ 单次运行平均耗时**26-30ms**，高效验证
+- ✅ 在普通笔记本硬件上数秒内完成
 - ✅ 实验参数符合**EXPERIMENTAL_PARAMETERS_CH.md**标准配置
 - ✅ 完整源代码和测试用例可供审计
 
@@ -536,17 +528,17 @@ _来自 `results/ideal_p0.json` 的参考基线_
 如果您在研究或论文中使用此仿真工具包，请引用：
 
 ```bibtex
-@software{replay_simulation_2025,
-  author = {Romeitou (tammakiiroha)},
-  title = {Replay Attack Simulation Toolkit},
-  year = {2025},
+@software{iot_replay_defense_simulator_2025,
+  author    = {Romeitou (tammakiiroha)},
+  title     = {IoT Replay Attack Defense Simulator},
+  year      = {2025},
   publisher = {GitHub},
-  url = {https://github.com/tammakiiroha/Replay-simulation}
+  url       = {https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator}
 }
 ```
 
 或纯文本格式：
-> Romeitou (tammakiiroha). (2025). Replay Attack Simulation Toolkit. GitHub. https://github.com/tammakiiroha/Replay-simulation
+> Romeitou (tammakiiroha). (2025). IoT Replay Attack Defense Simulator. GitHub. https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator
 
 ## 参考文献
 

@@ -5,6 +5,7 @@
 - 本项目是本人为毕业研究构建的 2.4GHz 无线重放攻击防御仿真平台。
 - 研究内容包括：攻击/防御模型设计、信道环境建模、实验场景与指标设计等。
 - 系统整体设计与核心实现逻辑由本人负责，开发过程中使用 ChatGPT 等 AI 工具进行查错和代码优化。
+- **开发周期**：2025年4月启动实机实验，6-10月逐步实现4种防御机制和实验框架，11月完成文档和测试整理。
 - 详细说明请参见下方的日文/英文部分，以及仓库中的中文 README。
 
 ---
@@ -28,8 +29,11 @@
 **研究分野**: ネットワークセキュリティ、IoTセキュリティ
 
 **開発履歴**:
-- 2025年4月～: 卒業設計の実験と設計を開始
-- 2025年11月18日以降: 本リポジトリにてコード整理、文書化、実験スクリプト追加
+- **2025年4月～5月**: 2.4GHz 玩具車リモコンの実機実験、RF キャプチャとトレース整理
+- **2025年6月～7月**: 基本的なシミュレータフレームワークを実装（No Defense / Rolling Counter）
+- **2025年8月**: Sliding Window モードの追加、パラメータスイープのスクリプト作成
+- **2025年9月～10月**: Challenge-Response モードの追加、攻撃モデルの整理、結果のプロットスクリプト整備
+- **2025年11月**: テストケースとドキュメントの整理、GitHub 公開用にリポジトリ構成を整備
 
 ### 開発証明
 
@@ -100,8 +104,11 @@ This project was developed as part of the following thesis research:
 **Research Area**: Network Security, IoT Security
 
 **Development Timeline**:
-- From April 2025: Started thesis experiments and design
-- From November 18, 2025: Code restructuring, documentation, and experimental scripts in this repository
+- **April - May 2025**: Conducted real hardware experiments with 2.4GHz toy car remote control, RF signal capture and trace organization
+- **June - July 2025**: Implemented basic simulator framework (No Defense / Rolling Counter modes)
+- **August 2025**: Added Sliding Window mode, created parameter sweep scripts
+- **September - October 2025**: Added Challenge-Response mode, refined attack models, developed result plotting scripts
+- **November 2025**: Organized test cases and documentation, restructured repository for GitHub publication
 
 ### Development Evidence
 

@@ -508,6 +508,24 @@ Therefore, a more prudent statement would be:
 - **Under these simulation conditions**, W=3-7 forms an "optimal window size range"
 - If further determination of the final value is needed, real-device testing of candidates within this range in the target environment is recommended
 
+**Why is the default W=5 rather than W=3?**
+
+Although Experiment 3 shows W=3's combined score is slightly higher than W=5 (78.6 vs 77.7), this project still chooses W=5 as the default value. Here's why:
+
+| Consideration | W=3 | W=5 | Explanation |
+|---------------|-----|-----|-------------|
+| **Combined Score** | 78.6 | 77.7 | Difference is only 0.9, statistically insignificant |
+| **Reordering Tolerance** | Up to 3 packets | Up to 5 packets | W=5 is more robust to network jitter |
+| **Security Margin** | 6.5% attack rate | 7.7% attack rate | 1.2% difference, both acceptable |
+| **Applicability** | Better for low-latency networks | More versatile | W=5 performs stably across wider conditions |
+
+**Core Considerations**:
+1. **Conservative Design Principle**: W=5 provides larger reordering tolerance, won't suddenly fail when network conditions are worse than experimental settings (e.g., burst delays)
+2. **Specificity of Experimental Conditions**: Experiment 3's conditions (p_loss=15%, p_reorder=15%) are a specific combination; W=3's "optimality" only holds for that condition
+3. **Engineering Practice**: In real deployments, network conditions vary significantly; choosing a slightly larger window provides safety margin
+
+> 💡 **Recommendation**: If the target environment's network characteristics are known and relatively stable, W=3 can be used to achieve slightly better overall performance. If network conditions are uncertain or highly variable, W=5 is the safer choice.
+
 **Simulation Limitations Explained**:
 
 | Limitation | Description | Potential Impact |

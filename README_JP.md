@@ -11,7 +11,7 @@
 [![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-80+-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-94-brightgreen.svg)](tests/)
 [![Monte Carlo](https://img.shields.io/badge/runs-200-orange.svg)](EXPERIMENTAL_PARAMETERS_JP.md)
 
 **2.4 GHz 無線制御システムにおけるリプレイ攻撃防御メカニズムを評価するモンテカルロベースのシミュレータ（卒業論文研究ツール）**
@@ -38,7 +38,7 @@
 - 📊 **明確なメトリクス**：セキュリティ（攻撃成功率）対ユーザビリティ（正規受理率）
 - ⚡ **実験に十分な速度**：一般的なラップトップで数秒で完了
 - 🔄 **再現可能**：固定ランダムシードと文書化されたパラメータセット
-- 🧪 **十分なテスト**：送信者、受信者、チャネル、攻撃者、実験ロジックをカバーする 80+ 単体テスト
+- 🧪 **十分なテスト**：送信者、受信者、チャネル、攻撃者、実験ロジックをカバーする 94 単体テスト
 - 🌐 **多言語対応**：English、日本語、中文の完全ドキュメント
 
 ---

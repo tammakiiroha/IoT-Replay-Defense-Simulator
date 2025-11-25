@@ -11,7 +11,7 @@
 [![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-80+-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-94-brightgreen.svg)](tests/)
 [![Monte Carlo](https://img.shields.io/badge/runs-200-orange.svg)](EXPERIMENTAL_PARAMETERS_CH.md)
 
 **基于蒙特卡洛方法的模拟器，用于评估 2.4 GHz 无线控制系统中的重放攻击防御机制（毕业论文研究工具）**
@@ -38,7 +38,7 @@
 - 📊 **清晰指标**：安全性（攻击成功率）与可用性（合法接受率）
 - ⚡ **实验速度充足**：在普通笔记本电脑上数秒内完成典型配置
 - 🔄 **可重现**：固定随机种子和文档化的参数集
-- 🧪 **充分测试**：80+ 单元测试覆盖发送者、接收者、信道、攻击者和实验逻辑
+- 🧪 **充分测试**：94 个单元测试覆盖发送者、接收者、信道、攻击者和实验逻辑
 - 🌐 **多语言**：完整文档支持 English、日本語 和中文
 
 ---

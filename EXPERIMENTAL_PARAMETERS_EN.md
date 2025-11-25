@@ -1,7 +1,7 @@
 # Experimental Parameters Configuration
 
 **Version**: 1.0  
-**Last Updated**: 2024  
+**Last Updated**: 2025  
 **Related Code**: [`scripts/experiment_config.py`](scripts/experiment_config.py)  
 **Technical Details**: See [`PRESENTATION_EN.md`](PRESENTATION_EN.md#6-technical-implementation-details)
 
@@ -261,7 +261,7 @@ python scripts/experiment_config.py  # Prints parameter summary
 
 ## Version History
 
-**v1.0** (2024)
+**v1.0** (2025)
 - Initial parameter specification
 - Three core experiments defined
 - Statistical justification documented

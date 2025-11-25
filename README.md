@@ -34,7 +34,7 @@
 
 - 🔬 **Monte Carlo Evaluation**: 200 simulation runs per experiment for stable statistics
 - 🛡️ **4 Defense Mechanisms**: No Defense, Rolling Counter + MAC, Sliding Window, Challenge-Response
-- 📡 **Realistic Channel Model**: Packet loss (0–30%) and reordering (0–30%) simulation
+- 📡 **Simplified Channel Model**: Approximates wireless environments with packet loss (0–30%) and reordering (0–30%)
 - 📊 **Clear Metrics**: Security (attack success rate) vs. usability (legitimate acceptance rate)
 - ⚡ **Fast Enough for Experiments**: Runs complete in a few seconds for typical configurations on a laptop-class machine
 - 🔄 **Reproducible**: Fixed random seed and documented parameter sets
@@ -370,7 +370,7 @@ This project systematically evaluates four replay attack defense mechanisms thro
 | Experiment | Variable Parameter | Fixed Parameters | Data Points | Corresponding Figures |
 |------------|-------------------|------------------|-------------|----------------------|
 | **Exp. 1** | p_loss: 0-30% | p_reorder=0% | 7 points × 4 modes = 28 records | `p_loss_legit.png`, `p_loss_attack.png` |
-| **Exp. 2** | p_reorder: 0-30% | p_loss=10% | 7 points × 4 modes = 28 records | `p_reorder_legit.png` |
+| **Exp. 2** | p_reorder: 0-30% | p_loss=10% | 7 points × 4 modes = 28 records | `p_reorder_legit.png`, `p_reorder_attack.png` |
 | **Exp. 3** | window_size: 1-20 | p_loss=15%, p_reorder=15% | 7 window sizes | `window_tradeoff.png` |
 
 Full parameter configuration: [Experimental Parameters Documentation](EXPERIMENTAL_PARAMETERS_EN.md)
@@ -386,12 +386,12 @@ Full parameter configuration: [Experimental Parameters Documentation](EXPERIMENT
 | **no_def** | Usability 100%, Attack 100% | Usability 70.3%, Attack 69.7% | ↓29.7% | ❌ No Protection |
 | **rolling** | Usability 100%, Attack 0.0% | Usability 70.3%, Attack 0.4% | ↓29.7% | ✅ Excellent |
 | **window** | Usability 100%, Attack 0.0% | Usability 69.5%, Attack 1.8% | ↓30.5% | ✅ Excellent |
-| **challenge** | Usability 100%, Attack 0.0% | Usability 70.0%, Attack 0.3% | ↓30.0% | ✅ Best |
+| **challenge** | Usability 100%, Attack 0.0% | Usability 70.0%, Attack 0.3% | ↓30.0% | ✅ Best security under these conditions |
 
 **Conclusions**:
 - All defense mechanisms experience ~30% usability degradation as packet loss increases, consistent with channel characteristics
 - Defense security remains strong even in harsh conditions, with attack success rates <2%
-- `challenge` mechanism shows best stability, maintaining 0.3% attack rate even at 30% packet loss
+- Under these experimental conditions, `challenge` mechanism shows best stability, maintaining 0.3% attack rate even at 30% packet loss
 
 ### Experiment 2: Impact of Packet Reordering on Defense Mechanisms
 
@@ -402,13 +402,13 @@ Full parameter configuration: [Experimental Parameters Documentation](EXPERIMENT
 | Defense Mode | No Reordering (0%) | Severe Reordering (30%) | Usability Drop | Key Observation |
 |--------------|-------------------|------------------------|----------------|-----------------|
 | **no_def** | Usability 90.3%, Attack 89.6% | Usability 90.7%, Attack 89.9% | ↓-0.4% | Reordering irrelevant |
-| **rolling** | Usability 90.3%, Attack 0.1% | Usability 76.8%, Attack 0.1% | ↓13.5% | ⚠️ **Critical Flaw** |
-| **window** | Usability 90.3%, Attack 0.5% | Usability 90.6%, Attack 0.5% | ↓-0.3% | ✅ Reordering Immune |
+| **rolling** | Usability 90.3%, Attack 0.1% | Usability 76.8%, Attack 0.1% | ↓13.5% | ⚠️ **Highly sensitive to reordering** |
+| **window** | Usability 90.3%, Attack 0.5% | Usability 90.6%, Attack 0.5% | ↓-0.3% | ✅ Robust to reordering in this experiment |
 | **challenge** | Usability 89.8%, Attack 0.1% | Usability 64.5%, Attack 0.1% | ↓25.3% | ⚠️ Affected |
 
 **Core Conclusions**:
-1. **Rolling mechanism has a critical flaw**: Usability drops 13.5% under 30% reordering due to strict ordering checks rejecting legitimate packets
-2. **Window mechanism is completely immune to reordering**: Sliding window with bitmap elegantly handles out-of-order packets
+1. **Rolling mechanism shows significant issues under reordering**: Usability drops 13.5% under 30% reordering due to strict ordering checks rejecting legitimate packets
+2. **Window mechanism is highly robust to reordering in this experiment**: Sliding window with bitmap allows packets to arrive in any order within the window
 3. **Challenge mechanism suffers under high reordering**: Interactive challenge-response pattern sensitive to reordering, 25.3% usability drop
 
 ### Experiment 3: Sliding Window Size Trade-off Analysis
@@ -434,20 +434,20 @@ Full parameter configuration: [Experimental Parameters Documentation](EXPERIMENT
 
 ### Comprehensive Evaluation and Practical Recommendations
 
-Based on 200 Monte Carlo simulations under **moderate network conditions (p_loss=10%, p_reorder=0%)**:
+Under this simulation model, based on 200 Monte Carlo runs per configuration under **moderate network conditions (p_loss=10%, p_reorder=0%)**:
 
 | Rank | Defense | Usability | Attack Rate | Combined Score | Recommended Scenario |
 |------|---------|-----------|-------------|----------------|---------------------|
-| 🥇 | **rolling** | 90.3% | 0.1% | 90.1 | ⚠️ **Only for reorder-free networks** |
+| 🥇 | **rolling** | 90.3% | 0.1% | 90.1 | ⚠️ **Better suited for near-reorder-free networks** |
 | 🥈 | **window** | 90.3% | 0.5% | 89.8 | ✅ **First choice for general IoT** |
 | 🥉 | **challenge** | 89.8% | 0.1% | 89.7 | ✅ **High-security scenarios** |
 | ❌ | **no_def** | 90.3% | 89.6% | 0.6 | ❌ Baseline (no protection) |
 
-**Practical Deployment Recommendations**:
+**Practical Deployment Recommendations** (based on experimental data):
 
 1. **General IoT Devices** (Smart Home, Sensor Networks)
-   - Recommended: `window` mechanism, size 5-7
-   - Reason: Reordering immune, stable performance, simple implementation
+   - Recommended: `window` mechanism, size 3-5
+   - Reason: Robust to reordering in this experiment
 
 2. **Industrial Control Systems** (Power Grid, Traffic Signals)
    - Recommended: `challenge` mechanism
@@ -526,8 +526,8 @@ Related data files:
 ## Observations and insights
 - **Robustness to Reordering**: The Rolling Counter mechanism is highly sensitive to packet reordering. Even a moderate reordering probability (0.3) causes the legitimate acceptance rate to drop to ~84%. In contrast, the Window (W=5) mechanism maintains near-perfect usability (>99.8%) even under severe reordering (0.7).
 - **Window Tuning**: `W=1` acts as a strict counter and fails catastrophically under unstable conditions (27.6% acceptance). Increasing the window to `W=3..5` restores usability to ~95% while keeping the attack success rate extremely low (<0.3%).
-- **Security Trade-off**: While the Window mode theoretically opens a small replay window, the experimental results show that in practice (even with 200 runs), the attack success rate remains negligible compared to the massive usability gains.
-- **Conclusion**: For real-world wireless control systems where packet loss and reordering are common, a Sliding Window mechanism (W=5) provides the best balance between security and user experience.
+- **Security Trade-off**: While the Window mode theoretically opens a small replay window, in this experiment (200 runs), the attack success rate remains negligible compared to the massive usability gains.
+- **Conclusion**: For wireless control scenarios where packet loss and reordering are common, under the conditions of this project's simulation, a properly configured Sliding Window mechanism (e.g., W=3-5) shows a good balance between security and user experience.
 
 ## Contributing
 

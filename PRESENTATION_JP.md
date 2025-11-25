@@ -876,7 +876,7 @@ for mode in [no_def, rolling, window, challenge]:
 ### 8.1 実験概要
 
 本プロジェクトは**3つのコア実験**を通じて、4種類のリプレイ攻撃防御メカニズムを体系的に評価します。すべての実験で使用：
-- **200回のモンテカルロ実行**（95%信頼水準）
+- **200回のモンテカルロ実行**（統計的に安定した推定を得るのに十分なサンプル数）
 - **固定ランダムシード42**（完全再現可能）
 - **統一ベースライン**：実行ごとに20個の正規送信、100回のリプレイ試行
 
@@ -967,6 +967,9 @@ for mode in [no_def, rolling, window, challenge]:
 
 ![並び替え影響-可用性](figures/p_reorder_legit.png)
 *図3：並び替えが正規受理率に与える影響（rolling欠陥を明らかに）*
+
+![並び替え影響-攻撃成功率](figures/p_reorder_attack.png)
+*図4：並び替えが攻撃成功率に与える影響（4防御メカニズム比較）*
 
 **核心的発見**：
 
@@ -1064,7 +1067,7 @@ for mode in [no_def, rolling, window, challenge]:
 
 | 順位 | 防御 | 可用性 | 攻撃率 | 総合スコア | 推奨シナリオ | 主要特性 |
 |-----|------|--------|-------|----------|-----------|---------|
-| 🥇 | **rolling** | 90.3% | 0.1% | **90.1** | ⚠️ 並び替えなしのみ | シンプルだが並び替えに脆弱 |
+| 🥇 | **rolling** | 90.3% | 0.1% | **90.1** | ⚠️ ほぼ並び替えなしの環境に適する | シンプルだが並び替えに脆弱 |
 | 🥈 | **window** | 90.3% | 0.5% | 89.8 | ✅ **一般IoT第一選択** | 並び替え免疫、安定 |
 | 🥉 | **challenge** | 89.8% | 0.1% | 89.7 | ✅ 高セキュリティ | 最高セキュリティ、双方向必要 |
 | ❌ | **no_def** | 90.3% | 89.6% | 0.6 | ❌ ベースライン参照 | 保護なし |
@@ -1089,7 +1092,7 @@ for mode in [no_def, rolling, window, challenge]:
 #### 8.5.3 データ信頼性まとめ
 
 ✅ **統計的信頼性**：
-- 200回モンテカルロ実行、95%信頼水準
+- 各構成で200回のモンテカルロ実行、安定した統計推定を得るのに十分なサンプル数
 - 固定ランダムシード42、完全再現可能
 - 低標準偏差、安定結果
 
@@ -1098,9 +1101,14 @@ for mode in [no_def, rolling, window, challenge]:
 - 約36-38実行/秒スループット
 
 ✅ **実験透明性**：
-- 完全なソースコード：[GitHub](https://github.com/tammakiiroha/Replay-simulation)
+- 完全なソースコード：[GitHub](https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator)
 - 生データ：`results/*.json`
 - パラメータ構成：[EXPERIMENTAL_PARAMETERS_JP.md](EXPERIMENTAL_PARAMETERS_JP.md)
+
+上記の結論は、本シミュレーションフレームワークの攻撃者モデルおよびチャネルモデルの仮定に基づいていることを強調しておきます。これらの仮定と実際の2.4GHz無線環境との差異およびその影響については、後続の「考察」セクションでさらに分析します。
+
+---
+
 ## 9. プロジェクト品質保証
 
 ### 9.1 テストカバレッジ
@@ -1703,6 +1711,7 @@ Replay-simulation/
 │   ├── p_loss_legit.png
 │   ├── p_loss_attack.png
 │   ├── p_reorder_legit.png
+│   ├── p_reorder_attack.png
 │   ├── window_tradeoff.png
 │   └── baseline_attack.png
 │

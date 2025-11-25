@@ -910,7 +910,7 @@ for mode in [no_def, rolling, window, challenge]:
 ### 8.1 Experimental Overview
 
 This project systematically evaluates four replay attack defense mechanisms through **three core experiments**. All experiments use:
-- **200 Monte Carlo runs** (95% confidence level)
+- **200 Monte Carlo runs** (providing statistically stable estimates)
 - **Fixed random seed 42** (fully reproducible)
 - **Unified baseline**: 20 legitimate transmissions, 100 replay attempts per run
 
@@ -1010,6 +1010,9 @@ Evaluate impact of reordering on each mechanism under 10% baseline packet loss, 
 ![Reordering Impact - Usability](figures/p_reorder_legit.png)
 *Figure 3: Impact of reordering on legitimate acceptance rate (reveals rolling flaw)*
 
+![Reordering Impact - Attack Success](figures/p_reorder_attack.png)
+*Figure 4: Impact of reordering on attack success rate (4 defense mechanisms)*
+
 **How to Read This Figure**:
 - **X-axis**: p_reorder (packet reordering probability)
   - 0.0 = perfect ordering
@@ -1044,6 +1047,8 @@ Evaluate impact of reordering on each mechanism under 10% baseline packet loss, 
 | Wired Ethernet | 0-5% | 90.3% | 90.3% | Rolling viable |
 | Wi-Fi | 10-20% | 78-85% | 90.3% | ⚠️ Rolling degraded |
 | Bluetooth/Zigbee | 15-30% | 76-82% | 90.6% | ❌ Rolling unreliable |
+
+*Note: The "typical p_reorder" values in this table are illustrative ranges to show approximate differences in reordering between network types, not measurements from a specific system. The corresponding usability values are simulation results at those parameters, intended to help understand trends.*
 
 **Conclusion**:
 - **Rolling unsuitable for real IoT networks** (Wi-Fi, BLE, Zigbee have reordering)
@@ -1123,7 +1128,7 @@ Based on 200 Monte Carlo simulations under **moderate network conditions (p_loss
 
 | Rank | Defense | Usability | Attack Rate | Combined Score | Recommended Scenario | Key Characteristics |
 |------|---------|-----------|-------------|----------------|---------------------|---------------------|
-| 🥇 | **rolling** | 90.3% | 0.1% | **90.1** | ⚠️ Reorder-free only | Simple but reorder-fragile |
+| 🥇 | **rolling** | 90.3% | 0.1% | **90.1** | ⚠️ Better suited for near-reorder-free environments | Simple but reorder-fragile |
 | 🥈 | **window** | 90.3% | 0.5% | 89.8 | ✅ **General IoT first choice** | Reorder-immune, stable |
 | 🥉 | **challenge** | 89.8% | 0.1% | 89.7 | ✅ High-security | Best security, needs bidirectional |
 | ❌ | **no_def** | 90.3% | 89.6% | 0.6 | ❌ Baseline reference | No protection |
@@ -1177,7 +1182,7 @@ Start Choosing Defense Mechanism
 #### 8.5.4 Data Reliability Summary
 
 ✅ **Statistical Reliability**:
-- 200 Monte Carlo runs, 95% confidence level
+- 200 Monte Carlo runs per configuration, sample size sufficient for stable statistical estimates
 - Fixed random seed 42, fully reproducible
 - Low standard deviation, stable results
 
@@ -1186,9 +1191,11 @@ Start Choosing Defense Mechanism
 - ~36-38 runs/second throughput
 
 ✅ **Experimental Transparency**:
-- Complete source code: [GitHub](https://github.com/tammakiiroha/Replay-simulation)
+- Complete source code: [GitHub](https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator)
 - Raw data: `results/*.json`
 - Parameter configuration: [EXPERIMENTAL_PARAMETERS_EN.md](EXPERIMENTAL_PARAMETERS_EN.md)
+
+It should be emphasized that the above conclusions are based on the attacker model and channel model assumptions of this simulation framework; the differences between these assumptions and real 2.4GHz wireless environments and their implications will be further analyzed in the "Discussion" section.
 
 ---
   - p_loss=0.20: Both at 79.53%
@@ -1798,6 +1805,7 @@ Replay-simulation/
 │   ├── p_loss_legit.png
 │   ├── p_loss_attack.png
 │   ├── p_reorder_legit.png
+│   ├── p_reorder_attack.png
 │   ├── window_tradeoff.png
 │   └── baseline_attack.png
 │

@@ -925,7 +925,7 @@ for mode in [no_def, rolling, window, challenge]:
 ### 8.1 实验概览
 
 本项目通过**三组核心实验**系统评估了四种重放攻击防御机制的性能。所有实验均采用：
-- **200次蒙特卡洛运行**（每个实验配置运行200次，提供95%置信水平的统计可靠性）
+- **200次蒙特卡洛运行**（每个实验配置运行200次，可获得统计上较稳定的估计）
 - **固定随机种子 42**（完全可重现）
 - **统一基线参数**：每次运行20个合法传输，100次重放尝试
 
@@ -1033,6 +1033,9 @@ for mode in [no_def, rolling, window, challenge]:
 ![乱序率影响-可用性](figures/p_reorder_legit.png)
 *图3：乱序率对合法接受率的影响（揭示rolling机制局限性）*
 
+![乱序率影响-攻击成功率](figures/p_reorder_attack.png)
+*图4：乱序率对攻击成功率的影响（4种防御机制对比）*
+
 **如何阅读此图**：
 - **X轴**：p_reorder（包乱序概率）
   - 0.0 = 完美顺序（无乱序）
@@ -1069,6 +1072,8 @@ for mode in [no_def, rolling, window, challenge]:
 | 有线以太网 | 0-5% | 90.3% | 90.3% | rolling可用 |
 | Wi-Fi | 10-20% | 78-85% | 90.3% | ⚠️ rolling降级 |
 | 蓝牙/Zigbee | 15-30% | 76-82% | 90.6% | ❌ rolling不可靠 |
+
+*注：表中"典型 p_reorder" 为示意性范围，用于说明不同类型网络在乱序程度上的大致差异，并非某一具体系统的实测结果；对应的可用性数值来自本仿真在相应参数下的结果，用于辅助理解趋势。*
 
 **结论**：
 - **rolling机制在存在乱序的IoT网络中表现受限**（Wi-Fi、BLE、Zigbee等环境）
@@ -1159,7 +1164,7 @@ for mode in [no_def, rolling, window, challenge]:
 
 | 排名 | 防御机制 | 可用性 | 攻击成功率 | 综合得分 | 适用场景 | 关键特性 |
 |-----|---------|--------|-----------|---------|---------|---------|
-| 🥇 | **rolling** | 90.3% | 0.1% | **90.1** | ⚠️ 仅无乱序网络 | 计算简单但乱序脆弱 |
+| 🥇 | **rolling** | 90.3% | 0.1% | **90.1** | ⚠️ 更适用于几乎无乱序的网络环境 | 计算简单但乱序脆弱 |
 | 🥈 | **window** | 90.3% | 0.5% | 89.8 | ✅ **通用IoT首选** | 可用性对乱序鲁棒 |
 | 🥉 | **challenge** | 89.8% | <0.1% | ~89.7 | ✅ 高安全要求 | 最高安全性，需双向通信 |
 | ❌ | **no_def** | 90.3% | 89.6% | 0.6 | ❌ 基线参考 | 无防护能力 |
@@ -1218,7 +1223,7 @@ for mode in [no_def, rolling, window, challenge]:
 #### 8.5.4 关键决策因素
 
 **1. 网络特性**
-- 乱序率 >5%：**必须使用window**，rolling不可靠
+- 乱序率 >5%：**应优先选择 window**，rolling 的可用性会明显下降
 - 乱序率 <5%：rolling和window均可
 - 丢包率 >20%：所有机制可用性均下降，但安全性保持
 
@@ -1248,8 +1253,8 @@ for mode in [no_def, rolling, window, challenge]:
 #### 8.5.6 数据可靠性总结
 
 ✅ **统计可靠性**：
-- 200次蒙特卡洛运行，95%置信水平
-- 固定随机种子42，结果完全可重现
+- 每个配置 200 次蒙特卡洛运行，样本量足以获得稳定的统计估计
+- 固定随机种子 42，结果完全可重现
 - 标准差低，结果稳定
 
 ✅ **性能验证**：
@@ -1257,9 +1262,14 @@ for mode in [no_def, rolling, window, challenge]:
 - ~36-38次运行/秒吞吐量
 
 ✅ **实验透明性**：
-- 完整源代码：[GitHub](https://github.com/tammakiiroha/Replay-simulation)
+- 完整源代码：[GitHub](https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator)
 - 原始数据：`results/*.json`
 - 参数配置：[EXPERIMENTAL_PARAMETERS_CH.md](EXPERIMENTAL_PARAMETERS_CH.md)
+
+需要强调的是，上述结论均建立在本仿真框架的攻击者模型和信道模型假设之上；这些假设与真实 2.4GHz 无线环境的差异及其影响，将在后续的"讨论"章节中进一步分析。
+
+---
+
 ## 9. 项目质量保证
 
 ### 9.1 测试覆盖率
@@ -2012,6 +2022,7 @@ Replay-simulation/
 │   ├── p_loss_legit.png
 │   ├── p_loss_attack.png
 │   ├── p_reorder_legit.png
+│   ├── p_reorder_attack.png
 │   ├── window_tradeoff.png
 │   └── baseline_attack.png
 │

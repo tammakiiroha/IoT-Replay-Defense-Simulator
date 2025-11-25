@@ -270,7 +270,7 @@ def plot_preorder_curves(data: List[Dict], width: float, save_kwargs: dict) -> N
     x_range = max(all_x) - min(all_x)
     jitter_unit = x_range * 0.015
 
-    # Legitimate acceptance only
+    # Legitimate acceptance
     fig, ax = plt.subplots(figsize=(width, width * 0.7), layout="constrained")
     for mode, entries in subset_by_mode.items():
         if not entries:
@@ -302,6 +302,41 @@ def plot_preorder_curves(data: List[Dict], width: float, save_kwargs: dict) -> N
     ax.legend(ncol=2, loc="lower left", frameon=True, framealpha=0.9)
     apply_axes_style(ax)
     save_figure(fig, stem="p_reorder_legit", **save_kwargs)
+
+    # Replay success (log axis)
+    fig, ax = plt.subplots(figsize=(width, width * 0.7), layout="constrained")
+    for mode, entries in subset_by_mode.items():
+        if not entries:
+            continue
+            
+        raw_xs = [entry["sweep_value"] for entry in entries]
+        offset = OFFSET_MAP.get(mode, 0) * jitter_unit
+        xs = [x + offset for x in raw_xs]
+        
+        ys = [max(entry["avg_attack_rate"] * 100, 1e-3) for entry in entries]
+        yerr = standard_error_series(entries, "std_attack_rate")
+        
+        style = STYLE_MAP.get(mode, {})
+        
+        ax.errorbar(
+            xs, ys, yerr=yerr,
+            marker=style.get("marker", "o"), 
+            linestyle=style.get("linestyle", "-"),
+            color=style.get("color", "#777"),
+            label=style.get("label", mode),
+            linewidth=2.5, markersize=9, 
+            capsize=5, capthick=2.0, elinewidth=2.0, 
+            markeredgewidth=1.5, alpha=0.9, zorder=3
+        )
+        
+    ax.set_xlabel("Packet reordering probability")
+    ax.set_ylabel("Replay success [%] (log)")
+    ax.set_yscale("log")
+    ax.set_ylim(1e-3, 150)
+    ax.set_title("Packet reordering vs replay success")
+    ax.legend(ncol=2, loc="lower right", frameon=True, framealpha=0.9)
+    apply_axes_style(ax)
+    save_figure(fig, stem="p_reorder_attack", **save_kwargs)
 
 
 def plot_window_tradeoff(data: List[Dict], width: float, save_kwargs: dict) -> None:

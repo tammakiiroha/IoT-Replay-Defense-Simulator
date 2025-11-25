@@ -1205,7 +1205,7 @@ This project implements a comprehensive unit test suite to ensure code correctne
 | Metric | Value | Description |
 |--------|-------|-------------|
 | **Test Files** | 5 | Cover all core modules |
-| **Total Test Cases** | 85+ | Comprehensive validation |
+| **Total Test Cases** | 94 | Comprehensive validation |
 | **Code Coverage** | ~70% | High coverage of critical modules |
 | **RFC Compliance** | RFC 6479, 2104 | Standard verification |
 
@@ -1410,7 +1410,7 @@ Please fix the errors and try again.
 
 | Dimension | Score | Description |
 |-----------|-------|-------------|
-| Test Coverage | 9/10 ✅ | 85+ tests, 70% coverage |
+| Test Coverage | 9/10 ✅ | 94 tests, 70% coverage |
 | RFC Compliance | 10/10 ✅ | RFC 6479, 2104 verified |
 | Performance | 9/10 ✅ | 26-30ms/run |
 | Error Handling | 9/10 ✅ | Complete validation |

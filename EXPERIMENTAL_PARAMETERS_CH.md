@@ -1,7 +1,7 @@
 # 实验参数配置文档
 
 **版本**: 1.0  
-**最后更新**: 2024  
+**最后更新**: 2025  
 **相关代码**: [`scripts/experiment_config.py`](scripts/experiment_config.py)  
 **技术细节**: 详见 [`PRESENTATION_CH.md`](PRESENTATION_CH.md#6-技术实现细节)
 
@@ -261,7 +261,7 @@ python scripts/experiment_config.py  # 打印参数摘要
 
 ## 版本历史
 
-**v1.0**（2024）
+**v1.0**（2025）
 - 初始参数规格说明
 - 定义三个核心实验
 - 记录统计论证

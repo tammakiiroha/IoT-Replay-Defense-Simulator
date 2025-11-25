@@ -223,11 +223,6 @@ def _print_table(stats) -> None:
                 _format_rate(entry.std_attack_rate),
             )
         )
-    
-    # Wait, I missed adding p_reorder to AggregateStats in types.py!
-    # I should fix that or just not print it.
-    # I'll fix it in types.py first.
-    
     col_widths = [max(len(col), max(len(row[i]) for row in rows)) for i, col in enumerate(header)]
 
     def _print_line(values):

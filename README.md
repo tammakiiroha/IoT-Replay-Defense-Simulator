@@ -11,7 +11,7 @@
 [![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-80+-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-94-brightgreen.svg)](tests/)
 [![Monte Carlo](https://img.shields.io/badge/runs-200-orange.svg)](EXPERIMENTAL_PARAMETERS_EN.md)
 
 **A Monte Carlo–based simulator for evaluating replay attack defense mechanisms in 2.4 GHz wireless control systems (graduation thesis research tool)**
@@ -38,7 +38,7 @@
 - 📊 **Clear Metrics**: Security (attack success rate) vs. usability (legitimate acceptance rate)
 - ⚡ **Fast Enough for Experiments**: Runs complete in a few seconds for typical configurations on a laptop-class machine
 - 🔄 **Reproducible**: Fixed random seed and documented parameter sets
-- 🧪 **Well Tested**: 80+ unit tests covering sender, receiver, channel, attacker, and experiment logic
+- 🧪 **Well Tested**: 94 unit tests covering sender, receiver, channel, attacker, and experiment logic
 - 🌐 **Multilingual**: Documentation in English, 日本語, and 中文
 
 ---
@@ -114,7 +114,7 @@ This repository includes unit tests for all core simulation components:
 - `test_attacker.py` – replay attacker behavior
 - `test_experiment.py` – Monte Carlo experiment driver
 
-In total there are more than 80 test cases covering sender, receiver, channel, attacker, and experiment logic.
+In total there are 94 test cases covering sender, receiver, channel, attacker, and experiment logic.
 
 You can run all tests with:
 

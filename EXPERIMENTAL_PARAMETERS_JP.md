@@ -1,7 +1,7 @@
 # 実験パラメータ設定書
 
 **バージョン**: 1.0  
-**最終更新**: 2024  
+**最終更新**: 2025  
 **関連コード**: [`scripts/experiment_config.py`](scripts/experiment_config.py)  
 **技術詳細**: [`PRESENTATION_JP.md`](PRESENTATION_JP.md#6-技術実装詳細) を参照
 
@@ -261,7 +261,7 @@ python scripts/experiment_config.py  # パラメータ概要を出力
 
 ## バージョン履歴
 
-**v1.0**（2024）
+**v1.0**（2025）
 - 初期パラメータ仕様
 - 3つのコア実験を定義
 - 統計的正当化を文書化

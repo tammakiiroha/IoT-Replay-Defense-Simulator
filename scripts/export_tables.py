@@ -101,7 +101,7 @@ def make_window_table() -> str:
     if not rows:
         return ""
     
-    return "## Window sweep (Stress test: p_loss=0.05, p_reorder=0.3)\n\n" + "\n".join([header, *rows]) + "\n\n**Source**: `results/window_sweep.json`\n"
+    return "## Window sweep (Stress test: p_loss=0.15, p_reorder=0.15, inline attack)\n\n" + "\n".join([header, *rows]) + "\n\n**Source**: `results/window_sweep.json`\n"
 
 
 def make_baseline_tables() -> str:

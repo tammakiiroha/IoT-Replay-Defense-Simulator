@@ -1070,6 +1070,8 @@ Find optimal window size under moderate network stress, balancing usability and 
 
 **Data Source**: [`results/window_sweep.json`](results/window_sweep.json)
 
+**Experimental Conditions**: p_loss=15%, p_reorder=15%, inline (real-time) attack. The window sweep table in README uses the same data source and conditions.
+
 #### Window Size Performance Impact
 
 | Window Size | Usability (%) | Attack Success (%) | Combined Score | Rating |
@@ -1739,7 +1741,7 @@ def send(self, frame):
 > A: Experimental results recommend W=3-5. However, actual systems need adjustment based on communication environment.
 
 **Q5: What if attacker targets window gaps?**
-> A: We measured this in experiments. Even with W=5, attack success rate is <0.3%, practically negligible.
+> A: The window mechanism's attack success rate depends on network conditions and attack mode. Experiment 3 (p_loss=15%, p_reorder=15%, inline attack) shows W=5 with ~7.7% attack rate; under post-attack mode (Experiments 1/2), attack rate drops to 0.5-1.8%. While a theoretical replay window exists, experimental results show: compared to rolling mechanism's 13.5% usability drop under high reordering, window mechanism's security cost is acceptable. Actual deployment requires weighing based on threat model.
 
 ---
 

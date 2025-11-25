@@ -393,6 +393,45 @@ Full parameter configuration: [Experimental Parameters Documentation](EXPERIMENT
 - Defense security remains strong even in harsh conditions, with attack success rates <2%
 - Under these experimental conditions, `challenge` mechanism shows best stability, maintaining 0.3% attack rate even at 30% packet loss
 
+**Deep Dive: Why such different attack success rates under the same packet loss?**
+
+| Mechanism | Attack Rate at 30% Loss | Root Cause Analysis |
+|-----------|------------------------|---------------------|
+| **no_def** | 69.7% | Attack frames also suffer packet loss (100% × 0.7 ≈ 70%), but no verification mechanism to block replays |
+| **rolling** | 0.4% | Counter has already incremented, replayed old frame's counter value is outdated and rejected by receiver |
+| **window** | 1.8% | Counter is out of window range, and bitmap marks it as used, replay is rejected |
+| **challenge** | 0.3% | Each communication uses a new nonce, old frame's response cannot match new challenge |
+
+**Why do the three defense mechanisms have different attack rates (0.3% vs 0.4% vs 1.8%)?**
+
+While all three mechanisms effectively defend against replay attacks, the attack success rates differ, reflecting each mechanism's **design trade-offs**:
+
+| Rank | Mechanism | Attack Rate | Why this value? |
+|------|-----------|-------------|-----------------|
+| 🥇 | **challenge** | 0.3% | **Theoretically safest in this model**: Each communication uses a completely new nonce (128-bit), unpredictable to attackers. The extremely low success rate comes from statistical noise or extreme edge cases |
+| 🥈 | **rolling** | 0.4% | **Strict ordering**: Counter strictly increments, replay frame counter must be outdated. Slightly higher than challenge due to: possible tiny race window when receiver counter "jumps" due to packet loss |
+| 🥉 | **window** | 1.8% | **Design compromise**: Opens window range to tolerate reordering. When legitimate frame is lost but counter is still within window and unmarked as used, replay frame can be accepted |
+
+**Root cause of higher attack rate in window mechanism**:
+
+```
+Scenario: Window size W=5, current window [10,11,12,13,14]
+
+1. Legitimate frame (counter=11) sent → packet loss → receiver doesn't receive
+2. Legitimate frames (counter=12,13,14) received successfully, bitmap [_,_,✓,✓,✓]
+3. Attacker replays recorded frame (counter=11)
+4. Receiver checks: 11 is within window and unmarked → accepted ❌
+
+This is the design cost of window mechanism's "trading security for usability".
+```
+
+**Core Insights**:
+- **challenge**: Highest security, but requires bidirectional communication (increased latency and complexity)
+- **rolling**: Second highest security, but clearly sensitive to reordering (significant usability drop in Experiment 2)
+- **window**: Slightly lower security (1.8%), but highly robust to reordering under these experimental conditions (most stable in Experiment 2)
+
+> 💡 **The Essence of Trade-offs**: There is no perfect solution. Window trades ~1.4% additional attack risk (1.8%-0.4%) for more stable usability under strong reordering conditions, which may be a reasonable choice in many scenarios where usability is important.
+
 ### Experiment 2: Impact of Packet Reordering on Defense Mechanisms
 
 **Objective**: Evaluate the impact of reordering on each defense mechanism under 10% packet loss baseline.
@@ -407,9 +446,30 @@ Full parameter configuration: [Experimental Parameters Documentation](EXPERIMENT
 | **challenge** | Usability 89.8%, Attack 0.1% | Usability 64.5%, Attack 0.1% | ↓25.3% | ⚠️ Affected |
 
 **Core Conclusions**:
-1. **Rolling mechanism shows significant issues under reordering**: Usability drops 13.5% under 30% reordering due to strict ordering checks rejecting legitimate packets
-2. **Window mechanism is highly robust to reordering in this experiment**: Sliding window with bitmap allows packets to arrive in any order within the window
+1. **Rolling mechanism shows significant issues under reordering**: Usability drops 13.5% under 30% reordering due to strict ordering checks rejecting legitimate packets that arrive late as replays
+2. **Window mechanism is highly robust to reordering in this experiment**: Through sliding window and bitmap mechanism, allows any order of arrival within the window, so usability is barely affected at 0-30% reordering
 3. **Challenge mechanism suffers under high reordering**: Interactive challenge-response pattern sensitive to reordering, 25.3% usability drop
+
+**Deep Dive: Why does challenge mechanism plummet 25.3% in usability under reordering?**
+
+Challenge-Response mechanism requires **strict bidirectional timing pairing**:
+
+```
+Normal flow: Sender ──challenge(N1)──> Receiver ──response(N1)──> Verification passed ✅
+
+Reordering scenario:
+  Sender ──challenge(N1)──> [network delay]
+  Sender ──challenge(N2)──> Receiver (arrives first)
+  Receiver expects N2's response, but receives N1's response ──> Verification failed ❌
+```
+
+| Problem | Impact |
+|---------|--------|
+| **Challenge expiration** | When response arrives, receiver has already issued new challenge, old response rejected |
+| **Response mismatch** | Reordering causes response to pair with wrong challenge |
+| **Timeout mechanism** | To prevent replay, challenges usually have time limits, reordering easily triggers timeout |
+
+**Comparison with window mechanism**: Window uses **bitmap** to track received counter values, allowing any order of arrival within window range, thus highly robust within the reordering range covered by window size. This embodies the advantage of **unidirectional communication protocols** over **bidirectional handshake protocols** in unstable networks.
 
 ### Experiment 3: Sliding Window Size Trade-off Analysis
 
@@ -419,18 +479,45 @@ Full parameter configuration: [Experimental Parameters Documentation](EXPERIMENT
 
 | Window Size | Usability | Attack Success | Combined Score | Rating |
 |-------------|-----------|---------------|----------------|--------|
-| **1** | 25.9% | 7.3% | 18.6 | ❌ Too small, unusable |
+| **1** | 25.9% | 7.3% | 18.6 | ❌ Window too small, extremely poor usability |
 | **3** | 85.0% | 6.5% | 78.6 | ✅ **Optimal Balance** |
 | **5** | 85.5% | 7.7% | 77.7 | ✅ Recommended |
 | **7** | 85.5% | 8.7% | 76.7 | ✅ Acceptable |
 | **9** | 85.5% | 9.6% | 75.9 | ⚠️ Security degrading |
-| **15** | 85.5% | 11.1% | 74.4 | ⚠️ Attack rate high |
-| **20** | 85.5% | 11.6% | 73.9 | ❌ Too large, security risk |
+| **15** | 85.5% | 11.1% | 74.4 | ⚠️ Attack rate getting high |
+| **20** | 85.5% | 11.6% | 73.9 | ❌ Window too large, security risk |
 
 **Conclusions**:
 - **Optimal window size: 3-7**, maintaining 85% usability while keeping attack success at 6.5-8.7%
-- Window size=1 causes usability to plummet to 25.9%, impractical
+- Window size=1 causes usability to plummet to 25.9%, extremely impractical
 - Oversized windows (>9) significantly increase attack success rate, degrading security
+
+**Deep Dive: How to understand W=3 being "optimal" in this experiment?**
+
+Under the experimental conditions (p_loss=15%, p_reorder=15%, inline attack), the combined score reaches its highest value at W=3 (78.6), with W=5 and W=7 slightly lower but very close (77.7 and 76.7 respectively).
+
+| Window Size | Combined Score | Assessment |
+|-------------|---------------|------------|
+| **W=3** | **78.6** | Slightly superior under these conditions |
+| W=5 | 77.7 | Close to W=3 |
+| W=7 | 76.7 | Still in good range |
+
+This indicates that **within the W=3-7 range, the window mechanism is in a "high usability + low attack success" optimal zone**, and W=3 is "slightly better" under the current scoring method, but not the only viable choice.
+
+Therefore, a more prudent statement would be:
+- **Under these simulation conditions**, W=3-7 forms an "optimal window size range"
+- If further determination of the final value is needed, real-device testing of candidates within this range in the target environment is recommended
+
+**Simulation Limitations Explained**:
+
+| Limitation | Description | Potential Impact |
+|------------|-------------|------------------|
+| **Reordering model** | Uses i.i.d. assumption | Cannot capture bursty reordering in real networks |
+| **Attacker model** | Assumes perfect recording capability | Real attackers may have more limitations |
+| **Unmodeled factors** | Transmission delay, clock drift, retransmission mechanisms | May affect actual performance |
+| **Parameter range** | Only tested specific p_loss/p_reorder combinations | Conclusions may differ under other conditions |
+
+> 💡 **Academic Honesty Statement**: W=3 shows slightly superior performance **under these simulation conditions**. For application to real systems, validation testing of W=3-7 in the target environment is recommended.
 
 ### Comprehensive Evaluation and Practical Recommendations
 
@@ -443,23 +530,103 @@ Under this simulation model, based on 200 Monte Carlo runs per configuration und
 | 🥉 | **challenge** | 89.8% | 0.1% | 89.7 | ✅ **High-security scenarios** |
 | ❌ | **no_def** | 90.3% | 89.6% | 0.6 | ❌ Baseline (no protection) |
 
-**Practical Deployment Recommendations** (based on experimental data):
+**⚠️ Notes and Limitations of the "Combined Score" Metric**
+
+The "Combined Score" in the table above uses the simplest calculation method:
+
+```
+Combined Score = Usability(%) - Attack Success Rate(%)
+```
+
+**This metric has the following limitations that readers should interpret carefully**:
+
+| Issue | Description | More Reasonable Approach |
+|-------|-------------|-------------------------|
+| **Equal weight assumption** | Implicitly assumes usability and security are equally important (1:1) | Weights should be set based on application scenario, e.g., industrial control should weight security higher |
+| **Linear assumption** | Treats 85%→86% as equivalent to 50%→51% | Should consider diminishing marginal utility, improvements in high-usability range are more valuable |
+| **No threshold constraints** | No security floor set | In some scenarios, attack rate >1% is unacceptable, should be a hard constraint |
+| **Single value** | Compresses multi-dimensional problem to one dimension | Should use Pareto frontier analysis for multi-objective trade-offs |
+
+**Suggested More Reasonable Evaluation Framework**:
+
+```
+Scenario-aware Score = α × Usability + β × (100 - Attack Rate)
+Where:
+  - High-security scenario (industrial control): α=0.3, β=0.7
+  - General scenario (smart home): α=0.5, β=0.5  
+  - High-availability scenario (real-time communication): α=0.7, β=0.3
+```
+
+> ⚠️ **Statement**: The "Combined Score" in this document is only for quick reference and should not be the sole basis for selection. Actual selection should consider the specific application scenario's security requirements, availability requirements, and cost constraints.
+
+**Practical Deployment Recommendations** (based on experimental data, not a single combined score):
 
 1. **General IoT Devices** (Smart Home, Sensor Networks)
-   - Recommended: `window` mechanism, size 3-5
-   - Reason: Robust to reordering in this experiment
+   - Recommended: `window` mechanism, **window size 3-5**
+   - Reason: Highly robust to reordering under these experimental conditions
 
 2. **Industrial Control Systems** (Power Grid, Traffic Signals)
    - Recommended: `challenge` mechanism
-   - Reason: Highest security (0.1% attack rate), acceptable latency tolerance
+   - Reason: Lowest attack rate (0.1%), security takes priority over usability
 
-3. **Real-time Communication** (Telemedicine, Autonomous Vehicles)
-   - Recommended: `window` mechanism, size 3
-   - Reason: Low latency, high usability, good security
+3. **High-jitter Network Environments**
+   - Recommended: `window` mechanism, window size 5-7
+   - Reason: While combined score is slightly lower, provides more tolerance for bursty reordering
 
 4. **Low-cost Devices** (RFID Tags, Simple Sensors)
    - Not Recommended: `rolling` mechanism
-   - Reason: Despite computational simplicity, reordering sensitivity makes it unreliable in real networks
+   - Reason: Despite computational simplicity, high sensitivity to reordering is problematic
+
+### Discussion: From Simulation Results to Real Systems
+
+> 🔍 **How to interpret these experimental results?**
+>
+> - This simulation uses a simplified channel model (independent packet loss + independent reordering) and an "idealized record-and-replay attacker".
+> - Therefore, **the numbers themselves** (e.g., "70% usability at 30% packet loss") cannot be directly used as precise predictions for real systems.
+> - However, under these premises, the **relative performance** between different defense methods (which fears reordering, which is sensitive to packet loss, which type of solution has greater impact on usability) is mainly determined by protocol logic, and these trends will not easily reverse even with more complex channel models.
+> - The goal of this project is to provide a reproducible comparison platform for protocol design and parameter tuning, not to provide precise numbers for a specific device in real environments.
+
+**Robust Conclusions Under the Current Model**:
+
+Under a fixed attack model (can perfectly record and replay frames, but cannot forge MACs) and simplified channel model (independent packet loss + independent reordering), the three experiments provide some "structural" conclusions:
+
+1. **Packet loss mainly affects usability, not increasing replay attack success rate**
+   - Experiment 1 shows: As packet loss increases from 0% to 30%, legitimate acceptance rate for all four defense methods drops almost linearly by about 30 percentage points, while attack success rate remains basically unchanged (all <2% with defense)
+   - This indicates that in this model, packet loss is equivalent to "swallowing" some legitimate operations, but attackers do not become more likely to bypass replay detection due to packet loss
+
+2. **Rolling is extremely vulnerable to reordering, which is determined by the counter design itself**
+   - In Experiment 2, after introducing 30% reordering, rolling's usability drops from ~90% to 76.8%, while attack success rate remains almost unchanged
+   - The reason is that rolling only accepts "values larger than current counter", any slightly delayed/reordered legitimate frames are rejected as replays
+   - In other words, rolling contains a very strong real-world assumption: **the network hardly reorders**. Once this assumption doesn't hold, usability drops significantly
+
+3. **Window balances security and usability when reordering degree is "not too large"**
+   - Window uses sliding window + bitmap to remember counter values it has seen, as long as reordering magnitude doesn't exceed window size W, legitimate frames won't be misjudged as replays
+   - Experiment 3 further shows: Under moderate packet loss/reordering, **W=3-7 generally achieves good security-usability balance**
+
+4. **Challenge almost completely blocks replay in this model, but is sensitive to reordering and timing**
+   - In all three experiments, challenge's attack success rate stays close to 0, indicating that as long as challenge-response achieves "only accepting one matching response per challenge", it can theoretically very effectively block replays
+   - But Experiment 2 also shows: Under 30% reordering, legitimate acceptance rate drops from ~90% to 64.5%
+   - This indicates **the main cost of bidirectional handshake protocols in unstable networks is usability, not security itself**
+
+**Comprehensive Assessment** (under current model):
+
+- Looking at security (attack success rate) alone: `Challenge ≳ Window ≈ Rolling ≫ No defense`
+- In wireless environments with "significant packet loss + reordering", from **combined usability + security**: `Window (appropriate W) > Challenge > Rolling ≫ No defense`
+
+These conclusions come from the logical structure of each protocol itself, as long as the attacker model and "wireless environment with packet loss and reordering" as the two major premises remain unchanged, **even if channel details differ slightly, the trends themselves will not completely reverse**.
+
+**Relationship with Real 2.4GHz Wireless Systems**:
+
+It should be emphasized that the channel model in this simulator is intentionally simplified:
+- Packet loss and reordering are modeled as **mutually independent random events**
+- Burst interference, time correlation, physical layer fading, MAC layer retransmission, etc. are not explicitly modeled
+- Attacker is assumed to be a "perfect recorder", in reality would be limited by distance, hardware performance, etc.
+
+Therefore:
+- **The numbers themselves** (e.g., "70%/80% usability at 30% packet loss") cannot be directly used as precise predictions for real systems
+- But the **relative relationships** between these numbers—such as "rolling usability is significantly lower than window in strong reordering environments", "challenge attack success rate is significantly lower than other methods under same loss/reorder conditions"—still have reference value for real system design
+
+In real 2.4GHz devices, lower-layer protocols usually additionally implement: link-layer ACK + retransmission, backoff/reconnection mechanisms, device sleep/wake state machines. These mechanisms usually improve **overall usability**, making measured curves more "optimistic" than this simulation, but **do not change the fact of which defense is more prone to problems in reordering environments**.
 
 ### Data Reliability Statement
 

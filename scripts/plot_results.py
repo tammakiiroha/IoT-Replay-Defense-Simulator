@@ -392,7 +392,7 @@ def plot_window_tradeoff(data: List[Dict], width: float, save_kwargs: dict) -> N
         
     apply_axes_style(ax2)
 
-    fig.suptitle("Window size vs usability and security (p_loss=0.05, p_reorder=0.3)", fontsize=11)
+    fig.suptitle("Window size vs usability and security (p_loss=0.15, p_reorder=0.15, inline)", fontsize=11)
     save_figure(fig, stem="window_tradeoff", **save_kwargs)
 
 

@@ -668,17 +668,20 @@ Related data files:
 | 0.10   | 89.90%      | 89.90%           |
 | 0.20   | 79.53%      | 79.53%           |
 
-### Window sweep (Stress test: p_loss=0.05, p_reorder=0.3)
-*Comparing usability vs security trade-offs under harsh channel conditions.*
+### Window sweep (Stress test: p_loss=0.15, p_reorder=0.15, inline attack)
+*Comparing usability vs security trade-offs under moderate network stress.*
 
 | Window W | Legitimate (%) | Replay success (%) |
 | -------- | -------------- | ------------------ |
-| 1        | 27.65%         | 4.51%              |
-| 3        | 95.10%         | 0.22%              |
-| 5        | 95.08%         | 0.30%              |
-| 10       | 95.22%         | 0.49%              |
+| 1        | 25.88%         | 7.28%              |
+| 3        | 85.03%         | 6.46%              |
+| 5        | 85.45%         | 7.71%              |
+| 7        | 85.45%         | 8.74%              |
+| 9        | 85.45%         | 9.56%              |
+| 15       | 85.45%         | 11.09%             |
+| 20       | 85.45%         | 11.58%             |
 
-*Note: This table comes from an additional sweep (p_loss=0.05, p_reorder=0.3, post attack). The main text’s Experiment 3 uses the stricter condition p_loss=0.15, p_reorder=0.15 with inline (real-time) attacks—see PRESENTATION_EN.md for details.*
+*Note: This table data comes from `results/window_sweep.json`, consistent with Experiment 3 and the figure `window_tradeoff.png`.*
 
 ### Ideal channel baseline (post attack, runs = 500, p_loss = 0)
 *Reference baseline from `results/ideal_p0.json`*

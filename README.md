@@ -28,6 +28,21 @@
 
 > For detailed authorship declaration and development background, see [AUTHORSHIP.md](AUTHORSHIP.md).
 
+## 🎓 Relation to Graduation Thesis
+
+This repository is the experimental and simulation toolkit for my B.Eng. graduation thesis on replay-attack defense in 2.4 GHz wireless control / IoT systems.
+
+- Thesis topic (conceptual): *Replay Attack Defense Mechanisms for 2.4 GHz Wireless Control Systems*
+- Role of this repository:
+  - Monte Carlo simulator and experiment driver
+  - Parameter sets and JSON result files
+  - Figures used in the thesis and slides
+- Not included:
+  > The full thesis PDF / LaTeX source is **not** published in this repository.  
+  > This project focuses on the code, experiments, and technical documentation that support the thesis.
+
+If you are an examiner or prospective advisor, this repository shows how the experiments were designed and reproduced.
+
 ---
 
 ## 🌟 Highlights
@@ -75,6 +90,12 @@ This README provides a **quick overview** and **getting started guide**. For com
 | 📄 **[PRESENTATION](PRESENTATION_EN.md)** | Complete technical deep-dive, implementation details, full experimental analysis | 2000+ lines | [EN](PRESENTATION_EN.md) / [日本語](PRESENTATION_JP.md) / [中文](PRESENTATION_CH.md) |
 | 📊 **[EXPERIMENTAL_PARAMETERS](EXPERIMENTAL_PARAMETERS_EN.md)** | Detailed parameter specifications and rationale | ~280 lines | [EN](EXPERIMENTAL_PARAMETERS_EN.md) / [日本語](EXPERIMENTAL_PARAMETERS_JP.md) / [中文](EXPERIMENTAL_PARAMETERS_CH.md) |
 | 🤝 **[CONTRIBUTING](CONTRIBUTING.md)** | Development guidelines, code style, how to contribute | ~200 lines | EN |
+
+**How these documents relate to the thesis**
+
+- `PRESENTATION_*.md`: roughly corresponds to the methodology, experiment, and discussion chapters of the thesis.
+- `EXPERIMENTAL_PARAMETERS_*.md`: contains the full parameter tables that are cited in the thesis.
+- This `README`: compact summary for GitHub visitors, examiners, and interviewers.
 
 **What's in PRESENTATION documents:**
 - 🔍 Defense mechanism implementations with code examples

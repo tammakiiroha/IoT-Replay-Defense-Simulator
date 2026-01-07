@@ -510,14 +510,14 @@ export default function SimulatorPage() {
                         <Tooltip
                           cursor={{ fill: '#f8fafc' }}
                           contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                          formatter={(value: number) => [<span className="font-bold text-slate-800">{(value * 100).toFixed(1)}%</span>, "Acceptance"]}
+                          formatter={(value: any) => [<span className="font-bold text-slate-800">{(Number(value) * 100).toFixed(1)}%</span>, "Acceptance"]}
                         />
-                        <Bar dataKey="avg_legit_rate" radius={[0, 6, 6, 0]} barSize={40} background={{ fill: '#f1f5f9', radius: [0, 6, 6, 0] }}>
+                        <Bar dataKey="avg_legit_rate" radius={[0, 6, 6, 0]} barSize={40} background={{ fill: '#f1f5f9' }}>
                           <LabelList
                             dataKey="avg_legit_rate"
                             position="insideRight"
                             fill="white"
-                            formatter={(val: number) => `${(val * 100).toFixed(1)}%`}
+                            formatter={(val: any) => `${(Number(val) * 100).toFixed(1)}%`}
                             style={{ fontWeight: 'bold', fontSize: '12px', paddingRight: '10px' }}
                           />
                           {results.map((entry, index) => (
@@ -562,14 +562,14 @@ export default function SimulatorPage() {
                         <Tooltip
                           cursor={{ fill: '#f8fafc' }}
                           contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                          formatter={(value: number) => [<span className="font-bold text-slate-800">{(value * 100).toFixed(2)}%</span>, "Success Rate"]}
+                          formatter={(value: any) => [<span className="font-bold text-slate-800">{(Number(value) * 100).toFixed(2)}%</span>, "Success Rate"]}
                         />
                         <Bar dataKey="avg_attack_rate" radius={[6, 6, 0, 0]} barSize={48}>
                           <LabelList
                             dataKey="avg_attack_rate"
                             position="top"
                             fill="#64748b"
-                            formatter={(val: number) => val > 0 ? `${(val * 100).toFixed(1)}%` : ''}
+                            formatter={(val: any) => Number(val) > 0 ? `${(Number(val) * 100).toFixed(1)}%` : ''}
                             style={{ fontWeight: 'bold', fontSize: '11px' }}
                           />
                           {results.map((entry, index) => (

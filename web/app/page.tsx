@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Play, Settings2, ShieldCheck, AlertTriangle, CheckCircle2, RefreshCw, Languages, Zap } from 'lucide-react';
+import { Play, Settings2, ShieldCheck, AlertTriangle, CheckCircle2, RefreshCw, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart,

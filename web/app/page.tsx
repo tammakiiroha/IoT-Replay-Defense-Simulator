@@ -227,6 +227,7 @@ export default function SimulatorPage() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateConfig = (key: keyof SimulationConfig, value: any) => {
     setConfig(prev => ({ ...prev, [key]: value }));
     if (key === 'p_loss' || key === 'p_reorder' || key === 'attack_mode') {

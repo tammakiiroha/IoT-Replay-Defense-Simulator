@@ -65,6 +65,7 @@ def simulate_one_run(
     legit_accepted = 0
     attack_attempts = 0
     attack_success = 0
+    remaining_replays = config.num_replay
 
     def process_arrived(frames: List[Frame]):
         nonlocal legit_accepted, attack_success
@@ -96,6 +97,8 @@ def simulate_one_run(
         # 2. Inline Attacks
         if config.attack_mode is AttackMode.INLINE:
             for _ in range(max(1, config.inline_attack_burst)):
+                if remaining_replays <= 0:
+                    break
                 if local_rng.random() >= config.inline_attack_probability:
                     break
                 attack_frame = attacker.pick_frame(local_rng)
@@ -103,18 +106,18 @@ def simulate_one_run(
                     break
                 
                 attack_attempts += 1
+                remaining_replays -= 1
                 attack_frame.is_attack = True
                 arrived_attack = channel.send(attack_frame)
                 process_arrived(arrived_attack)
 
     # 3. Post-Run Attacks
     if config.attack_mode is AttackMode.POST_RUN:
-        # Flush channel first? No, keep it running.
-        # But usually post-run implies legitimate traffic has stopped.
-        # We should probably flush the channel of legitimate frames before starting post-run?
-        # Or just let them mix. Let's let them mix, but usually channel is empty by now if no delay.
-        
-        for _ in range(config.num_replay):
+        # Deliver any delayed legitimate frames before starting post-run attacks.
+        remaining = channel.flush()
+        process_arrived(remaining)
+
+        for _ in range(remaining_replays):
             attack_frame = attacker.pick_frame(local_rng)
             if attack_frame is None:
                 break

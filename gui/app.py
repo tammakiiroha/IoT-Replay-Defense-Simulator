@@ -235,7 +235,7 @@ class SimulationGUI:
                     text=True,
                     bufsize=1,
                     executable='/bin/bash',
-                    preexec_fn=None if platform.system() == "Windows" else lambda: None
+                    start_new_session=platform.system() != "Windows"
                 )
                 for line in self.current_process.stdout:
                     if not self.running:

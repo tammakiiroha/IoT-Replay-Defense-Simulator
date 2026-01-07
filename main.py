@@ -13,7 +13,7 @@ from sim.experiment import run_many_experiments
 from sim.types import AttackMode, Mode, SimulationConfig
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Replay attack simulation driver")
     parser.add_argument("--modes", nargs="+", default=[mode.value for mode in Mode], help="Modes to evaluate")
     parser.add_argument("--runs", type=int, default=200, help="Monte Carlo runs per mode")
@@ -39,7 +39,7 @@ def parse_args() -> argparse.Namespace:
                         help="Nonce length (bits) for the challenge-response mode")
     parser.add_argument("--quiet", action="store_true",
                         help="Disable visual progress display (quiet mode)")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def validate_parameters(args: argparse.Namespace) -> None:
@@ -63,8 +63,11 @@ def validate_parameters(args: argparse.Namespace) -> None:
         errors.append(f"Invalid num_legit: {args.num_legit}. Must be non-negative integer")
     if args.num_replay < 0:
         errors.append(f"Invalid num_replay: {args.num_replay}. Must be non-negative integer")
-    if args.window_size <= 0:
-        errors.append(f"Invalid window_size: {args.window_size}. Must be positive integer")
+    window_mode_requested = Mode.WINDOW.value in args.modes
+    if args.window_size < 0:
+        errors.append(f"Invalid window_size: {args.window_size}. Must be non-negative integer")
+    elif window_mode_requested and args.window_size == 0:
+        errors.append("Invalid window_size: must be positive when WINDOW mode is enabled")
     if args.mac_length <= 0:
         errors.append(f"Invalid mac_length: {args.mac_length}. Must be positive integer")
     if args.inline_attack_burst <= 0:

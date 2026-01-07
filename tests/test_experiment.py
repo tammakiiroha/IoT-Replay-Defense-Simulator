@@ -482,6 +482,26 @@ def test_inline_attack_mode():
     assert results is not None
 
 
+def test_inline_attack_respects_replay_cap():
+    """测试inline模式遵守重放次数上限"""
+    config = SimulationConfig(
+        mode=Mode.ROLLING_MAC,
+        num_legit=5,
+        num_replay=2,
+        p_loss=0.0,
+        p_reorder=0.0,
+        attacker_record_loss=0.0,
+        window_size=5,
+        rng_seed=42,
+        attack_mode=AttackMode.INLINE,
+        inline_attack_probability=1.0,
+        inline_attack_burst=5
+    )
+
+    result = simulate_one_run(config)
+    assert result.attack_attempts == 2
+
+
 # ============================================================================
 # Test: Edge Cases
 # ============================================================================

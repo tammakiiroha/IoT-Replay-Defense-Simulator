@@ -1,3 +1,4 @@
+import random
 import pytest
 from sim.receiver import Receiver, VerificationResult
 from sim.types import Mode, Frame
@@ -115,3 +116,20 @@ def test_window_too_old(receiver_window):
     f_valid = create_frame(16)
     res = receiver_window.process(f_valid)
     assert res.accepted
+
+
+def test_window_mask_clamped():
+    receiver = Receiver(Mode.WINDOW, shared_key=SHARED_KEY, mac_length=MAC_LENGTH, window_size=3)
+
+    for counter in range(1, 10):
+        res = receiver.process(create_frame(counter))
+        assert res.accepted
+        assert receiver.state.received_mask < (1 << 3)
+
+
+def test_challenge_nonce_hex_length_rounds_up():
+    receiver = Receiver(Mode.CHALLENGE, shared_key=SHARED_KEY, mac_length=MAC_LENGTH)
+    rng = random.Random(0)
+
+    nonce = receiver.issue_nonce(rng, bits=5)
+    assert len(nonce) == 2

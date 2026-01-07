@@ -50,6 +50,7 @@ def verify_with_window(
 ) -> VerificationResult:
     if window_size < 1:
         raise ValueError("window_size must be >= 1 for window mode")
+    mask_limit = (1 << window_size) - 1
 
     if frame.counter is None or frame.mac is None:
         return VerificationResult(False, "missing_security_fields", state)
@@ -77,6 +78,7 @@ def verify_with_window(
         state.received_mask <<= diff
         # Set bit 0 (the new last_counter)
         state.received_mask |= 1
+        state.received_mask &= mask_limit
         # Update last_counter
         state.last_counter = frame.counter
         return VerificationResult(True, "window_accept_new", state)
@@ -95,6 +97,7 @@ def verify_with_window(
         
         # Mark as received
         state.received_mask |= (1 << offset)
+        state.received_mask &= mask_limit
         return VerificationResult(True, "window_accept_old", state)
 
 
@@ -163,7 +166,8 @@ class Receiver:
         if self.mode is not Mode.CHALLENGE:
             raise RuntimeError("Nonce issuance is only supported in challenge mode")
         nonce_int = rng.getrandbits(bits)
-        nonce_hex = f"{nonce_int:0{bits // 4}x}"
+        hex_len = (bits + 3) // 4
+        nonce_hex = f"{nonce_int:0{hex_len}x}"
         self.state.expected_nonce = nonce_hex
         return nonce_hex
 

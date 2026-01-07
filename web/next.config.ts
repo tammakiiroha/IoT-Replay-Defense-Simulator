@@ -11,8 +11,8 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Optional: If deploying to a subdirectory (e.g. username.github.io/repo-name), 
-  // you might need 'basePath' later, but for now we keep it simple.
+  // Deploying to subdirectory: https://username.github.io/repo-name/
+  basePath: "/IoT-Replay-Defense-Simulator",
 };
 
 export default nextConfig;

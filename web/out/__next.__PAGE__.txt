@@ -1,9 +1,0 @@
-1:"$Sreact.fragment"
-2:I[47257,["/IoT-Replay-Defense-Simulator/_next/static/chunks/e7283fea06b4a340.js"],"ClientPageRoot"]
-3:I[31713,["/IoT-Replay-Defense-Simulator/_next/static/chunks/71a3af38039de406.js"],"default"]
-6:I[97367,["/IoT-Replay-Defense-Simulator/_next/static/chunks/e7283fea06b4a340.js"],"OutletBoundary"]
-7:"$Sreact.suspense"
-0:{"buildId":"lR_j2qG1HihshFypzlwXj","rsc":["$","$1","c",{"children":[["$","$L2",null,{"Component":"$3","serverProvidedParams":{"searchParams":{},"params":{},"promises":["$@4","$@5"]}}],[["$","script","script-0",{"src":"/IoT-Replay-Defense-Simulator/_next/static/chunks/71a3af38039de406.js","async":true}]],["$","$L6",null,{"children":["$","$7",null,{"name":"Next.MetadataOutlet","children":"$@8"}]}]]}],"loading":null,"isPartial":false}
-4:{}
-5:"$0:rsc:props:children:0:props:serverProvidedParams:params"
-8:null

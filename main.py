@@ -191,6 +191,14 @@ def main() -> None:
         except Exception as exc:
             print(f"\n❌ Failed to save JSON output to '{args.output_json}': {exc}", file=sys.stderr)
             sys.exit(1)
+            
+    # For GUI: Hidden JSON Output
+    # This allows the GUI to parse results without parsing the table
+    try:
+        gui_payload = [entry.as_dict() for entry in stats]
+        print(f"\n__JSON_RESULT__:{json.dumps(gui_payload)}")
+    except Exception:
+        pass
 
 
 def _print_table(stats) -> None:
@@ -198,47 +206,61 @@ def _print_table(stats) -> None:
         print("No stats to display")
         return
 
-    header = (
-        "Mode",
-        "Runs",
-        "Attack",
-        "p_loss",
-        "p_reorder",
-        "Window",
-        "Avg Legit",
-        "Std Legit",
-        "Avg Attack",
-        "Std Attack",
-    )
+    # 定义固定列宽（确保表头和数据对齐）
+    col_widths = {
+        "Mode": 12,
+        "Runs": 6,
+        "Attack": 8,
+        "p_loss": 8,
+        "p_reorder": 10,
+        "Window": 8,
+        "Avg Legit": 12,
+        "Std Legit": 12,
+        "Avg Attack": 12,
+        "Std Attack": 12,
+    }
+    
+    headers = list(col_widths.keys())
+    widths = list(col_widths.values())
+    
+    # 构建行数据
     rows = []
     for entry in stats:
-        rows.append(
-            (
-                entry.mode.value,
-                str(entry.runs),
-                entry.attack_mode.value,
-                f"{entry.p_loss:.2f}",
-                f"{entry.p_reorder:.2f}",
-                str(entry.window_size),
-                _format_rate(entry.avg_legit_rate),
-                _format_rate(entry.std_legit_rate),
-                _format_rate(entry.avg_attack_rate),
-                _format_rate(entry.std_attack_rate),
-            )
-        )
-    col_widths = [max(len(col), max(len(row[i]) for row in rows)) for i, col in enumerate(header)]
-
-    def _print_line(values):
-        print("  ".join(value.ljust(col_widths[i]) for i, value in enumerate(values)))
-
-    _print_line(header)
-    _print_line(tuple("-" * w for w in col_widths))
+        rows.append([
+            entry.mode.value,
+            str(entry.runs),
+            entry.attack_mode.value,
+            f"{entry.p_loss:.2f}",
+            f"{entry.p_reorder:.2f}",
+            str(entry.window_size),
+            _format_rate(entry.avg_legit_rate),
+            _format_rate(entry.std_legit_rate),
+            _format_rate(entry.avg_attack_rate),
+            _format_rate(entry.std_attack_rate),
+        ])
+    
+    def _print_row(values, widths_list):
+        """格式化并打印一行"""
+        formatted = []
+        for val, w in zip(values, widths_list):
+            formatted.append(str(val).ljust(w))
+        print(" | ".join(formatted))
+    
+    # 打印分隔线
+    def _print_separator():
+        print("-+-".join("-" * w for w in widths))
+    
+    # 打印表格
+    print()  # 空行开始
+    _print_row(headers, widths)
+    _print_separator()
     for row in rows:
-        _print_line(row)
+        _print_row(row, widths)
+    print()  # 空行结束
 
 
 def _format_rate(value: float) -> str:
-    return f"{value * 100:6.2f}%"
+    return f"{value * 100:.2f}%"
 
 
 def _print_header(args) -> None:

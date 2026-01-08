@@ -1,11 +1,11 @@
 """
 GUI Package for Replay Attack Simulation
-模块化 GUI 界面
+模块化 GUI 界面 - Web-style version
 """
 
-from .app import SimulationGUI, main
-from .widgets import AcademicButton, SectionCard
-from .theme import COLORS, FONTS
+from .gui.app import SimulationGUI, main
+from .widgets import AcademicButton, SectionCard, ModernButton, ModernCard
+from .theme import COLORS, FONTS, MODE_META
 from .translations import TRANSLATIONS
 
 __all__ = [
@@ -13,7 +13,10 @@ __all__ = [
     "main",
     "AcademicButton",
     "SectionCard",
+    "ModernButton",
+    "ModernCard",
     "COLORS",
     "FONTS",
+    "MODE_META",
     "TRANSLATIONS",
 ]

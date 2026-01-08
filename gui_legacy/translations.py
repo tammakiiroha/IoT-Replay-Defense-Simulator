@@ -1,60 +1,16 @@
 """
 多语言翻译配置
-Multilingual translations for GUI - Web-style version
+Multilingual translations for GUI
 """
 
 TRANSLATIONS = {
     "en": {
-        # === Header ===
-        "title": "IoT Replay Defense",
-        "subtitle": "Wireless replay attack defense evaluation simulator.",
+        "title": "Replay Attack Defense Evaluation",
+        "subtitle": "Monte Carlo Simulation Framework",
         "version": "v1.0",
         "tagline": "Statistical analysis of defense mechanisms against replay attacks",
-        
-        # === Scenario Section ===
-        "scenario": "Select Scenario",
         "scenarios": "Experimental Scenarios",
-        "custom_scenario": "Custom Settings",
-        "ideal_scenario": "Ideal Channel (Baseline)",
-        "office_scenario": "Office (Wi-Fi Interference)",
-        "industrial_scenario": "Industrial (High Interference)",
-        "multihop_scenario": "Multi-hop Network (High Reordering)",
-        "attack_heavy_scenario": "Active Inline Attack",
-        "ideal_desc": "Benchmark: 0% loss, 0% reordering",
-        "office_desc": "Typical Wi-Fi: 10% loss, 5% reordering",
-        "industrial_desc": "Harsh env: 25% loss, 10% reordering",
-        "multihop_desc": "Mesh network: 10% loss, 25% reordering",
-        "attack_heavy_desc": "Adversarial: Inline attacks enabled",
-        
-        # === Environment Section ===
-        "env_settings": "Environment",
-        "runs": "Sim Runs",
-        "pkt_loss": "Packet Loss",
-        "reorder": "Reordering",
-        "window_size": "Window Size",
-        
-        # === Modes Section ===
-        "modes": "Target Protocols",
-        "mode_no_def": "No Defense",
-        "mode_rolling": "Rolling Counter",
-        "mode_window": "Sliding Window",
-        "mode_challenge": "Challenge-Response",
-        "desc_no_def": "No protection baseline",
-        "desc_rolling": "Strict sequential validation",
-        "desc_window": "Reordering tolerance mechanism",
-        "desc_challenge": "Nonce-based authentication",
-        
-        # === Run Button ===
-        "run_btn": "Run Analysis",
-        "running": "Simulating...",
-        
-        # === Dashboard ===
-        "dashboard": "Dashboard",
-        "dash_desc": "Real-time Monte Carlo simulation performance metrics",
-        "ready_title": "Ready to Simulate",
-        "ready_desc": "Select a scenario or adjust parameters, then click Run Analysis to start.",
-        
-        # === Legacy keys (for compatibility) ===
+        "dashboard": "Control Panel",
         "custom_exp": "Custom Configuration",
         "defense_mech": "Defense Mechanisms",
         "all": "All Modes (Comparative Study)",
@@ -62,10 +18,12 @@ TRANSLATIONS = {
         "rolling": "Rolling Counter + MAC",
         "window": "Sliding Window",
         "challenge": "Challenge-Response",
+        "runs": "Monte Carlo Runs",
         "num_legit": "Legitimate Packets",
         "num_replay": "Replay Attempts",
         "p_loss": "Packet Loss Rate",
         "p_reorder": "Reordering Rate",
+        "window_size": "Window Size",
         "attack_mode": "Attack Timing",
         "post_run": "Post-run (after legit traffic)",
         "inline": "Inline (during legit traffic)",
@@ -85,6 +43,8 @@ TRANSLATIONS = {
         "baseline_desc": "Ideal conditions (no loss/reorder)",
         "packet_loss": "Packet Loss Impact",
         "loss_desc": "10% packet loss scenario",
+        "reorder": "Reordering Impact",
+        "reorder_desc": "30% packet reordering",
         "harsh": "Harsh Network",
         "harsh_desc": "Combined loss + reordering",
         "busy_msg": "A simulation is already running.",
@@ -104,12 +64,16 @@ TRANSLATIONS = {
 
 • Avg Legit: Average acceptance rate of legitimate packets
   → Higher is better (closer to 100% = more usable)
+  → Example: 95% means legitimate packets are accepted 95% of the time
 
 • Std Legit: Standard deviation of legitimate acceptance
   → Lower is better (closer to 0% = more stable)
+  → Example: 2% means results are consistent (stable system)
+  → Example: 15% means results vary wildly (unstable system)
 
 • Avg Attack: Average success rate of replay attacks
   → Lower is better (closer to 0% = more secure)
+  → Example: 5% means only 5% of attacks succeed
 
 • Std Attack: Standard deviation of attack success
   → Lower means defense performance is predictable
@@ -117,56 +81,12 @@ TRANSLATIONS = {
 Ideal System: High Avg Legit + Low Std Legit + Low Avg Attack ✓""",
     },
     "zh": {
-        # === Header ===
-        "title": "IoT 重放攻击防御",
-        "subtitle": "无线重放攻击防御机制评估环境",
+        "title": "重放攻击防御评估",
+        "subtitle": "蒙特卡洛仿真框架",
         "version": "v1.0 版本",
         "tagline": "基于统计方法的防御机制评估研究",
-        
-        # === Scenario Section ===
-        "scenario": "场景选择",
         "scenarios": "实验场景",
-        "custom_scenario": "自定义设置",
-        "ideal_scenario": "理想信道 (基准)",
-        "office_scenario": "办公环境 (Wi-Fi干扰)",
-        "industrial_scenario": "工业环境 (强电磁干扰)",
-        "multihop_scenario": "多跳网络 (高乱序)",
-        "attack_heavy_scenario": "高强度实时攻击",
-        "ideal_desc": "基准测试：0% 丢包，0% 乱序",
-        "office_desc": "典型办公：10% 丢包，5% 乱序",
-        "industrial_desc": "恶劣环境：25% 丢包，10% 乱序",
-        "multihop_desc": "多跳网络：10% 丢包，25% 乱序",
-        "attack_heavy_desc": "对抗模式：启用内联攻击 (Inline)",
-        
-        # === Environment Section ===
-        "env_settings": "环境设置",
-        "runs": "模拟次数",
-        "pkt_loss": "丢包率",
-        "reorder": "乱序率",
-        "window_size": "窗口大小",
-        
-        # === Modes Section ===
-        "modes": "防御协议",
-        "mode_no_def": "无防御 (No Defense)",
-        "mode_rolling": "滚动计数器 (Rolling)",
-        "mode_window": "滑动窗口 (Window)",
-        "mode_challenge": "挑战应答 (Challenge)",
-        "desc_no_def": "无保护基准",
-        "desc_rolling": "严格序列验证",
-        "desc_window": "乱序容忍机制",
-        "desc_challenge": "Nonce 随机数验证",
-        
-        # === Run Button ===
-        "run_btn": "开始分析",
-        "running": "模拟中...",
-        
-        # === Dashboard ===
-        "dashboard": "实时仪表盘",
-        "dash_desc": "蒙特卡洛模拟性能指标",
-        "ready_title": "准备就绪",
-        "ready_desc": "请选择一个场景或自定义参数，然后点击运行。",
-        
-        # === Legacy keys ===
+        "dashboard": "控制面板",
         "custom_exp": "自定义配置",
         "defense_mech": "防御机制",
         "all": "全部模式（对比研究）",
@@ -174,10 +94,12 @@ Ideal System: High Avg Legit + Low Std Legit + Low Avg Attack ✓""",
         "rolling": "滚动计数器 + MAC",
         "window": "滑动窗口",
         "challenge": "挑战-响应",
+        "runs": "蒙特卡洛运行次数",
         "num_legit": "正规传输次数（每次运行）",
         "num_replay": "重放攻击次数（每次运行）",
         "p_loss": "丢包率 (p_loss)",
         "p_reorder": "乱序率 (p_reorder)",
+        "window_size": "窗口大小（滑动窗口）",
         "attack_mode": "攻击模式",
         "post_run": "事后攻击（正规流量后重放）",
         "inline": "内联攻击（正规流量中重放）",
@@ -197,6 +119,8 @@ Ideal System: High Avg Legit + Low Std Legit + Low Avg Attack ✓""",
         "baseline_desc": "理想条件（无丢包/乱序）",
         "packet_loss": "丢包影响",
         "loss_desc": "10% 丢包场景",
+        "reorder": "乱序影响",
+        "reorder_desc": "30% 数据包乱序",
         "harsh": "恶劣网络",
         "harsh_desc": "丢包 + 乱序组合",
         "busy_msg": "仿真正在运行中。",
@@ -216,12 +140,16 @@ Ideal System: High Avg Legit + Low Std Legit + Low Avg Attack ✓""",
 
 • 平均合法率 (Avg Legit): 合法包的平均接受率
   → 越高越好（接近100% = 系统可用性高）
+  → 示例：95% 表示合法包有95%的概率被接受
 
 • 标准差合法率 (Std Legit): 合法包接受率的波动程度
   → 越低越好（接近0% = 系统稳定）
+  → 示例：2% 表示结果一致，系统行为稳定
+  → 示例：15% 表示结果波动大，系统不稳定
 
 • 平均攻击率 (Avg Attack): 重放攻击的平均成功率
   → 越低越好（接近0% = 安全性高）
+  → 示例：5% 表示只有5%的攻击成功
 
 • 标准差攻击率 (Std Attack): 攻击成功率的波动程度
   → 越低表示防御性能越可预测
@@ -229,56 +157,12 @@ Ideal System: High Avg Legit + Low Std Legit + Low Avg Attack ✓""",
 理想系统：高平均合法率 + 低标准差 + 低攻击率 ✓""",
     },
     "ja": {
-        # === Header ===
-        "title": "IoT リプレイ攻撃防御",
-        "subtitle": "無線リプレイ攻撃防御評価シミュレーター",
+        "title": "リプレイ攻撃防御評価",
+        "subtitle": "モンテカルロシミュレーションフレームワーク",
         "version": "v1.0 バージョン",
         "tagline": "統計的手法による防御メカニズムの評価研究",
-        
-        # === Scenario Section ===
-        "scenario": "シナリオ選択",
         "scenarios": "実験シナリオ",
-        "custom_scenario": "カスタム設定",
-        "ideal_scenario": "理想的な通信 (基準)",
-        "office_scenario": "オフィス環境 (Wi-Fi干渉)",
-        "industrial_scenario": "産業環境 (強い電磁干渉)",
-        "multihop_scenario": "マルチホップNW (高乱順)",
-        "attack_heavy_scenario": "高強度リアルタイム攻撃",
-        "ideal_desc": "ベンチマーク：損失0%, 乱順0%",
-        "office_desc": "オフィス：損失10%, 乱順5%",
-        "industrial_desc": "過酷な環境：損失25%, 乱順10%",
-        "multihop_desc": "マルチホップ：損失10%, 乱順25%",
-        "attack_heavy_desc": "対抗モード：インライン攻撃有効",
-        
-        # === Environment Section ===
-        "env_settings": "環境設定",
-        "runs": "試行回数",
-        "pkt_loss": "パケット損失率",
-        "reorder": "パケット乱順率",
-        "window_size": "ウィンドウサイズ",
-        
-        # === Modes Section ===
-        "modes": "防御プロトコル",
-        "mode_no_def": "防御なし",
-        "mode_rolling": "ローリングカウンタ",
-        "mode_window": "スライディング窓",
-        "mode_challenge": "チャレンジ応答",
-        "desc_no_def": "ベースライン",
-        "desc_rolling": "厳密な順序検証",
-        "desc_window": "順序の乱れを許容",
-        "desc_challenge": "Nonceによる検証",
-        
-        # === Run Button ===
-        "run_btn": "分析開始",
-        "running": "実行中...",
-        
-        # === Dashboard ===
-        "dashboard": "ダッシュボード",
-        "dash_desc": "リアルタイム・モンテカルロ・シミュレーション結果",
-        "ready_title": "準備完了",
-        "ready_desc": "シナリオを選択するかパラメータを調整して実行してください。",
-        
-        # === Legacy keys ===
+        "dashboard": "コントロールパネル",
         "custom_exp": "カスタム設定",
         "defense_mech": "防御メカニズム",
         "all": "全モード（比較研究）",
@@ -286,10 +170,12 @@ Ideal System: High Avg Legit + Low Std Legit + Low Avg Attack ✓""",
         "rolling": "ローリングカウンタ + MAC",
         "window": "スライディングウィンドウ",
         "challenge": "チャレンジレスポンス",
+        "runs": "モンテカルロ実行回数",
         "num_legit": "正規送信回数（実行ごと）",
         "num_replay": "リプレイ攻撃回数（実行ごと）",
         "p_loss": "パケット損失率 (p_loss)",
         "p_reorder": "並び替え率 (p_reorder)",
+        "window_size": "ウィンドウサイズ（スライディング）",
         "attack_mode": "攻撃モード",
         "post_run": "事後攻撃（正規トラフィック後）",
         "inline": "インライン攻撃（正規トラフィック中）",
@@ -309,6 +195,8 @@ Ideal System: High Avg Legit + Low Std Legit + Low Avg Attack ✓""",
         "baseline_desc": "理想条件（損失/並び替えなし）",
         "packet_loss": "パケット損失影響",
         "loss_desc": "10% 損失シナリオ",
+        "reorder": "並び替え影響",
+        "reorder_desc": "30% パケット並び替え",
         "harsh": "厳しいネットワーク",
         "harsh_desc": "損失 + 並び替え組み合わせ",
         "busy_msg": "シミュレーションは既に実行中です。",
@@ -328,12 +216,16 @@ Ideal System: High Avg Legit + Low Std Legit + Low Avg Attack ✓""",
 
 • 平均正規率 (Avg Legit): 正規パケットの平均受理率
   → 高いほど良い（100%に近い = 可用性が高い）
+  → 例：95% は正規パケットの95%が受理されることを意味
 
 • 標準偏差正規率 (Std Legit): 正規パケット受理率の変動
   → 低いほど良い（0%に近い = 安定）
+  → 例：2% は結果が一貫しており、システムが安定
+  → 例：15% は結果が大きく変動し、システムが不安定
 
 • 平均攻撃率 (Avg Attack): リプレイ攻撃の平均成功率
   → 低いほど良い（0%に近い = セキュリティが高い）
+  → 例：5% は攻撃の5%のみが成功
 
 • 標準偏差攻撃率 (Std Attack): 攻撃成功率の変動
   → 低いほど防御性能が予測可能

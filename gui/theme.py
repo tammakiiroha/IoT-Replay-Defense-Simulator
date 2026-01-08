@@ -1,70 +1,90 @@
 """
 主题配置：颜色和字体
 Theme configuration: colors and fonts
+
+Web-style modern theme matching web/app/page.tsx
 """
 
 import platform
 
-# --- 学术风格配色方案 ---
+# --- Web 风格配色方案 (Slate + Indigo) ---
 COLORS = {
-    # 主色调：深蓝色学术风格
-    "primary": "#1a3a52",           # 深海军蓝
-    "primary_light": "#2d5575",     # 浅海军蓝
-    "primary_dark": "#0f2537",      # 极深蓝
+    # 背景色：Slate 灰色系
+    "bg_main": "#f8fafc",           # slate-50 - 主背景
+    "bg_card": "#ffffff",           # white - 卡片/侧边栏背景
+    "bg_section": "#f1f5f9",        # slate-100 - 分区背景
+    "bg_hover": "#f8fafc",          # slate-50 - 悬停背景
     
-    # 背景色：纸质感
-    "bg_main": "#f8f9fa",           # 浅灰白（纸质）
-    "bg_card": "#ffffff",           # 纯白（卡片）
-    "bg_section": "#f0f2f5",        # 分区背景
+    # 主强调色：Indigo
+    "primary": "#4f46e5",           # indigo-600
+    "primary_light": "#6366f1",     # indigo-500
+    "primary_dark": "#4338ca",      # indigo-700
+    "primary_bg": "#eef2ff",        # indigo-50 - 浅色背景
     
-    # 强调色：学术期刊风格
-    "accent": "#d4a574",            # 金褐色（强调）
-    "accent_hover": "#c4956a",      # 深金褐
-    
-    # 状态色：专业配色
-    "success": "#3a7d44",           # 深绿
-    "warning": "#b8860b",           # 深金黄
-    "danger": "#8b3a3a",            # 深红
-    "info": "#4a6fa5",              # 信息蓝
+    # 状态色
+    "success": "#10b981",           # emerald-500
+    "warning": "#f59e0b",           # amber-500
+    "danger": "#ef4444",            # red-500
+    "info": "#3b82f6",              # blue-500
     
     # 文字颜色
-    "text_primary": "#1a1a1a",      # 主文字（近黑）
-    "text_secondary": "#4a5568",    # 次要文字（深灰）
-    "text_muted": "#718096",        # 弱化文字（中灰）
-    "text_light": "#ffffff",        # 白色文字
+    "text_primary": "#0f172a",      # slate-900 - 主文字
+    "text_secondary": "#64748b",    # slate-500 - 次要文字
+    "text_muted": "#94a3b8",        # slate-400 - 弱化文字
+    "text_light": "#ffffff",        # white - 白色文字
     
     # 边框与分割线
-    "border": "#d1d5db",            # 边框灰
-    "divider": "#e5e7eb",           # 分割线
-    "shadow": "#e8eaed",            # 阴影色
+    "border": "#e2e8f0",            # slate-200
+    "divider": "#e2e8f0",           # slate-200
+    "border_light": "#f1f5f9",      # slate-100
     
     # 终端配色
-    "terminal_bg": "#1e1e1e",       # 终端背景
-    "terminal_text": "#d4d4d4",     # 终端文字
+    "terminal_bg": "#0f172a",       # slate-900 - 终端背景
+    "terminal_text": "#e2e8f0",     # slate-200 - 终端文字
+    
+    # 防御模式颜色 (与 Web 版本一致)
+    "mode_no_def": "#ef4444",       # red-500
+    "mode_rolling": "#8b5cf6",      # violet-500
+    "mode_window": "#3b82f6",       # blue-500
+    "mode_challenge": "#10b981",    # emerald-500
+    
+    # 兼容性别名（保持旧代码兼容）
+    "accent": "#4f46e5",            # indigo-600
+    "accent_hover": "#4338ca",      # indigo-700
 }
 
-# --- 学术风格字体配置 ---
+# --- 现代字体配置 ---
 if platform.system() == "Darwin":  # macOS
     FONTS = {
-        "title": ("Georgia", 28, "bold"),           # 衬线字体 - 标题
-        "subtitle": ("Georgia", 14),                # 衬线字体 - 副标题
-        "h1": ("Helvetica Neue", 20, "bold"),       # 无衬线 - 一级标题
-        "h2": ("Helvetica Neue", 16, "bold"),       # 二级标题
-        "h3": ("Helvetica Neue", 13, "bold"),       # 三级标题
-        "body": ("Helvetica Neue", 12),             # 正文
-        "small": ("Helvetica Neue", 11),            # 小字
-        "mono": ("Menlo", 11),                      # 等宽字体
-        "button": ("Helvetica Neue", 13, "bold"),   # 按钮
+        "title": ("SF Pro Display", 22, "bold"),      # 标题
+        "subtitle": ("SF Pro Text", 12),              # 副标题
+        "h1": ("SF Pro Display", 18, "bold"),         # 一级标题
+        "h2": ("SF Pro Text", 14, "bold"),            # 二级标题
+        "h3": ("SF Pro Text", 12, "bold"),            # 三级标题
+        "body": ("SF Pro Text", 12),                  # 正文
+        "small": ("SF Pro Text", 11),                 # 小字
+        "tiny": ("SF Pro Text", 10),                  # 极小字
+        "mono": ("Menlo", 11),                        # 等宽字体 (Menlo alignment is better)
+        "button": ("SF Pro Text", 13, "bold"),        # 按钮
     }
-else:
+else:  # Windows / Linux
     FONTS = {
-        "title": ("Georgia", 24, "bold"),
-        "subtitle": ("Georgia", 12),
-        "h1": ("Segoe UI", 18, "bold"),
-        "h2": ("Segoe UI", 14, "bold"),
+        "title": ("Segoe UI", 20, "bold"),
+        "subtitle": ("Segoe UI", 11),
+        "h1": ("Segoe UI", 16, "bold"),
+        "h2": ("Segoe UI", 13, "bold"),
         "h3": ("Segoe UI", 11, "bold"),
-        "body": ("Segoe UI", 10),
-        "small": ("Segoe UI", 9),
+        "body": ("Segoe UI", 11),
+        "small": ("Segoe UI", 10),
+        "tiny": ("Segoe UI", 9),
         "mono": ("Consolas", 10),
-        "button": ("Segoe UI", 11, "bold"),
+        "button": ("Segoe UI", 12, "bold"),
     }
+
+# 防御模式元数据
+MODE_META = {
+    "no_def": {"color": COLORS["mode_no_def"], "label": "No Defense"},
+    "rolling": {"color": COLORS["mode_rolling"], "label": "Rolling Counter"},
+    "window": {"color": COLORS["mode_window"], "label": "Sliding Window"},
+    "challenge": {"color": COLORS["mode_challenge"], "label": "Challenge-Response"},
+}

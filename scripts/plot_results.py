@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Sequence
 import math
 
+import matplotlib
+matplotlib.use("Agg")  # Force non-interactive backend to prevent macOS crash
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 

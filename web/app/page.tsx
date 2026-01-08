@@ -29,7 +29,7 @@ const MODE_META = {
 
 const TRANSLATIONS = {
   zh: {
-    app_title: "IoTSim 重放攻击仿真",
+    app_title: "IoT 重放攻击防御模拟器",
     subtitle: "无线重放攻击防御机制评估环境",
     scenario: "场景选择",
     env: "环境设置",
@@ -63,7 +63,7 @@ const TRANSLATIONS = {
     desc_challenge: "Nonce 随机数验证"
   },
   ja: {
-    app_title: "IoTSim リプレイ攻撃",
+    app_title: "IoT リプレイ攻撃防御",
     subtitle: "無線リプレイ攻撃防御評価シミュレーター",
     scenario: "シナリオ選択",
     env: "環境設定",
@@ -97,7 +97,7 @@ const TRANSLATIONS = {
     desc_challenge: "Nonceによる検証"
   },
   en: {
-    app_title: "IoTSim Replay",
+    app_title: "IoT Replay Defense",
     subtitle: "Wireless replay attack defense evaluation.",
     scenario: "Select Scenario",
     env: "Environment",
@@ -258,7 +258,7 @@ export default function SimulatorPage() {
               </div>
               <div>
                 <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">{t.app_title}</h1>
-                <span className="text-xs font-semibold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-full">Pro Edition</span>
+                <span className="text-xs font-semibold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-full">Web Simulator</span>
               </div>
             </div>
             {/* Language Switcher */}

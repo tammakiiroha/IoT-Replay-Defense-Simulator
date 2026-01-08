@@ -16,7 +16,7 @@
 
 **A Monte Carlo–based simulator for evaluating replay attack defense mechanisms in 2.4 GHz wireless control systems (graduation thesis research tool)**
 
-[📖 Quick Start](#quick-start) • [🎯 Key Results](#experimental-results-and-data-analysis) • [📊 Quality & Tests](#project-quality-and-tests) • [🤝 Contributing](CONTRIBUTING.md) • [📚 Full Documentation](PRESENTATION_EN.md)
+[🌐 Web Demo](https://tammakiiroha.github.io/IoT-Replay-Defense-Simulator/) • [📖 Quick Start](#quick-start) • [🎯 Key Results](#experimental-results-and-data-analysis) • [📊 Quality & Tests](#project-quality-and-tests) • [🤝 Contributing](CONTRIBUTING.md) • [📚 Full Documentation](PRESENTATION_EN.md)
 
 </div>
 
@@ -204,7 +204,15 @@ The simulator focuses on the logical behavior of the defense mechanisms and the 
 
 ## Quick Start
 
-### Option 1: Graphical Interface (Easiest, recommended for demos)
+### Option 1: Web Version (No installation required)
+
+**🌐 [Open Web Simulator](https://tammakiiroha.github.io/IoT-Replay-Defense-Simulator/)**
+
+- No installation needed, runs directly in browser
+- Supports all defense mechanisms and parameter configurations
+- Interactive visualization of simulation results
+
+### Option 2: Graphical Interface (Desktop GUI)
 
 **🎨 Complete mouse operation, no typing needed!**
 
@@ -231,7 +239,7 @@ Features:
 - 📊 Real-time output display
 - 🌏 Bilingual interface (EN/CN/JP)
 
-### Option 2: Command Line (For automation and scripts)
+### Option 3: Command Line (For automation and scripts)
 
 ```bash
 python3 main.py --runs 200 --num-legit 20 --num-replay 100 --p-loss 0.05 --window-size 5

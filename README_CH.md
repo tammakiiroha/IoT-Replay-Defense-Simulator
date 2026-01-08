@@ -16,7 +16,7 @@
 
 **基于蒙特卡洛方法的模拟器，用于评估 2.4 GHz 无线控制系统中的重放攻击防御机制（毕业论文研究工具）**
 
-[📖 快速开始](#快速开始) • [🎯 核心结果](#实验结果与数据分析) • [📊 质量与测试](#项目质量与测试) • [🤝 贡献指南](CONTRIBUTING.md) • [📚 完整文档](PRESENTATION_CH.md)
+[🌐 Web Demo](https://tammakiiroha.github.io/IoT-Replay-Defense-Simulator/) • [📖 快速开始](#快速开始) • [🎯 核心结果](#实验结果与数据分析) • [📊 质量与测试](#项目质量与测试) • [🤝 贡献指南](CONTRIBUTING.md) • [📚 完整文档](PRESENTATION_CH.md)
 
 </div>
 
@@ -153,7 +153,15 @@ pytest
 <a id="快速开始"></a>
 ## 快速开始
 
-### 方式 1：图形界面（最简单，推荐用于演示）
+### 方式 1：Web 版（无需安装）
+
+**🌐 [打开 Web 模拟器](https://tammakiiroha.github.io/IoT-Replay-Defense-Simulator/)**
+
+- 无需安装，直接在浏览器中运行
+- 支持所有防御机制和参数配置
+- 模拟结果交互式可视化
+
+### 方式 2：图形界面（桌面 GUI）
 
 **🎨 完全鼠标操作，无需输入命令！**
 
@@ -180,7 +188,7 @@ python gui.py
 - 📊 实时输出显示
 - 🌏 三语界面（EN/中/日）
 
-### 方式 2：命令行（用于自动化和脚本）
+### 方式 3：命令行（用于自动化和脚本）
 
 ```bash
 python3 main.py --runs 200 --num-legit 20 --num-replay 100 --p-loss 0.05 --window-size 5

@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { LocaleProvider } from './locale-context';
 import {
   DEFAULT_LOCALE,
+  HTML_LANG,
   LANGUAGE_NAMES,
+  LANGUAGE_SELECTOR_LABELS,
   NAV_LABELS,
   type Locale,
   type LocalizedText,
@@ -48,6 +50,10 @@ export function SiteShell({
     window.setTimeout(() => setLocaleState(queryLocale), 0);
   }, []);
 
+  useEffect(() => {
+    document.documentElement.lang = HTML_LANG[locale];
+  }, [locale]);
+
   const setLocale = (nextLocale: Locale) => {
     setLocaleState(nextLocale);
     const url = new URL(window.location.href);
@@ -70,12 +76,12 @@ export function SiteShell({
 
   return (
     <LocaleProvider value={{ locale, setLocale }}>
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,#f9f4e8_0%,#f5efe0_36%,#ebe3d2_100%)] text-stone-900">
+      <div className="min-h-screen bg-[linear-gradient(180deg,#f7faf7_0%,#eef6f3_48%,#f8f7f2_100%)] text-stone-900">
         <header className="border-b border-stone-900/10 backdrop-blur-sm">
           <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl space-y-3">
               <p className="eyebrow">{localizedShell.eyebrow}</p>
-              <h1 className="text-4xl font-semibold text-stone-950 lg:text-6xl">
+              <h1 className="text-3xl font-semibold leading-tight text-stone-950 sm:text-4xl lg:text-5xl">
                 {localizedShell.title}
               </h1>
               <p className="max-w-2xl text-base leading-7 text-stone-700 lg:text-lg">
@@ -108,7 +114,7 @@ function LanguageSwitcher({
   setLocale: (locale: Locale) => void;
 }) {
   return (
-    <div className="language-switcher" aria-label="Language selector">
+    <div className="language-switcher" aria-label={LANGUAGE_SELECTOR_LABELS[locale]}>
       {Object.entries(LANGUAGE_NAMES).map(([key, label]) => {
         const nextLocale = key as Locale;
         return (
@@ -138,7 +144,7 @@ export function Panel({
   return (
     <section className="panel">
       <div className="mb-6 flex flex-col gap-2">
-        <h2 className="text-2xl font-semibold tracking-[-0.03em] text-stone-950">{title}</h2>
+        <h2 className="text-2xl font-semibold text-stone-950">{title}</h2>
         {description ? <p className="text-sm leading-6 text-stone-600">{description}</p> : null}
       </div>
       {children}

@@ -11,6 +11,18 @@ export const LANGUAGE_NAMES: Record<Locale, string> = {
   zh: '中文',
 };
 
+export const HTML_LANG: Record<Locale, string> = {
+  en: 'en',
+  ja: 'ja',
+  zh: 'zh-CN',
+};
+
+export const LANGUAGE_SELECTOR_LABELS: Record<Locale, string> = {
+  en: 'Language selector',
+  ja: '言語セレクター',
+  zh: '语言选择器',
+};
+
 export const NAV_LABELS: Record<Locale, Record<string, string>> = {
   en: {
     overview: 'Overview',
@@ -50,5 +62,20 @@ export function localize(text: LocalizedText | undefined, locale: Locale, fallba
 }
 
 export function withLocale(path: string, locale: Locale): string {
-  return locale === DEFAULT_LOCALE ? path : `${path}?lang=${locale}`;
+  const hashIndex = path.indexOf('#');
+  const pathWithoutHash = hashIndex >= 0 ? path.slice(0, hashIndex) : path;
+  const hash = hashIndex >= 0 ? path.slice(hashIndex) : '';
+  const queryIndex = pathWithoutHash.indexOf('?');
+  const pathname = queryIndex >= 0 ? pathWithoutHash.slice(0, queryIndex) : pathWithoutHash;
+  const query = queryIndex >= 0 ? pathWithoutHash.slice(queryIndex + 1) : '';
+  const params = new URLSearchParams(query);
+
+  if (locale === DEFAULT_LOCALE) {
+    params.delete('lang');
+  } else {
+    params.set('lang', locale);
+  }
+
+  const nextQuery = params.toString();
+  return `${pathname}${nextQuery ? `?${nextQuery}` : ''}${hash}`;
 }

@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --background: #efe6d6;
+  --background: #f7faf7;
   --foreground: #1e1a16;
-  --panel: rgba(255, 252, 246, 0.72);
+  --panel: rgba(255, 255, 255, 0.78);
   --panel-border: rgba(41, 33, 26, 0.12);
   --accent: #c96b3d;
   --accent-2: #0f766e;
@@ -41,7 +41,7 @@ a {
 .eyebrow {
   font-family: var(--font-mono), monospace;
   font-size: 0.72rem;
-  letter-spacing: 0.28em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: rgba(30, 26, 22, 0.62);
 }
@@ -49,9 +49,9 @@ a {
 .panel {
   border: 1px solid var(--panel-border);
   background: var(--panel);
-  border-radius: 2rem;
+  border-radius: 0.5rem;
   padding: 1.5rem;
-  box-shadow: 0 22px 60px rgba(50, 35, 20, 0.08);
+  box-shadow: 0 16px 42px rgba(20, 40, 32, 0.08);
   backdrop-filter: blur(22px);
 }
 
@@ -118,7 +118,7 @@ a {
 
 .field span {
   font-size: 0.75rem;
-  letter-spacing: 0.18em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: rgba(30, 26, 22, 0.56);
 }
@@ -127,7 +127,7 @@ a {
 .field select {
   width: 100%;
   border: 1px solid rgba(30, 26, 22, 0.12);
-  border-radius: 1rem;
+  border-radius: 0.5rem;
   background: rgba(255, 255, 255, 0.72);
   padding: 0.9rem 1rem;
   font: inherit;

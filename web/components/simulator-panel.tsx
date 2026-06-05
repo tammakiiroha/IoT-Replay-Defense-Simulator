@@ -416,7 +416,7 @@ export function SimulatorPanel() {
         </div>
 
         <div className="mt-6">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+          <p className="mb-3 text-xs font-semibold uppercase text-stone-500">
             {copy.defenseModes}
           </p>
           <div className="flex flex-wrap gap-3">
@@ -514,7 +514,7 @@ function RunResults({
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h3 className="text-lg font-semibold">{modeLabel(entry.mode, locale)}</h3>
-                <p className="text-xs uppercase tracking-[0.2em] text-stone-500">
+                <p className="text-xs uppercase text-stone-500">
                   {entry.runs} runs · {entry.attack_mode}
                 </p>
               </div>
@@ -599,7 +599,7 @@ function Metric({
 }) {
   return (
     <div className="rounded border border-stone-900/10 bg-stone-50/80 p-3">
-      <p className="text-xs uppercase tracking-[0.22em] text-stone-500">{label}</p>
+      <p className="text-xs uppercase text-stone-500">{label}</p>
       <p className="mt-2 text-lg font-semibold text-stone-950">{value}</p>
       {hint ? <p className="mt-1 text-xs text-stone-500">{hintPrefix ?? '95% CI'} {hint}</p> : null}
     </div>

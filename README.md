@@ -2,21 +2,22 @@
 
 <div align="center">
 
-<img src="figures/logo.png" alt="IoT Replay Attack Defense Simulator" width="400">
+<img src="figures/logo.png" alt="ReplayBench-IoT benchmark logo" width="360">
 
 <br>
 
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.md)
 [![日本語](https://img.shields.io/badge/lang-日本語-red.svg)](README_JP.md)
 [![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)
+[![CI](https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/actions/workflows/ci.yml/badge.svg)](https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/tammakiiroha/IoT-Replay-Defense-Simulator?label=release)](https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/releases)
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-94-brightgreen.svg)](tests/)
-[![Monte Carlo](https://img.shields.io/badge/runs-200-orange.svg)](EXPERIMENTAL_PARAMETERS_EN.md)
+[![Citation](https://img.shields.io/badge/citation-CFF-informational.svg)](CITATION.cff)
 
-**A reproducible benchmark for IoT replay-defense evaluation under lossy and reordered wireless links.**
+**A reproducible benchmark for IoT replay-defense evaluation under packet loss, reordering, and low-cost device constraints.**
 
-[🌐 Web Demo](https://tammakiiroha.github.io/IoT-Replay-Defense-Simulator/) • [📖 Quick Start](#quick-start) • [🎯 Key Results](#experimental-results-and-data-analysis) • [📊 Quality & Tests](#project-quality-and-tests) • [🤝 Contributing](CONTRIBUTING.md) • [📚 Full Documentation](PRESENTATION_EN.md)
+[Web Demo](https://tammakiiroha.github.io/IoT-Replay-Defense-Simulator/) • [Project Status](docs/PROJECT_STATUS.md) • [Quick Start](#quick-start) • [Release Notes](docs/releases/v0.2.0.md) • [Figures](docs/figures) • [Contributing](CONTRIBUTING.md)
 
 </div>
 
@@ -28,11 +29,17 @@
 
 > For detailed authorship declaration and development background, see [AUTHORSHIP.md](AUTHORSHIP.md).
 
-## ReplayBench-IoT Scope
+## At a Glance
 
-ReplayBench-IoT evaluates replay-defense designs for low-cost IoT control links. It now includes no defense, rolling counter + MAC, RFC-style sliding window, challenge-response, HSW-CR adaptive sliding-window + challenge defense, and an OSCORE-like replay-window profile.
+ReplayBench-IoT compares replay-defense designs for low-cost IoT control links. It includes no defense, rolling counter + MAC, RFC-style sliding window, challenge-response, HSW-CR adaptive sliding-window + challenge defense, and an OSCORE-like replay-window profile.
 
-Primary metrics are LAR, ASR, FRR, latency ticks, bytes overhead, receiver state bytes, energy proxy, raw counts, and Wilson 95% confidence intervals. Use paired scenario traces for lower-noise comparisons across modes.
+| Question | Current answer |
+| --- | --- |
+| Best use | Reproducible replay-defense benchmarking, thesis evidence, and protocol trade-off comparison. |
+| Not a fit for | Cryptographic proof, certification, production firmware, or full RF-channel emulation. |
+| Authoritative runtime | Python benchmark core; the deployed website is a static artifact-backed showcase. |
+| Metrics | LAR, ASR, FRR, Wilson 95% CI, latency ticks, byte overhead, receiver state bytes, energy proxy, raw counts. |
+| Release | `v0.2.0`, CI-gated, with `CITATION.cff` metadata. |
 
 Core generated figures:
 
@@ -40,15 +47,13 @@ Core generated figures:
 - [LAR vs reordering](docs/figures/lar_vs_reorder.png)
 - [Security-cost frontier](docs/figures/security_cost_frontier.png)
 
-### Limitations
-
-This is not a cryptographic proof, not a certification tool, and not a complete wireless-channel emulator. Hardware validation covers controlled links only. Trace-driven loss currently accepts in-memory `list[bool]` sequences; there is no pcap/CSV trace loader yet. NISTIR 8259A and ETSI EN 303 645 references are informative alignment only, not a standards-to-feature certification map.
-
-### Standards Alignment
+### Scope and Limitations
 
 The benchmark uses RFC-style sliding-window semantics inspired by RFC 6479, HMAC truncation vocabulary aligned with RFC 2104 practice, optional Ascon profile aligned with NIST SP 800-232, and an OSCORE-like replay-window mode inspired by RFC 8613. These references describe modeling choices, not compliance claims.
 
-### How to Cite
+Hardware validation covers controlled links only. Trace-driven loss currently accepts in-memory `list[bool]` sequences; there is no pcap/CSV trace loader yet. NISTIR 8259A and ETSI EN 303 645 references are informative alignment only, not a standards-to-feature certification map.
+
+### Citation
 
 Use [CITATION.cff](CITATION.cff), or cite: Romeitou, *ReplayBench-IoT: A reproducible benchmark for IoT replay-defense evaluation*, v0.2.0, 2026.
 
@@ -791,32 +796,11 @@ Related data files:
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style guidelines, and how to submit changes.
 
-## ⭐ Star History
-
-<div align="center">
-
-[![Star History Chart](https://api.star-history.com/svg?repos=tammakiiroha/IoT-Replay-Defense-Simulator&type=Date)](https://star-history.com/#tammakiiroha/IoT-Replay-Defense-Simulator&Date)
-
-</div>
-
-> **Like this project?** Give it a star to show your support and help others discover it!
-
 ## Citation
 
-If you use this simulation toolkit in your research or thesis, please cite:
+If you use this benchmark in research, thesis work, or technical reports, use [CITATION.cff](CITATION.cff) or cite:
 
-```bibtex
-@software{iot_replay_defense_simulator_2025,
-  author    = {Romeitou (tammakiiroha)},
-  title     = {IoT Replay Attack Defense Simulator},
-  year      = {2025},
-  publisher = {GitHub},
-  url       = {https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator}
-}
-```
-
-Or in plain text:
-> Romeitou (tammakiiroha). (2025). IoT Replay Attack Defense Simulator. GitHub. https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator
+> Romeitou (tammakiiroha). (2026). ReplayBench-IoT: A reproducible benchmark for IoT replay-defense evaluation. v0.2.0. GitHub. https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator
 
 ## References
 

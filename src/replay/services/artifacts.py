@@ -53,8 +53,16 @@ def _constant_value(payload: list[dict[str, Any]], key: str) -> Any:
     return None
 
 
-def _simulation_config_snapshot(path: Path, payload: list[dict[str, Any]]) -> dict[str, Any]:
-    source_path = str(path.relative_to(_project_root()))
+def _source_path(path: Path, project_root: Path) -> str:
+    return str(path.relative_to(project_root))
+
+
+def _simulation_config_snapshot(
+    path: Path,
+    payload: list[dict[str, Any]],
+    project_root: Path,
+) -> dict[str, Any]:
+    source_path = _source_path(path, project_root)
     snapshot: dict[str, Any] = {
         "seed": None,
         "source_path": source_path,
@@ -78,9 +86,13 @@ def _simulation_config_snapshot(path: Path, payload: list[dict[str, Any]]) -> di
     return _to_jsonable(snapshot)
 
 
-def _simulation_provenance(path: Path, payload: list[dict[str, Any]]) -> dict[str, Any]:
+def _simulation_provenance(
+    path: Path,
+    payload: list[dict[str, Any]],
+    project_root: Path,
+) -> dict[str, Any]:
     return {
-        "source_path": str(path.relative_to(_project_root())),
+        "source_path": _source_path(path, project_root),
         "source_file": path.name,
         "source_format": "legacy_aggregate_rows",
         "row_count": len(payload),
@@ -90,10 +102,10 @@ def _simulation_provenance(path: Path, payload: list[dict[str, Any]]) -> dict[st
     }
 
 
-def _lab_provenance(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
+def _lab_provenance(path: Path, payload: dict[str, Any], project_root: Path) -> dict[str, Any]:
     environment = payload.get("environment", {})
     return {
-        "source_path": str(path.relative_to(_project_root())),
+        "source_path": _source_path(path, project_root),
         "source_file": path.name,
         "source_format": "lab_validation_json",
         "validation_time": payload.get("validation_time"),
@@ -102,7 +114,11 @@ def _lab_provenance(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _summarize_simulation_dataset(path: Path, payload: list[dict[str, Any]]) -> ExperimentArtifact:
+def _summarize_simulation_dataset(
+    path: Path,
+    payload: list[dict[str, Any]],
+    project_root: Path,
+) -> ExperimentArtifact:
     top_legit = max(payload, key=lambda item: item.get("avg_legit_rate", 0.0), default={})
     lowest_attack = min(payload, key=lambda item: item.get("avg_attack_rate", 1.0), default={})
     artifact_id = normalize_artifact_id(path)
@@ -111,8 +127,8 @@ def _summarize_simulation_dataset(path: Path, payload: list[dict[str, Any]]) -> 
         kind="simulation_dataset",
         title=path.stem.replace("_", " ").title(),
         description=f"Versioned simulation dataset exported from {path.name}.",
-        source_path=str(path.relative_to(_project_root())),
-        config_snapshot=_simulation_config_snapshot(path, payload),
+        source_path=_source_path(path, project_root),
+        config_snapshot=_simulation_config_snapshot(path, payload, project_root),
         summary={
             "records": len(payload),
             "best_legit_mode": top_legit.get("mode"),
@@ -123,12 +139,16 @@ def _summarize_simulation_dataset(path: Path, payload: list[dict[str, Any]]) -> 
         metrics=_to_jsonable(payload),
         metadata={
             "dataset_type": "simulation",
-            "provenance": _simulation_provenance(path, payload),
+            "provenance": _simulation_provenance(path, payload, project_root),
         },
     )
 
 
-def _summarize_lab_dataset(path: Path, payload: dict[str, Any]) -> ExperimentArtifact:
+def _summarize_lab_dataset(
+    path: Path,
+    payload: dict[str, Any],
+    project_root: Path,
+) -> ExperimentArtifact:
     results = payload.get("results", [])
     artifact_id = normalize_artifact_id(path)
     return ExperimentArtifact(
@@ -136,7 +156,7 @@ def _summarize_lab_dataset(path: Path, payload: dict[str, Any]) -> ExperimentArt
         kind="lab_validation",
         title=path.stem.replace("_", " ").title(),
         description=f"Physical validation artifact derived from {path.name}.",
-        source_path=str(path.relative_to(_project_root())),
+        source_path=_source_path(path, project_root),
         config_snapshot=_to_jsonable(payload.get("config", {})),
         summary=_to_jsonable(payload.get("summary", {})),
         metrics=_to_jsonable(results),
@@ -145,7 +165,7 @@ def _summarize_lab_dataset(path: Path, payload: dict[str, Any]) -> ExperimentArt
             "environment": _to_jsonable(payload.get("environment", {})),
             "counting_rules": _to_jsonable(payload.get("counting_rules", {})),
             "conclusion_scope": _to_jsonable(payload.get("conclusion_scope", {})),
-            "provenance": _lab_provenance(path, payload),
+            "provenance": _lab_provenance(path, payload, project_root),
         },
     )
 
@@ -176,9 +196,9 @@ def build_demo_artifacts(project_root: Path | None = None) -> ArtifactManifest:
             continue
         payload = _load_json(source)
         artifact = (
-            _summarize_simulation_dataset(source, payload)
+            _summarize_simulation_dataset(source, payload, root)
             if isinstance(payload, list)
-            else _summarize_lab_dataset(source, payload)
+            else _summarize_lab_dataset(source, payload, root)
         )
         artifact_path = artifact_dir / f"{artifact.artifact_id}.json"
         artifact_path.write_text(

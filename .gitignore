@@ -86,6 +86,11 @@ coverage.xml
 # Pytest
 .pytest_cache/
 
+# Browser/e2e test output
+test-results/
+playwright-report/
+blob-report/
+
 # mypy
 .mypy_cache/
 .dmypy.json

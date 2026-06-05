@@ -1,52 +1,204 @@
 from __future__ import annotations
 
 import argparse
-import dataclasses
 import json
 import sys
-import time
 from pathlib import Path
-from typing import List
 
-from sim.commands import DEFAULT_COMMANDS, load_command_sequence
-from sim.experiment import run_many_experiments
-from sim.types import AttackMode, Mode, SimulationConfig
+from pydantic import ValidationError
+
+from replay.contracts import SimulationSpec
+from replay.core import (
+    DEFAULT_ATTACK_MODE,
+    DEFAULT_ATTACKER_RECORD_LOSS,
+    DEFAULT_CHALLENGE_NONCE_BITS,
+    DEFAULT_COMMANDS,
+    DEFAULT_INLINE_ATTACK_BURST,
+    DEFAULT_INLINE_ATTACK_PROBABILITY,
+    DEFAULT_MAC_LENGTH,
+    DEFAULT_NUM_LEGIT,
+    DEFAULT_NUM_REPLAY,
+    DEFAULT_P_LOSS,
+    DEFAULT_P_REORDER,
+    DEFAULT_RUNS,
+    DEFAULT_SHARED_KEY,
+    DEFAULT_WINDOW_SIZE,
+    Mode,
+    load_command_sequence,
+)
+from replay.services import simulate_batch
+
+VALID_MODE_VALUES = [mode.value for mode in Mode]
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Replay attack simulation driver")
+    parser.add_argument(
+        "--modes",
+        nargs="+",
+        choices=VALID_MODE_VALUES,
+        default=VALID_MODE_VALUES,
+        help="Modes to evaluate",
+    )
+    parser.add_argument(
+        "--runs",
+        type=int,
+        default=DEFAULT_RUNS,
+        help="Monte Carlo runs per mode",
+    )
+    parser.add_argument(
+        "--num-legit",
+        type=int,
+        default=DEFAULT_NUM_LEGIT,
+        help="Legitimate transmissions per run",
+    )
+    parser.add_argument(
+        "--num-replay",
+        type=int,
+        default=DEFAULT_NUM_REPLAY,
+        help="Replay attempts per run",
+    )
+    parser.add_argument(
+        "--p-loss",
+        type=float,
+        default=DEFAULT_P_LOSS,
+        help="Packet loss probability",
+    )
+    parser.add_argument(
+        "--p-reorder",
+        type=float,
+        default=DEFAULT_P_REORDER,
+        help="Packet reordering probability",
+    )
+    parser.add_argument(
+        "--window-size",
+        type=int,
+        default=DEFAULT_WINDOW_SIZE,
+        help="Window size for window mode",
+    )
+    parser.add_argument(
+        "--mac-length",
+        type=int,
+        default=DEFAULT_MAC_LENGTH,
+        help="Truncated MAC length (hex chars)",
+    )
+    parser.add_argument("--seed", type=int, default=None, help="Global RNG seed")
+    parser.add_argument(
+        "--target-commands",
+        nargs="+",
+        help="Specific commands for attacker to replay",
+    )
+    parser.add_argument(
+        "--commands-file",
+        type=str,
+        help="Path to a newline-delimited command trace captured from real hardware",
+    )
+    parser.add_argument(
+        "--shared-key",
+        type=str,
+        default=DEFAULT_SHARED_KEY,
+        help="Shared secret key",
+    )
+    parser.add_argument(
+        "--attacker-loss",
+        type=float,
+        default=DEFAULT_ATTACKER_RECORD_LOSS,
+        help="Attacker recording loss probability",
+    )
+    parser.add_argument("--output-json", type=str, help="Optional path to dump aggregate stats")
+    parser.add_argument(
+        "--attack-mode",
+        choices=["post", "inline"],
+        default=DEFAULT_ATTACK_MODE.value,
+        help="Replay scheduling strategy",
+    )
+    parser.add_argument(
+        "--inline-attack-prob",
+        type=float,
+        default=DEFAULT_INLINE_ATTACK_PROBABILITY,
+        help="Inline replay probability",
+    )
+    parser.add_argument(
+        "--inline-attack-burst",
+        type=int,
+        default=DEFAULT_INLINE_ATTACK_BURST,
+        help="Max consecutive inline replays",
+    )
+    parser.add_argument(
+        "--challenge-nonce-bits",
+        type=int,
+        default=DEFAULT_CHALLENGE_NONCE_BITS,
+        help="Nonce length in bits",
+    )
+    parser.add_argument("--quiet", action="store_true", help="Disable progress display")
+    return parser
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Replay attack simulation driver")
-    parser.add_argument("--modes", nargs="+", default=[mode.value for mode in Mode], help="Modes to evaluate")
-    parser.add_argument("--runs", type=int, default=200, help="Monte Carlo runs per mode")
-    parser.add_argument("--num-legit", type=int, default=20, help="Legitimate transmissions per run")
-    parser.add_argument("--num-replay", type=int, default=100, help="Replay attempts per run")
-    parser.add_argument("--p-loss", type=float, default=0.0, help="Packet loss probability")
-    parser.add_argument("--p-reorder", type=float, default=0.0, help="Packet reordering probability")
-    parser.add_argument("--window-size", type=int, default=5, help="Window size for the window mode")
-    parser.add_argument("--mac-length", type=int, default=8, help="Truncated MAC length (hex chars)")
-    parser.add_argument("--seed", type=int, default=None, help="Global RNG seed")
-    parser.add_argument("--commands-file", type=str, help="Optional path to a command trace")
-    parser.add_argument("--target-commands", nargs="+", help="Specific commands for attacker to replay (selective replay)")
-    parser.add_argument("--shared-key", type=str, default="sim_shared_key", help="Shared secret key")
-    parser.add_argument("--attacker-loss", type=float, default=0.0, help="Attacker recording loss probability")
-    parser.add_argument("--output-json", type=str, help="Optional path to dump aggregate stats")
-    parser.add_argument("--attack-mode", choices=[mode.value for mode in AttackMode], default=AttackMode.POST_RUN.value,
-                        help="Replay scheduling strategy (post or inline)")
-    parser.add_argument("--inline-attack-prob", type=float, default=0.3,
-                        help="Probability of injecting a replay after each legitimate frame in inline mode")
-    parser.add_argument("--inline-attack-burst", type=int, default=1,
-                        help="Maximum consecutive replay attempts per legitimate frame in inline mode")
-    parser.add_argument("--challenge-nonce-bits", type=int, default=32,
-                        help="Nonce length (bits) for the challenge-response mode")
-    parser.add_argument("--quiet", action="store_true",
-                        help="Disable visual progress display (quiet mode)")
-    return parser.parse_args(argv)
+    return build_parser().parse_args(argv)
+
+
+def _raise_cli_validation_error(errors: list[str]) -> None:
+    if not errors:
+        return
+
+    print("\nParameter Validation Failed:\n", file=sys.stderr)
+    for error in errors:
+        print(f"  - {error}", file=sys.stderr)
+    print("\nPlease fix the errors and try again.\n", file=sys.stderr)
+    raise SystemExit(1)
+
+
+def _format_spec_validation_error(exc: ValidationError) -> list[str]:
+    errors: list[str] = []
+    for error in exc.errors():
+        location = ".".join(str(part) for part in error.get("loc", ()))
+        message = error.get("msg", "Invalid parameter")
+        errors.append(f"{location}: {message}" if location else str(message))
+    return errors
+
+
+def _load_command_sequence_from_args(commands_file: str | None) -> list[str] | None:
+    if not commands_file:
+        return None
+
+    try:
+        return load_command_sequence(commands_file)
+    except (FileNotFoundError, ValueError) as exc:
+        _raise_cli_validation_error([str(exc)])
+        return None
+
+
+def _build_simulation_spec(args: argparse.Namespace) -> SimulationSpec:
+    try:
+        return SimulationSpec(
+            modes=args.modes,
+            runs=args.runs,
+            seed=args.seed,
+            p_loss=args.p_loss,
+            p_reorder=args.p_reorder,
+            window_size=args.window_size,
+            num_legit=args.num_legit,
+            num_replay=args.num_replay,
+            attack_mode=args.attack_mode,
+            mac_length=args.mac_length,
+            shared_key=args.shared_key,
+            attacker_record_loss=args.attacker_loss,
+            inline_attack_probability=args.inline_attack_prob,
+            inline_attack_burst=args.inline_attack_burst,
+            challenge_nonce_bits=args.challenge_nonce_bits,
+            target_commands=args.target_commands,
+            command_sequence=_load_command_sequence_from_args(args.commands_file),
+            command_set=list(DEFAULT_COMMANDS),
+        )
+    except ValidationError as exc:
+        _raise_cli_validation_error(_format_spec_validation_error(exc))
+        raise AssertionError("unreachable") from exc
 
 
 def validate_parameters(args: argparse.Namespace) -> None:
-    """验证输入参数的合理性"""
-    errors = []
-    
-    # 验证概率参数 (0.0 ~ 1.0)
+    errors: list[str] = []
+
     if not 0.0 <= args.p_loss <= 1.0:
         errors.append(f"Invalid p_loss: {args.p_loss}. Must be between 0.0 and 1.0")
     if not 0.0 <= args.p_reorder <= 1.0:
@@ -54,244 +206,100 @@ def validate_parameters(args: argparse.Namespace) -> None:
     if not 0.0 <= args.attacker_loss <= 1.0:
         errors.append(f"Invalid attacker_loss: {args.attacker_loss}. Must be between 0.0 and 1.0")
     if not 0.0 <= args.inline_attack_prob <= 1.0:
-        errors.append(f"Invalid inline_attack_prob: {args.inline_attack_prob}. Must be between 0.0 and 1.0")
-    
-    # 验证正整数参数
+        errors.append(
+            f"Invalid inline_attack_prob: {args.inline_attack_prob}. "
+            "Must be between 0.0 and 1.0"
+        )
+
     if args.runs <= 0:
         errors.append(f"Invalid runs: {args.runs}. Must be positive integer")
     if args.num_legit < 0:
         errors.append(f"Invalid num_legit: {args.num_legit}. Must be non-negative integer")
     if args.num_replay < 0:
         errors.append(f"Invalid num_replay: {args.num_replay}. Must be non-negative integer")
-    window_mode_requested = Mode.WINDOW.value in args.modes
     if args.window_size < 0:
         errors.append(f"Invalid window_size: {args.window_size}. Must be non-negative integer")
-    elif window_mode_requested and args.window_size == 0:
+    elif "window" in args.modes and args.window_size == 0:
         errors.append("Invalid window_size: must be positive when WINDOW mode is enabled")
     if args.mac_length <= 0:
         errors.append(f"Invalid mac_length: {args.mac_length}. Must be positive integer")
     if args.inline_attack_burst <= 0:
-        errors.append(f"Invalid inline_attack_burst: {args.inline_attack_burst}. Must be positive integer")
+        errors.append(
+            f"Invalid inline_attack_burst: {args.inline_attack_burst}. "
+            "Must be positive integer"
+        )
     if args.challenge_nonce_bits <= 0:
-        errors.append(f"Invalid challenge_nonce_bits: {args.challenge_nonce_bits}. Must be positive integer")
-    
-    # 验证文件路径
-    if args.commands_file and not Path(args.commands_file).exists():
-        errors.append(f"Commands file not found: {args.commands_file}")
-    
-    # 验证种子值
+        errors.append(
+            f"Invalid challenge_nonce_bits: {args.challenge_nonce_bits}. "
+            "Must be positive integer"
+        )
     if args.seed is not None and args.seed < 0:
         errors.append(f"Invalid seed: {args.seed}. Must be non-negative integer or None")
-    
-    # 合理性警告（不阻止运行，但给出提示）
-    warnings = []
-    if args.p_loss > 0.5:
-        warnings.append(f"Warning: High packet loss ({args.p_loss*100:.0f}%) may lead to low acceptance rates")
-    if args.runs < 10:
-        warnings.append(f"Warning: Low run count ({args.runs}) may not provide statistically reliable results")
-    if args.num_legit == 0 and args.num_replay == 0:
-        warnings.append("Warning: Both num_legit and num_replay are zero. No simulation will occur")
-    if args.window_size > 100:
-        warnings.append(f"Warning: Very large window size ({args.window_size}) may be unrealistic")
-    
-    # 打印错误和警告
-    if errors:
-        print("\n❌ Parameter Validation Failed:\n", file=sys.stderr)
-        for error in errors:
-            print(f"  • {error}", file=sys.stderr)
-        print("\nPlease fix the errors and try again.\n", file=sys.stderr)
-        sys.exit(1)
-    
-    if warnings and not args.quiet:
-        print("\n⚠️  Parameter Warnings:\n")
-        for warning in warnings:
-            print(f"  • {warning}")
-        print()  # Extra line for readability
+
+    _raise_cli_validation_error(errors)
 
 
-def main() -> None:
-    args = parse_args()
-    
-    # Validate parameters first
+def main(argv: list[str] | None = None) -> None:
+    args = parse_args(argv)
     validate_parameters(args)
-    
-    # Always show header unless in quiet mode
-    if not args.quiet:
-        _print_header(args)
-    
-    modes: List[Mode] = []
-    for token in args.modes:
-        try:
-            modes.append(Mode(token))
-        except ValueError as exc:
-            valid = ", ".join(mode.value for mode in Mode)
-            raise SystemExit(f"Unsupported mode '{token}'. Valid options: {valid}") from exc
-
-    command_sequence = None
-    if args.commands_file:
-        try:
-            command_sequence = load_command_sequence(args.commands_file)
-        except Exception as exc:
-            raise SystemExit(f"Failed to load command sequence from '{args.commands_file}': {exc}") from exc
-
-    try:
-        attack_mode = AttackMode(args.attack_mode)
-    except ValueError as exc:
-        valid = ", ".join(mode.value for mode in AttackMode)
-        raise SystemExit(f"Unsupported attack mode '{args.attack_mode}'. Valid options: {valid}") from exc
-
-    try:
-        base_config = SimulationConfig(
-            mode=Mode.NO_DEFENSE,
-            attack_mode=attack_mode,
-            num_legit=args.num_legit,
-            num_replay=args.num_replay,
-            p_loss=args.p_loss,
-            p_reorder=args.p_reorder,
-            window_size=args.window_size,
-            command_sequence=command_sequence,
-            command_set=DEFAULT_COMMANDS,
-            target_commands=args.target_commands,
-            rng_seed=args.seed,
-            mac_length=args.mac_length,
-            shared_key=args.shared_key,
-            attacker_record_loss=args.attacker_loss,
-            inline_attack_probability=args.inline_attack_prob,
-            inline_attack_burst=args.inline_attack_burst,
-            challenge_nonce_bits=args.challenge_nonce_bits,
-        )
-    except Exception as exc:
-        raise SystemExit(f"Failed to create simulation configuration: {exc}") from exc
-
-    # Run experiments with progress display (unless quiet mode)
-    try:
-        stats = run_many_experiments(
-            base_config, 
-            modes=modes, 
-            runs=args.runs, 
-            seed=args.seed,
-            show_progress=not args.quiet
-        )
-    except Exception as exc:
-        print(f"\n❌ Simulation failed: {exc}", file=sys.stderr)
-        if not args.quiet:
-            import traceback
-            traceback.print_exc()
-        sys.exit(1)
-    
-    _print_table(stats)
+    spec = _build_simulation_spec(args)
+    batch = simulate_batch(spec, show_progress=not args.quiet)
+    rows = [entry.model_dump(mode="json") for entry in batch.results]
+    _print_table(rows)
 
     if args.output_json:
-        try:
-            path = Path(args.output_json)
-            path.parent.mkdir(parents=True, exist_ok=True)  # Create directory if needed
-            payload = [entry.as_dict() for entry in stats]
-            path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-            print(f"\n✓ Saved aggregate metrics to {path}")
-        except Exception as exc:
-            print(f"\n❌ Failed to save JSON output to '{args.output_json}': {exc}", file=sys.stderr)
-            sys.exit(1)
-            
-    # For GUI: Hidden JSON Output
-    # This allows the GUI to parse results without parsing the table
-    try:
-        gui_payload = [entry.as_dict() for entry in stats]
-        print(f"\n__JSON_RESULT__:{json.dumps(gui_payload)}")
-    except Exception:
-        pass
+        output_path = Path(args.output_json)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8")
+        print(f"\n✓ Saved aggregate metrics to {output_path}")
+
+    print(f"\n__JSON_RESULT__:{json.dumps(rows, ensure_ascii=False)}")
 
 
-def _print_table(stats) -> None:
-    if not stats:
+def _print_table(rows: list[dict[str, object]]) -> None:
+    if not rows:
         print("No stats to display")
         return
 
-    # 定义固定列宽（确保表头和数据对齐）
-    col_widths = {
-        "Mode": 12,
-        "Runs": 6,
-        "Attack": 8,
-        "p_loss": 8,
-        "p_reorder": 10,
-        "Window": 8,
-        "Avg Legit": 12,
-        "Std Legit": 12,
-        "Avg Attack": 12,
-        "Std Attack": 12,
-    }
-    
-    headers = list(col_widths.keys())
-    widths = list(col_widths.values())
-    
-    # 构建行数据
-    rows = []
-    for entry in stats:
-        rows.append([
-            entry.mode.value,
-            str(entry.runs),
-            entry.attack_mode.value,
-            f"{entry.p_loss:.2f}",
-            f"{entry.p_reorder:.2f}",
-            str(entry.window_size),
-            _format_rate(entry.avg_legit_rate),
-            _format_rate(entry.std_legit_rate),
-            _format_rate(entry.avg_attack_rate),
-            _format_rate(entry.std_attack_rate),
-        ])
-    
-    def _print_row(values, widths_list):
-        """格式化并打印一行"""
-        formatted = []
-        for val, w in zip(values, widths_list):
-            formatted.append(str(val).ljust(w))
-        print(" | ".join(formatted))
-    
-    # 打印分隔线
-    def _print_separator():
-        print("-+-".join("-" * w for w in widths))
-    
-    # 打印表格
-    print()  # 空行开始
-    _print_row(headers, widths)
-    _print_separator()
+    headers = [
+        ("Mode", 12),
+        ("Runs", 6),
+        ("Attack", 8),
+        ("p_loss", 8),
+        ("p_reorder", 10),
+        ("Window", 8),
+        ("Avg Legit", 12),
+        ("Std Legit", 12),
+        ("Avg Attack", 12),
+        ("Std Attack", 12),
+    ]
+    line = " ".join(name.ljust(width) for name, width in headers)
+    print(line)
+    print("-" * len(line))
     for row in rows:
-        _print_row(row, widths)
-    print()  # 空行结束
+        legit_rate = _coerce_float(row["avg_legit_rate"])
+        legit_std = _coerce_float(row["std_legit_rate"])
+        attack_rate = _coerce_float(row["avg_attack_rate"])
+        attack_std = _coerce_float(row["std_attack_rate"])
+        values = [
+            str(row["mode"]),
+            str(row["runs"]),
+            str(row["attack_mode"]),
+            f"{_coerce_float(row['p_loss']):.2f}",
+            f"{_coerce_float(row['p_reorder']):.2f}",
+            str(row["window_size"]),
+            f"{legit_rate * 100:.2f}%",
+            f"{legit_std * 100:.2f}%",
+            f"{attack_rate * 100:.2f}%",
+            f"{attack_std * 100:.2f}%",
+        ]
+        print(" ".join(value.ljust(width) for value, (_, width) in zip(values, headers)))
 
 
-def _format_rate(value: float) -> str:
-    return f"{value * 100:.2f}%"
-
-
-def _print_header(args) -> None:
-    """Print an impressive header with simulation parameters."""
-    print("\n" + "="*80)
-    print("║" + " "*78 + "║")
-    print("║" + "REPLAY ATTACK DEFENSE SIMULATION TOOLKIT".center(78) + "║")
-    print("║" + "リプレイ攻撃防御シミュレーションツールキット".center(78) + "║")
-    print("║" + " "*78 + "║")
-    print("="*80)
-    print("\n📋 SIMULATION PARAMETERS:")
-    print(f"   └─ Defense Modes: {', '.join(args.modes)}")
-    print(f"   └─ Monte Carlo Runs: {args.runs}")
-    print(f"   └─ Legitimate Transmissions: {args.num_legit} per run")
-    print(f"   └─ Replay Attempts: {args.num_replay} per run")
-    print(f"   └─ Packet Loss Rate: {args.p_loss:.2%}")
-    print(f"   └─ Packet Reorder Rate: {args.p_reorder:.2%}")
-    print(f"   └─ Window Size: {args.window_size}")
-    print(f"   └─ Attack Mode: {args.attack_mode}")
-    if args.target_commands:
-        print(f"   └─ Target Commands: {', '.join(args.target_commands)}")
-    print("\n🔬 INITIALIZING SIMULATION ENVIRONMENT...")
-    time.sleep(0.5)
-    print("   ✓ Channel model initialized")
-    time.sleep(0.3)
-    print("   ✓ Attacker model configured")
-    time.sleep(0.3)
-    print("   ✓ Cryptographic modules loaded")
-    time.sleep(0.3)
-    print("   ✓ Defense mechanisms ready")
-    print("\n" + "-"*80 + "\n")
+def _coerce_float(value: object) -> float:
+    if isinstance(value, (float, int, str)):
+        return float(value)
+    raise TypeError(f"Expected a numeric table cell, got {type(value).__name__}")
 
 
 if __name__ == "__main__":

@@ -31,11 +31,28 @@ jobs:
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python deps for artifact generation
+        run: python -m pip install fastapi pydantic PyYAML
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Install Dependencies
         run: npm ci
+
+      - name: Build demo artifacts
+        working-directory: .
+        run: |
+          python - <<'PY'
+          from replay.services import build_demo_artifacts
+
+          build_demo_artifacts()
+          PY
 
       - name: Build
         run: npm run build

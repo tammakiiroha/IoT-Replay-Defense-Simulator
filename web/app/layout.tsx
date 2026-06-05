@@ -1,20 +1,22 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { IBM_Plex_Mono, Space_Grotesk } from 'next/font/google';
+import './globals.css';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const spaceGrotesk = Space_Grotesk({
+  variable: '--font-space-grotesk',
+  subsets: ['latin'],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const plexMono = IBM_Plex_Mono({
+  variable: '--font-plex-mono',
+  weight: ['400', '500'],
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
-  title: "IoT Replay Attack Defense Simulator",
-  description: "Monte Carlo simulator for evaluating replay attack defense mechanisms in 2.4 GHz wireless control systems",
+  title: 'Replay Research Platform',
+  description:
+    'Research-grade replay attack simulator, physical validation toolkit, and static showcase site.',
 };
 
 export default function RootLayout({
@@ -24,11 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
+      <body className={`${spaceGrotesk.variable} ${plexMono.variable}`}>{children}</body>
     </html>
   );
 }

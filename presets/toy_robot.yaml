@@ -1,0 +1,17 @@
+name: toy_robot
+commands: [FWD, BACK, LEFT, RIGHT, STOP]
+risk:
+  FWD: 0.2
+  BACK: 0.2
+  LEFT: 0.2
+  RIGHT: 0.2
+  STOP: 0.8
+channel:
+  model: iid
+  loss_good: 0.01
+  loss_bad: 0.60
+defense:
+  mode: window
+  window_size: 5
+  mac_tag_bits: 80
+  challenge_for: [STOP]

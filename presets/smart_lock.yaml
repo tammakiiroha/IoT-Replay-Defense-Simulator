@@ -1,0 +1,16 @@
+name: smart_lock
+commands: [PING, STATUS, LOCK, UNLOCK]
+risk:
+  PING: 0.1
+  STATUS: 0.2
+  LOCK: 0.7
+  UNLOCK: 1.0
+channel:
+  model: gilbert_elliott
+  loss_good: 0.01
+  loss_bad: 0.40
+defense:
+  mode: hsw_cr
+  window_size: 8
+  mac_tag_bits: 80
+  challenge_for: [UNLOCK]

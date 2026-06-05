@@ -95,3 +95,35 @@ dmypy.json
 .DS_Store
 .AppleDouble
 .LSOverride
+
+# === ReplayBench hardening (added 2026-06-05) ===
+# macOS AppleDouble sidecars (anywhere in the tree)
+._*
+**/._*
+.AppleDouble/
+.LSOverride
+
+# Python envs / caches (explicit, anywhere)
+.venv/
+**/__pycache__/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.serena/cache/
+
+# Local agent/worktree state
+.claude/
+.serena/memories/
+.worktrees/
+
+# Web generated/dependency artifacts
+web/node_modules/
+web/.next/
+web/out/
+web/build/
+web/tsconfig.tsbuildinfo
+
+# Local env files
+.env
+.env.*
+!.env.example

@@ -1,0 +1,17 @@
+name: garage_door
+commands: [PING, STATUS, OPEN, CLOSE, STOP]
+risk:
+  PING: 0.1
+  STATUS: 0.2
+  OPEN: 1.0
+  CLOSE: 0.8
+  STOP: 0.6
+channel:
+  model: gilbert_elliott
+  loss_good: 0.02
+  loss_bad: 0.50
+defense:
+  mode: hsw_cr
+  window_size: 8
+  mac_tag_bits: 80
+  challenge_for: [OPEN, CLOSE]

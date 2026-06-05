@@ -1,0 +1,17 @@
+name: industrial_relay
+commands: [PING, STATUS, ENABLE, DISABLE, TRIP]
+risk:
+  PING: 0.1
+  STATUS: 0.2
+  ENABLE: 0.9
+  DISABLE: 0.9
+  TRIP: 1.0
+channel:
+  model: gilbert_elliott
+  loss_good: 0.005
+  loss_bad: 0.30
+defense:
+  mode: hsw_cr
+  window_size: 16
+  mac_tag_bits: 96
+  challenge_for: [ENABLE, DISABLE, TRIP]

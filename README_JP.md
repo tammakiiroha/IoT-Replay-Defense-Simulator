@@ -1,4 +1,4 @@
-# 🔒 IoT リプレイ攻撃防御シミュレータ
+# ReplayBench-IoT
 
 <div align="center">
 
@@ -14,7 +14,7 @@
 [![Tests](https://img.shields.io/badge/tests-94-brightgreen.svg)](tests/)
 [![Monte Carlo](https://img.shields.io/badge/runs-200-orange.svg)](EXPERIMENTAL_PARAMETERS_JP.md)
 
-**2.4 GHz 無線制御システムにおけるリプレイ攻撃防御メカニズムを評価するモンテカルロベースのシミュレータ（卒業論文研究ツール）**
+**損失・順序入れ替え・低コスト制約下の IoT リプレイ防御を評価する再現可能ベンチマーク。**
 
 [🌐 Web Demo](https://tammakiiroha.github.io/IoT-Replay-Defense-Simulator/) • [📖 クイックスタート](#クイックスタート) • [🎯 主要結果](#実験結果とデータ分析) • [📊 品質とテスト](#プロジェクト品質とテスト) • [🤝 コントリビューション](CONTRIBUTING.md) • [📚 完全ドキュメント](PRESENTATION_JP.md)
 
@@ -27,6 +27,30 @@
 **著者**: Romeitou (tammakiiroha)
 
 > 本プロジェクトの著作権・開発経緯の詳細については、[AUTHORSHIP.md](AUTHORSHIP.md) を参照してください。
+
+## ReplayBench-IoT の範囲
+
+ReplayBench-IoT は低コスト IoT 制御リンクにおけるリプレイ防御を評価します。無防御、ローリングカウンタ + MAC、RFC 風スライディングウィンドウ、チャレンジレスポンス、HSW-CR 適応型スライディングウィンドウ + チャレンジ防御、OSCORE-like リプレイウィンドウを含みます。
+
+主な指標は LAR、ASR、FRR、レイテンシ tick、バイトオーバーヘッド、受信側状態バイト、エネルギー proxy、raw counts、Wilson 95% 信頼区間です。モード間比較では paired scenario traces を使用してランダムノイズを減らします。
+
+生成された主要図：
+
+- [ASR vs packet loss](docs/figures/asr_vs_loss.png)
+- [LAR vs reordering](docs/figures/lar_vs_reorder.png)
+- [Security-cost frontier](docs/figures/security_cost_frontier.png)
+
+### 制限
+
+これは暗号学的証明でも認証ツールでも完全な無線チャネルエミュレータでもありません。ハードウェア検証は制御されたリンクのみを対象とします。trace-driven loss は現在メモリ上の `list[bool]` のみを受け取り、pcap/CSV trace loader は未実装です。NISTIR 8259A と ETSI EN 303 645 は参考としての整合であり、認証マップではありません。
+
+### 標準との関係
+
+スライディングウィンドウは RFC 6479、HMAC truncation 用語は RFC 2104 の実務、任意の Ascon profile は NIST SP 800-232、OSCORE-like モードは RFC 8613 の replay window に着想を得ています。これらはモデル化の参考であり、準拠宣言ではありません。
+
+### 引用
+
+[CITATION.cff](CITATION.cff) を使用するか、Romeitou, *ReplayBench-IoT: A reproducible benchmark for IoT replay-defense evaluation*, v0.2.0, 2026 として引用してください。
 
 ## 🎓 卒業論文との関係
 
@@ -48,9 +72,9 @@
 ## 🌟 ハイライト
 
 - 🔬 **モンテカルロ評価**：実験ごとに 200 回のシミュレーション実行で安定した統計を取得
-- 🛡️ **4 つの防御メカニズム**：無防御、ローリングカウンタ + MAC、スライディングウィンドウ、チャレンジ-レスポンス
-- 📡 **簡略化チャネルモデル**：パケット損失（0-30%）と順序入れ替え（0-30%）で無線環境を近似
-- 📊 **明確なメトリクス**：セキュリティ（攻撃成功率）対ユーザビリティ（正規受理率）
+- 🛡️ **6 つの防御メカニズム**：無防御、ローリングカウンタ + MAC、RFC 風スライディングウィンドウ、チャレンジレスポンス、HSW-CR、OSCORE-like
+- 📡 **チャネルモデル**：IID 損失、Gilbert-Elliott バースト損失、順序入れ替え、メモリ上の boolean trace
+- 📊 **明確な指標**：LAR、ASR、FRR、Wilson CI、レイテンシ、バイト、状態、エネルギー proxy
 - ⚡ **実験に十分な速度**：一般的なラップトップで数秒で完了
 - 🔄 **再現可能**：固定ランダムシードと文書化されたパラメータセット
 - 🧪 **十分なテスト**：送信者、受信者、チャネル、攻撃者、実験ロジックをカバーする 94 単体テスト
@@ -151,17 +175,30 @@ pytest
 
 ## クイックスタート
 
+### 方法0：ローカル全体実行モード（開発・デモ推奨）
+
+```bash
+./start_app.sh
+```
+
+このモードでは以下が起動します：
+- FastAPI (`8000`)
+- Next.js (`3001`)
+- 公開用 static showcase に使う artifact / contracts 同期
+
+権威ある Python バックエンドに Web から問い合わせたい場合は、このモードを使ってください。
+
 ### 方法1：Web版（インストール不要）
 
 **🌐 [Web シミュレータを開く](https://tammakiiroha.github.io/IoT-Replay-Defense-Simulator/)**
 
-- インストール不要、ブラウザで直接実行
-- すべての防御メカニズムとパラメータ設定をサポート
-- シミュレーション結果のインタラクティブな可視化
+- インストール不要、ブラウザで直接表示
+- 公開用 artifact を読む static showcase
+- 図表・方法論・検証結果の閲覧向け
 
-### 方法2：グラフィカルインターフェース（デスクトップ GUI）
+### 方法2：グラフィカルインターフェース（旧ローカル互換 GUI）
 
-**🎨 完全マウス操作、タイピング不要！**
+**Web/API が主経路になった後も残している旧 Tk 互換入口です。**
 
 ```bash
 ./run_gui.sh
@@ -179,14 +216,9 @@ python gui.py
 
 *図：パラメータ制御とリアルタイム出力を備えたメインインターフェース*
 
-機能：
-- 🖱️ **100%マウス操作** - ボタンクリック、スライダードラッグ
-- 🎯 クイックシナリオボタン（ワンクリック実行）
-- 🔧 ビジュアルコントロールでカスタム実験
-- 📊 リアルタイム出力表示
-- 🌏 多言語対応インターフェース（EN/中/日）
+旧デスクトップ操作が必要な場合だけ使用してください。新しいローカル検証やデモは `./start_app.sh` を優先します。
 
-### 方法3：コマンドライン（自動化とスクリプト用）
+### 方法3：コマンドライン（旧スクリプト互換）
 
 ```bash
 python3 main.py --runs 200 --num-legit 20 --num-replay 100 --p-loss 0.05 --window-size 5
@@ -710,16 +742,6 @@ _`results/ideal_p0.json` からの参照ベースライン_
 
 コントリビューションを歓迎します！開発環境のセットアップ、コードスタイルガイドライン、変更の提出方法については、[CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。
 
-## コントリビューター
-
-このプロジェクトの改善に協力してくださったすべてのコントリビューターに感謝します！
-
-<a href="https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=tammakiiroha/IoT-Replay-Defense-Simulator" />
-</a>
-
-[contrib.rocks](https://contrib.rocks) で生成。
-
 ## ⭐ Star 履歴
 
 <div align="center">
@@ -762,4 +784,3 @@ _`results/ideal_p0.json` からの参照ベースライン_
 ## ライセンス
 
 このプロジェクトは MIT ライセンスの下でライセンスされています。詳細については [LICENSE](LICENSE) ファイルをご覧ください。
-

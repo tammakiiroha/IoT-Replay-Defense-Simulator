@@ -1,7 +1,9 @@
 import random
+
 import pytest
-from sim.receiver import Receiver, VerificationResult
-from sim.types import Mode, Frame
+
+from sim.receiver import Receiver
+from sim.types import Frame, Mode
 
 # Helper constants
 SHARED_KEY = "test_key"
@@ -48,7 +50,7 @@ def test_window_basic(receiver_window):
     assert res.accepted
     assert receiver_window.state.last_counter == 10
 
-    # 2. Accept within window (e.g., 10 + 5 = 15 is max allowed jump? No, diff > window_size is rejected)
+    # 2. Accept within window.
     # If last is 10, window is 5.
     # 15 - 10 = 5. 5 > 5 is False. So 15 is accepted.
     # 16 - 10 = 6. 6 > 5 is True. So 16 is rejected.
@@ -90,13 +92,14 @@ def test_window_out_of_order(receiver_window):
 def test_window_too_far_ahead(receiver_window):
     # Start at 10
     receiver_window.process(create_frame(10))
-    
-    # Window is 5. Max allowed jump is 5.
-    # 10 + 6 = 16.
+
+    # Standard sliding-window semantics accept any authenticated
+    # future counter and advance the right edge.
     f_far = create_frame(16)
     res = receiver_window.process(f_far)
-    assert not res.accepted
-    assert res.reason == "counter_out_of_window"
+    assert res.accepted
+    assert res.reason == "window_accept_new"
+    assert receiver_window.state.last_counter == 16
 
 def test_window_too_old(receiver_window):
     # Start at 20

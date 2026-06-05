@@ -1,0 +1,81 @@
+{
+  "schema_version": "2026-03-16",
+  "generated_at": "2026-06-05T02:58:34.452863Z",
+  "title": "Replay Research Showcase",
+  "description": "Static artifacts and experiment evidence backing the replay-defense thesis.",
+  "runtime_mode": "hybrid",
+  "artifacts": [
+    {
+      "artifact_id": "p-loss-sweep",
+      "title": "P Loss Sweep",
+      "kind": "simulation_dataset",
+      "path": "/data/artifacts/p-loss-sweep.json",
+      "description": "Versioned simulation dataset exported from p_loss_sweep.json.",
+      "updated_at": "2026-06-05T02:58:34.446625Z"
+    },
+    {
+      "artifact_id": "p-reorder-sweep",
+      "title": "P Reorder Sweep",
+      "kind": "simulation_dataset",
+      "path": "/data/artifacts/p-reorder-sweep.json",
+      "description": "Versioned simulation dataset exported from p_reorder_sweep.json.",
+      "updated_at": "2026-06-05T02:58:34.447779Z"
+    },
+    {
+      "artifact_id": "window-sweep",
+      "title": "Window Sweep",
+      "kind": "simulation_dataset",
+      "path": "/data/artifacts/window-sweep.json",
+      "description": "Versioned simulation dataset exported from window_sweep.json.",
+      "updated_at": "2026-06-05T02:58:34.448429Z"
+    },
+    {
+      "artifact_id": "validation-20260316-164739",
+      "title": "Validation 20260316 164739",
+      "kind": "lab_validation",
+      "path": "/data/artifacts/validation-20260316-164739.json",
+      "description": "Physical validation artifact derived from validation_20260316_164739.json.",
+      "updated_at": "2026-06-05T02:58:34.451692Z"
+    }
+  ],
+  "highlights": [
+    {
+      "label": "Authority",
+      "value": "Python core is the sole simulation source of truth"
+    },
+    {
+      "label": "Modes",
+      "value": "Hybrid local runtime plus static public showcase"
+    },
+    {
+      "label": "Evidence",
+      "value": "Simulation sweeps and physical validation artifacts are versioned"
+    }
+  ],
+  "navigation": [
+    {
+      "href": "/",
+      "label": "Overview"
+    },
+    {
+      "href": "/simulator",
+      "label": "Simulator"
+    },
+    {
+      "href": "/results",
+      "label": "Results"
+    },
+    {
+      "href": "/methodology",
+      "label": "Methodology"
+    },
+    {
+      "href": "/hardware",
+      "label": "Hardware"
+    },
+    {
+      "href": "/reproducibility",
+      "label": "Reproducibility"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import pytest
 
 import main
+from sim.defaults import DEFAULT_ATTACK_MODE
 
 
 def _parse_args(argv):
@@ -27,3 +28,8 @@ def test_negative_window_size_is_rejected():
 
     with pytest.raises(SystemExit):
         main.validate_parameters(args)
+
+
+def test_attack_mode_default_uses_centralized_default():
+    args = _parse_args(["--modes", "no_def", "--quiet"])
+    assert args.attack_mode == DEFAULT_ATTACK_MODE.value

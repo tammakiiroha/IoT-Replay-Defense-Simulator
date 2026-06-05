@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use ReplayBench-IoT, please cite this software."
+title: "ReplayBench-IoT: A reproducible benchmark for IoT replay-defense evaluation"
+version: "0.2.0"
+date-released: "2026-06-05"
+authors:
+  - family-names: "Romeitou"
+    given-names: "tammakiiroha"
+url: "https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator"
+license: "MIT"
+type: software

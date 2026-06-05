@@ -8,10 +8,10 @@ Tests for Sender module
 """
 
 import pytest
-from sim.sender import Sender
-from sim.types import Mode, Frame
-from sim.security import compute_mac, constant_time_compare
 
+from sim.security import compute_mac, constant_time_compare
+from sim.sender import Sender
+from sim.types import Mode
 
 # ============================================================================
 # Fixtures
@@ -171,7 +171,12 @@ def test_mac_correctness_multiple_frames(sender_rolling):
         frame = sender_rolling.next_frame(cmd)
         
         # 验证MAC
-        expected_mac = compute_mac(frame.counter, frame.command, key=SHARED_KEY, mac_length=MAC_LENGTH)
+        expected_mac = compute_mac(
+            frame.counter,
+            frame.command,
+            key=SHARED_KEY,
+            mac_length=MAC_LENGTH,
+        )
         
         assert frame.mac == expected_mac
 

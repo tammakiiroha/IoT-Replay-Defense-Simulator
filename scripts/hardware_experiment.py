@@ -24,11 +24,13 @@ Usage:
 import argparse
 import json
 import logging
+import random
 import sys
 import time
 import zmq
 import os
 from dataclasses import dataclass
+from typing import List, Tuple
 
 # Path setup
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -62,7 +64,8 @@ def run_hardware_experiment(args, logger):
     """
     context = zmq.Context()
     tx_socket = context.socket(zmq.PUSH)
-    tx_socket.bind(f"tcp://*:{TX_PORT}")
+    bind_host = "*" if getattr(args, "bind_all", False) else "127.0.0.1"
+    tx_socket.bind(f"tcp://{bind_host}:{TX_PORT}")
     rx_socket = context.socket(zmq.PULL)
     rx_socket.connect(f"tcp://127.0.0.1:{RX_PORT}")
     
@@ -74,63 +77,93 @@ def run_hardware_experiment(args, logger):
     rng = random.Random(args.seed)
     overall_stats = HardwareStats()
     
-    # Simple packet buffer for reordering
-    # In real-time, we can simulate reordering by holding packets in a list 
-    # and shuffling release order, but simpler is just random delay.
-    # For this script, we process sequentially, so "reorder" means 
-    # "received packet X is processed AFTER packet X+1".
-    # Implementation: receive into a buffer, shuffle buffer, then process.
-    # BUT, hardware is serial. Real reordering happens in transit.
-    # To simulate reordering at RX side: "Hold this packet for N seconds before passing to Application Layer"
-    
     try:
         for run_idx in range(1, args.runs + 1):
             logger.info(f"--- Run {run_idx}/{args.runs} ---")
+            run_rng = random.Random(args.seed + run_idx)
             
-            sender = Sender(mode=Mode(args.mode), shared_key="hw_key")
-            receiver = Receiver(mode=Mode(args.mode), shared_key="hw_key")
+            sender = Sender(
+                mode=Mode(args.mode),
+                shared_key="hw_key",
+                mac_length=args.mac_length,
+            )
+            receiver = Receiver(
+                mode=Mode(args.mode),
+                shared_key="hw_key",
+                mac_length=args.mac_length,
+                window_size=args.window_size,
+            )
             
-            # Pre-generate trace queue (Legit + Attack)
-            # Mixed inline logic similar to main simulation
-            trace_queue = []
-            
-            # 1. Generate Legit Frames
-            legit_frames = []
-            for _ in range(args.num_legit):
-                cmd = "FWD"
-                legit_frames.append(sender.next_frame(cmd))
-                
-            # 2. Capture for Replay (Attacker Model)
-            # Perfect attacker records everything
-            captured_frames = list(legit_frames)
-            
-            # 3. Schedule Schedule
-            # Simple approach: Interleave legit and replay
-            # Or just send Legit then Replay (Post) or Mixed (Inline)
-            
-            queue = [] # List of (Frame, is_replay)
-            
-            # Add legitimate
-            for f in legit_frames:
-                queue.append((f, False))
-                
-            # Add replays
-            attacker_rng = random.Random(args.seed + run_idx)
-            if args.num_replay > 0 and captured_frames:
+            # Build a schedule of traffic types and generate concrete frames at send time.
+            # This keeps challenge-mode nonce issuance aligned with the current receiver state.
+            schedule = [False] * args.num_legit
+            if args.attack_mode == "post":
+                schedule.extend([True] * args.num_replay)
+            else:
                 for _ in range(args.num_replay):
-                    # Pick random frame to replay
-                    f = attacker_rng.choice(captured_frames).clone()
-                    f.is_attack = True
-                    
-                    if args.attack_mode == "post":
-                        queue.append((f, True))
-                    else: # inline - insert randomly
-                        insert_idx = attacker_rng.randint(0, len(queue))
-                        queue.insert(insert_idx, (f, True))
-            
-            logger.info(f"Scheduled {len(queue)} frames ({args.num_legit} legit, {args.num_replay} replay)")
-            
-            for i, (frame, is_replay) in enumerate(queue):
+                    if schedule and args.num_legit > 0:
+                        insert_idx = run_rng.randint(1, len(schedule))
+                    else:
+                        insert_idx = 0
+                    schedule.insert(insert_idx, True)
+
+            logger.info(
+                f"Scheduled {len(schedule)} frames "
+                f"({args.num_legit} legit, {args.num_replay} replay)"
+            )
+
+            # Delay-and-release queue used to emulate packet reordering at the
+            # application boundary after RF reception.
+            reorder_buffer: List[Tuple[bytes, bool, Frame, int]] = []
+
+            def process_received_packet(packet_msg: bytes, is_replay_packet: bool, sent_frame: Frame, msg_index: int) -> None:
+                try:
+                    data = json.loads(packet_msg.decode('utf-8'))
+                    rx_frame = Frame(
+                        command=data.get("c"),
+                        counter=data.get("cnt"),
+                        mac=data.get("mac"),
+                        nonce=data.get("n")
+                    )
+
+                    verification = receiver.process(rx_frame)
+                    accepted = verification.accepted
+
+                    status = "ACCEPTED" if accepted else "REJECTED"
+                    icon = "✅" if accepted else "❌"
+                    type_str = "REPLAY" if is_replay_packet else "LEGIT"
+
+                    logger.info(
+                        f"[{type_str}] Msg={msg_index} Sent={sent_frame.counter} Recv={rx_frame.counter} "
+                        f"-> {status} {icon} ({verification.reason})"
+                    )
+
+                    if is_replay_packet:
+                        if accepted:
+                            overall_stats.replay_success += 1
+                    else:
+                        if accepted:
+                            overall_stats.legit_accepted += 1
+                except Exception as e:
+                    logger.error(f"Bad packet: {e}")
+
+            captured_frames = []
+            for i, is_replay in enumerate(schedule):
+                if is_replay:
+                    if not captured_frames:
+                        logger.info(f"Msg {i} skipped (no captured frame yet for replay)")
+                        continue
+                    frame = run_rng.choice(captured_frames).clone()
+                    frame.is_attack = True
+                else:
+                    cmd = "FWD"
+                    if sender.mode is Mode.CHALLENGE:
+                        nonce = receiver.issue_nonce(run_rng)
+                        frame = sender.next_frame(cmd, nonce=nonce)
+                    else:
+                        frame = sender.next_frame(cmd)
+                    captured_frames.append(frame.clone())
+
                 # --- SENDING ---
                 payload = json.dumps({
                     "c": frame.command,
@@ -160,48 +193,33 @@ def run_hardware_experiment(args, logger):
                         overall_stats.artificial_drops += 1
                         logger.info(f"Msg {i} artificially dropped (p_loss)")
                         continue
-                        
-                    # 2. Reorder (Simulated by random sleep delay before processing?)
-                    # In a single threaded blocking script, sleep just delays the whole system.
-                    # Correct reordering simulation in real-time requires a background thread 
-                    # pushing to a queue. For simplicity, we skip complex reordering logic 
-                    # in this linear script and assume hardware does it, or user accepts
-                    # this limitation. We can verify "Reorder Robustness" by checking
-                    # if Hardware actually reorders.
-                    # Let's Skip explicit p_reorder implementation for now OR just warn.
-                    
-                    try:
-                        data = json.loads(msg.decode('utf-8'))
-                        rx_frame = Frame(
-                            command=data.get("c"),
-                            counter=data.get("cnt"),
-                            mac=data.get("mac"),
-                            nonce=data.get("n")
-                        )
-                        # Recover ground truth for logging
-                        is_actual_replay = data.get("_dbg_replay", False)
-                        
-                        # --- RECEIVER LOGIC ---
-                        accepted = receiver.receive(rx_frame)
-                        
-                        status = "ACCEPTED" if accepted else "REJECTED"
-                        icon = "✅" if accepted else "❌"
-                        type_str = "REPLAY" if is_actual_replay else "LEGIT"
-                        
-                        logger.info(f"[{type_str}] Sent={frame.counter} Recv={rx_frame.counter} -> {status} {icon}")
-                        
-                        if is_actual_replay:
-                            if accepted: overall_stats.replay_success += 1
-                        else:
-                            if accepted: overall_stats.legit_accepted += 1
-                            
-                    except Exception as e:
-                        logger.error(f"Bad packet: {e}")
+
+                    packet = (msg, is_replay, frame.clone(), i)
+
+                    # 2. Reordering: delay processing of some received packets.
+                    if args.p_reorder > 0 and rng.random() < args.p_reorder:
+                        reorder_buffer.append(packet)
+                        logger.info(f"Msg {i} delayed in reorder buffer (p_reorder)")
+                    else:
+                        process_received_packet(*packet)
+
+                        # Opportunistically release one delayed packet to create
+                        # out-of-order delivery at the app layer.
+                        if reorder_buffer and rng.random() < 0.5:
+                            delayed_idx = rng.randrange(len(reorder_buffer))
+                            delayed_packet = reorder_buffer.pop(delayed_idx)
+                            process_received_packet(*delayed_packet)
                 else:
                     overall_stats.timeouts += 1
                     logger.info(f"Msg {i} TIMEOUT (Real Loss) ⚠️")
                 
                 time.sleep(0.05) # Rate limiting
+
+            # Flush delayed packets at end of each run.
+            while reorder_buffer:
+                delayed_idx = rng.randrange(len(reorder_buffer))
+                delayed_packet = reorder_buffer.pop(delayed_idx)
+                process_received_packet(*delayed_packet)
                 
     except KeyboardInterrupt:
         logger.info("Stopping...")
@@ -227,14 +245,27 @@ def main():
     parser.add_argument("--runs", type=int, default=1)
     parser.add_argument("--num-legit", type=int, default=20)
     parser.add_argument("--num-replay", type=int, default=10)
-    parser.add_argument("--mode", default="window")
+    parser.add_argument("--mode", default="window", choices=[m.value for m in Mode])
     parser.add_argument("--window-size", type=int, default=5)
+    parser.add_argument("--mac-length", type=int, default=8)
     parser.add_argument("--p-loss", type=float, default=0.0, help="Artificial extra loss")
-    parser.add_argument("--p-reorder", type=float, default=0.0, help="Not fully implemented in linear script")
+    parser.add_argument("--p-reorder", type=float, default=0.0, help="Probability of delayed packet processing to emulate reordering")
     parser.add_argument("--attack-mode", default="post", choices=["inline", "post"])
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--bind-all", action="store_true", help="Bind TX ZMQ to all interfaces")
     
     args = parser.parse_args()
+    if not 0.0 <= args.p_loss <= 1.0:
+        parser.error("--p-loss must be in [0.0, 1.0]")
+    if not 0.0 <= args.p_reorder <= 1.0:
+        parser.error("--p-reorder must be in [0.0, 1.0]")
+    if args.runs <= 0:
+        parser.error("--runs must be a positive integer")
+    if args.num_legit < 0 or args.num_replay < 0:
+        parser.error("--num-legit and --num-replay must be non-negative")
+    if args.window_size < 0:
+        parser.error("--window-size must be non-negative")
+
     logging.basicConfig(format='%(message)s', level=logging.INFO)
     logger = logging.getLogger("HW")
     run_hardware_experiment(args, logger)

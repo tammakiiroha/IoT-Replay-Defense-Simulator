@@ -118,7 +118,7 @@ dmypy.json
 
 # Local agent/worktree state
 .claude/
-.serena/memories/
+.serena/
 .worktrees/
 
 # Web generated/dependency artifacts

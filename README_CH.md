@@ -9,14 +9,15 @@
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.md)
 [![日本語](https://img.shields.io/badge/lang-日本語-red.svg)](README_JP.md)
 [![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)
+[![CI](https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/actions/workflows/ci.yml/badge.svg)](https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/tammakiiroha/IoT-Replay-Defense-Simulator?label=release)](https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/releases)
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-94-brightgreen.svg)](tests/)
-[![Monte Carlo](https://img.shields.io/badge/runs-200-orange.svg)](EXPERIMENTAL_PARAMETERS_CH.md)
+[![Citation](https://img.shields.io/badge/citation-CFF-informational.svg)](CITATION.cff)
 
 **面向物联网重放攻击防御的可复现实验基准，覆盖丢包、乱序和低成本设备约束。**
 
-[🌐 Web Demo](https://tammakiiroha.github.io/IoT-Replay-Defense-Simulator/) • [📖 快速开始](#快速开始) • [🎯 核心结果](#实验结果与数据分析) • [📊 质量与测试](#项目质量与测试) • [🤝 贡献指南](CONTRIBUTING.md) • [📚 完整文档](PRESENTATION_CH.md)
+[🌐 Web Demo](https://tammakiiroha.github.io/IoT-Replay-Defense-Simulator/) • [项目状态](docs/PROJECT_STATUS.md) • [📖 快速开始](#快速开始) • [🎯 核心结果](#实验结果与数据分析) • [📊 质量与测试](#项目质量与测试) • [🤝 贡献指南](CONTRIBUTING.md)
 
 </div>
 
@@ -746,32 +747,11 @@ _来自 `results/ideal_p0.json` 的参考基线_
 
 欢迎贡献！有关开发环境设置、代码风格指南以及如何提交更改，请参阅 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
-## ⭐ Star 历史
-
-<div align="center">
-
-[![Star History Chart](https://api.star-history.com/svg?repos=tammakiiroha/IoT-Replay-Defense-Simulator&type=Date)](https://star-history.com/#tammakiiroha/IoT-Replay-Defense-Simulator&Date)
-
-</div>
-
-> **喜欢这个项目？** 给它一个 Star 以表示支持，帮助更多人发现它！
-
 ## 引用
 
-如果您在研究或论文中使用此仿真工具包，请引用：
+如果您在研究、论文或技术报告中使用本基准，请使用 [CITATION.cff](CITATION.cff)，或引用：
 
-```bibtex
-@software{iot_replay_defense_simulator_2025,
-  author    = {Romeitou (tammakiiroha)},
-  title     = {IoT Replay Attack Defense Simulator},
-  year      = {2025},
-  publisher = {GitHub},
-  url       = {https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator}
-}
-```
-
-或纯文本格式：
-> Romeitou (tammakiiroha). (2025). IoT Replay Attack Defense Simulator. GitHub. https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator
+> Romeitou (tammakiiroha). (2026). ReplayBench-IoT: A reproducible benchmark for IoT replay-defense evaluation. v0.2.0. GitHub. https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator
 
 ## 参考文献
 

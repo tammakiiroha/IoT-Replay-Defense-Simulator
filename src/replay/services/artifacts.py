@@ -197,6 +197,27 @@ def build_demo_artifacts(project_root: Path | None = None) -> ArtifactManifest:
         )
         artifacts.append(artifact)
 
+    if not any(artifact.kind == "lab_validation" for artifact in artifacts):
+        # Raw hardware outputs are local-only; preserve checked-in lab artifacts.
+        for artifact_path in sorted(artifact_dir.glob("*.json")):
+            try:
+                artifact = ExperimentArtifact.model_validate(_load_json(artifact_path))
+            except ValueError:
+                continue
+            if artifact.kind != "lab_validation":
+                continue
+            summaries.append(
+                ArtifactSummary(
+                    artifact_id=artifact.artifact_id,
+                    title=artifact.title,
+                    kind=artifact.kind,
+                    path=f"/data/artifacts/{artifact_path.name}",
+                    description=artifact.description,
+                    updated_at=datetime.fromtimestamp(artifact_path.stat().st_mtime, timezone.utc),
+                )
+            )
+            artifacts.append(artifact)
+
     manifest = ArtifactManifest(
         title="Replay Research Showcase",
         description="Static artifacts and experiment evidence backing the replay-defense thesis.",

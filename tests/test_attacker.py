@@ -9,10 +9,11 @@ Tests for Attacker module
 """
 
 import random
+
 import pytest
+
 from sim.attacker import Attacker
 from sim.types import Frame
-
 
 # ============================================================================
 # Fixtures
@@ -220,7 +221,7 @@ def test_replay_multiple_times(attacker_no_loss):
     attacker_no_loss.observe(frame, rng)
     
     # 重放5次（每次应该返回相同的帧克隆）
-    for i in range(5):
+    for _ in range(5):
         pick_rng = random.Random(42)  # 相同种子
         picked = attacker_no_loss.pick_frame(pick_rng)
         assert picked is not None

@@ -1,4 +1,4 @@
-# 🔒 物联网重放攻击防御模拟器
+# ReplayBench-IoT
 
 <div align="center">
 
@@ -14,7 +14,7 @@
 [![Tests](https://img.shields.io/badge/tests-94-brightgreen.svg)](tests/)
 [![Monte Carlo](https://img.shields.io/badge/runs-200-orange.svg)](EXPERIMENTAL_PARAMETERS_CH.md)
 
-**基于蒙特卡洛方法的模拟器，用于评估 2.4 GHz 无线控制系统中的重放攻击防御机制（毕业论文研究工具）**
+**面向物联网重放攻击防御的可复现实验基准，覆盖丢包、乱序和低成本设备约束。**
 
 [🌐 Web Demo](https://tammakiiroha.github.io/IoT-Replay-Defense-Simulator/) • [📖 快速开始](#快速开始) • [🎯 核心结果](#实验结果与数据分析) • [📊 质量与测试](#项目质量与测试) • [🤝 贡献指南](CONTRIBUTING.md) • [📚 完整文档](PRESENTATION_CH.md)
 
@@ -27,6 +27,30 @@
 **作者**: Romeitou (tammakiiroha)
 
 > 关于本项目的作者声明和开发背景，请参见 [AUTHORSHIP.md](AUTHORSHIP.md)。
+
+## ReplayBench-IoT 范围
+
+ReplayBench-IoT 用于评估低成本物联网控制链路中的重放攻击防御。当前包含无防御、滚动计数器 + MAC、RFC 风格滑动窗口、挑战-响应、HSW-CR 自适应滑动窗口 + 挑战防御，以及 OSCORE-like 重放窗口配置。
+
+核心指标包括 LAR、ASR、FRR、延迟 tick、字节开销、接收端状态字节、能量代理、原始计数和 Wilson 95% 置信区间。跨模式比较建议使用 paired scenario traces 以降低随机噪声。
+
+核心生成图：
+
+- [ASR vs packet loss](docs/figures/asr_vs_loss.png)
+- [LAR vs reordering](docs/figures/lar_vs_reorder.png)
+- [Security-cost frontier](docs/figures/security_cost_frontier.png)
+
+### 限制
+
+本项目不是密码学证明，不是认证工具，也不是完整无线信道仿真器。硬件验证仅覆盖受控链路。trace-driven loss 目前只接受内存中的 `list[bool]` 序列，尚不支持 pcap/CSV trace loader。NISTIR 8259A 和 ETSI EN 303 645 只作为叙述性对齐参考，不构成标准到功能的认证映射。
+
+### 标准对齐边界
+
+滑动窗口语义参考 RFC 6479，HMAC 截断术语参考 RFC 2104 实践，可选 Ascon profile 对齐 NIST SP 800-232，OSCORE-like 模式参考 RFC 8613 的重放窗口思想。这些都是建模参考，不是合规声明。
+
+### 引用方式
+
+请使用 [CITATION.cff](CITATION.cff)，或引用：Romeitou，*ReplayBench-IoT: A reproducible benchmark for IoT replay-defense evaluation*，v0.2.0，2026。
 
 ## 🎓 与毕业论文的关系
 
@@ -48,9 +72,9 @@
 ## 🌟 项目亮点
 
 - 🔬 **蒙特卡洛评估**：每个实验 200 次模拟运行，获得稳定统计结果
-- 🛡️ **4 种防御机制**：无防御、滚动计数器 + MAC、滑动窗口、挑战-响应
-- 📡 **简化信道模型**：用丢包（0-30%）和乱序（0-30%）来近似无线环境
-- 📊 **清晰指标**：安全性（攻击成功率）与可用性（合法接受率）
+- 🛡️ **6 种防御机制**：无防御、滚动计数器 + MAC、RFC 风格滑动窗口、挑战-响应、HSW-CR、OSCORE-like
+- 📡 **信道模型**：IID 丢包、Gilbert-Elliott 突发丢包、乱序和内存布尔 trace
+- 📊 **清晰指标**：LAR、ASR、FRR、Wilson CI、延迟、字节、状态和能量代理
 - ⚡ **实验速度充足**：在普通笔记本电脑上数秒内完成典型配置
 - 🔄 **可重现**：固定随机种子和文档化的参数集
 - 🧪 **充分测试**：94 个单元测试覆盖发送者、接收者、信道、攻击者和实验逻辑
@@ -153,17 +177,30 @@ pytest
 <a id="快速开始"></a>
 ## 快速开始
 
+### 方式 0：本地全栈模式（开发和演示推荐）
+
+```bash
+./start_app.sh
+```
+
+该模式会启动：
+- FastAPI（`8000`）
+- Next.js（`3001`）
+- 面向公开展示站的 artifact / contracts 同步
+
+当你需要让网站调用权威 Python 后端时，应优先使用这个模式。
+
 ### 方式 1：Web 版（无需安装）
 
 **🌐 [打开 Web 模拟器](https://tammakiiroha.github.io/IoT-Replay-Defense-Simulator/)**
 
-- 无需安装，直接在浏览器中运行
-- 支持所有防御机制和参数配置
-- 模拟结果交互式可视化
+- 无需安装，直接在浏览器中查看
+- 读取公开展示站使用的 artifact 数据
+- 适合浏览图表、方法说明和验证证据
 
-### 方式 2：图形界面（桌面 GUI）
+### 方式 2：图形界面（旧本地兼容 GUI）
 
-**🎨 完全鼠标操作，无需输入命令！**
+**这是在 Web/API 成为主入口后保留的旧 Tk 本地兼容入口。**
 
 ```bash
 ./run_gui.sh
@@ -181,14 +218,9 @@ python gui.py
 
 *图：主界面包含参数控制和实时输出显示*
 
-功能特性：
-- 🖱️ **100%鼠标操作** - 点击按钮，拖动滑块
-- 🎯 快速场景按钮（一键运行）
-- 🔧 自定义实验可视化控制
-- 📊 实时输出显示
-- 🌏 三语界面（EN/中/日）
+只有在确实需要旧桌面流程时才使用它。新的本地演示和论文验证优先使用 `./start_app.sh`。
 
-### 方式 3：命令行（用于自动化和脚本）
+### 方式 3：命令行（旧脚本兼容）
 
 ```bash
 python3 main.py --runs 200 --num-legit 20 --num-replay 100 --p-loss 0.05 --window-size 5
@@ -766,4 +798,3 @@ _来自 `results/ideal_p0.json` 的参考基线_
 ## 许可证
 
 该项目根据 MIT 许可证授权。详情请参阅 [LICENSE](LICENSE) 文件。
-

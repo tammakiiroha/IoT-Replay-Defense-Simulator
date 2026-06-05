@@ -9,10 +9,9 @@ Tests for Channel module
 """
 
 import random
-import pytest
+
 from sim.channel import Channel
 from sim.types import Frame
-
 
 # ============================================================================
 # Fixtures
@@ -341,7 +340,7 @@ def test_flush_empties_queue():
         channel.send(frame)
     
     # Flush
-    remaining = channel.flush()
+    channel.flush()
     
     # 再次flush应该没有包
     remaining2 = channel.flush()
@@ -465,3 +464,44 @@ def test_packet_loss_distribution():
     # 允许±10的误差
     assert abs(avg_received - expected) < 10, \
         f"Expected ~{expected}, got {avg_received}"
+
+
+def test_channel_accepts_explicit_loss_model():
+    from replay.core.channel import Channel
+    from replay.core.channel_models import IidLoss, ReorderDelay
+    from replay.core.rng import DeterministicRNG
+    from replay.core.types import Frame
+
+    rng = DeterministicRNG(1)
+    channel = Channel(loss_model=IidLoss(0.0), delay_model=ReorderDelay(0.0), rng=rng)
+
+    arrived = channel.send(Frame(command="X"))
+
+    assert len(arrived) == 1
+
+
+def test_send_rng_call_order_unchanged():
+    from replay.core.channel import Channel
+    from replay.core.channel_models import IidLoss, ReorderDelay
+    from replay.core.rng import DeterministicRNG
+    from replay.core.types import Frame
+
+    def run(make_channel):
+        rng = DeterministicRNG(12345)
+        channel = make_channel(rng)
+        output = []
+        for i in range(50):
+            output += [frame.command for frame in channel.send(Frame(command=str(i)))]
+        output += [frame.command for frame in channel.flush()]
+        return output
+
+    legacy = run(lambda rng: Channel(p_loss=0.3, p_reorder=0.3, rng=rng))
+    injected = run(
+        lambda rng: Channel(
+            rng=rng,
+            loss_model=IidLoss(0.3),
+            delay_model=ReorderDelay(0.3),
+        )
+    )
+
+    assert legacy == injected

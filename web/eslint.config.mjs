@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // ReplayBench hardening:
+    "**/._*",
+    "**/.DS_Store",
+    "node_modules/**",
   ]),
 ]);
 

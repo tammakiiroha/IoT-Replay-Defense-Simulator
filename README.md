@@ -1,4 +1,4 @@
-# 🔒 IoT Replay Attack Defense Simulator
+# ReplayBench-IoT
 
 <div align="center">
 
@@ -14,7 +14,7 @@
 [![Tests](https://img.shields.io/badge/tests-94-brightgreen.svg)](tests/)
 [![Monte Carlo](https://img.shields.io/badge/runs-200-orange.svg)](EXPERIMENTAL_PARAMETERS_EN.md)
 
-**A Monte Carlo–based simulator for evaluating replay attack defense mechanisms in 2.4 GHz wireless control systems (graduation thesis research tool)**
+**A reproducible benchmark for IoT replay-defense evaluation under lossy and reordered wireless links.**
 
 [🌐 Web Demo](https://tammakiiroha.github.io/IoT-Replay-Defense-Simulator/) • [📖 Quick Start](#quick-start) • [🎯 Key Results](#experimental-results-and-data-analysis) • [📊 Quality & Tests](#project-quality-and-tests) • [🤝 Contributing](CONTRIBUTING.md) • [📚 Full Documentation](PRESENTATION_EN.md)
 
@@ -27,6 +27,30 @@
 **Author**: Romeitou (tammakiiroha)
 
 > For detailed authorship declaration and development background, see [AUTHORSHIP.md](AUTHORSHIP.md).
+
+## ReplayBench-IoT Scope
+
+ReplayBench-IoT evaluates replay-defense designs for low-cost IoT control links. It now includes no defense, rolling counter + MAC, RFC-style sliding window, challenge-response, HSW-CR adaptive sliding-window + challenge defense, and an OSCORE-like replay-window profile.
+
+Primary metrics are LAR, ASR, FRR, latency ticks, bytes overhead, receiver state bytes, energy proxy, raw counts, and Wilson 95% confidence intervals. Use paired scenario traces for lower-noise comparisons across modes.
+
+Core generated figures:
+
+- [ASR vs packet loss](docs/figures/asr_vs_loss.png)
+- [LAR vs reordering](docs/figures/lar_vs_reorder.png)
+- [Security-cost frontier](docs/figures/security_cost_frontier.png)
+
+### Limitations
+
+This is not a cryptographic proof, not a certification tool, and not a complete wireless-channel emulator. Hardware validation covers controlled links only. Trace-driven loss currently accepts in-memory `list[bool]` sequences; there is no pcap/CSV trace loader yet. NISTIR 8259A and ETSI EN 303 645 references are informative alignment only, not a standards-to-feature certification map.
+
+### Standards Alignment
+
+The benchmark uses RFC-style sliding-window semantics inspired by RFC 6479, HMAC truncation vocabulary aligned with RFC 2104 practice, optional Ascon profile aligned with NIST SP 800-232, and an OSCORE-like replay-window mode inspired by RFC 8613. These references describe modeling choices, not compliance claims.
+
+### How to Cite
+
+Use [CITATION.cff](CITATION.cff), or cite: Romeitou, *ReplayBench-IoT: A reproducible benchmark for IoT replay-defense evaluation*, v0.2.0, 2026.
 
 ## 🎓 Relation to Graduation Thesis
 
@@ -43,14 +67,23 @@ This repository is the experimental and simulation toolkit for my B.Eng. graduat
 
 If you are an examiner or prospective advisor, this repository shows how the experiments were designed and reproduced.
 
+## Runtime Modes
+
+This repository now operates as **one product with two runtime modes**:
+
+- **Public static showcase**: the deployed website is a static, artifact-backed presentation of the thesis, figures, methodology, and validation evidence.
+- **Local authoritative runtime**: the local web app submits work to the Python backend, which is the single source of truth for simulation, sweeps, and physical-validation alignment.
+
+This means the browser is no longer treated as an independent simulation engine. The Python core is the authority.
+
 ---
 
 ## 🌟 Highlights
 
 - 🔬 **Monte Carlo Evaluation**: 200 simulation runs per experiment for stable statistics
-- 🛡️ **4 Defense Mechanisms**: No Defense, Rolling Counter + MAC, Sliding Window, Challenge-Response
-- 📡 **Simplified Channel Model**: Approximates wireless environments with packet loss (0–30%) and reordering (0–30%)
-- 📊 **Clear Metrics**: Security (attack success rate) vs. usability (legitimate acceptance rate)
+- 🛡️ **6 Defense Mechanisms**: No Defense, Rolling Counter + MAC, RFC Sliding Window, Challenge-Response, HSW-CR, OSCORE-like
+- 📡 **Channel Models**: IID loss, Gilbert-Elliott burst loss, reordering, and in-memory boolean traces
+- 📊 **Clear Metrics**: LAR, ASR, FRR, Wilson CIs, latency, bytes, state, and energy proxy
 - ⚡ **Fast Enough for Experiments**: Runs complete in a few seconds for typical configurations on a laptop-class machine
 - 🔄 **Reproducible**: Fixed random seed and documented parameter sets
 - 🧪 **Well Tested**: 94 unit tests covering sender, receiver, channel, attacker, and experiment logic
@@ -204,17 +237,30 @@ The simulator focuses on the logical behavior of the defense mechanisms and the 
 
 ## Quick Start
 
-### Option 1: Web Version (No installation required)
+### Option 0: Local Full-Stack Mode (recommended for development and thesis demos)
+
+```bash
+./start_app.sh
+```
+
+This starts:
+- FastAPI on port `8000`
+- Next.js on port `3001`
+- the artifact/contracts sync step used by the standalone web showcase
+
+Use this mode when you want the website to run authoritative simulations locally.
+
+### Option 1: Public Web Showcase (No installation required)
 
 **🌐 [Open Web Simulator](https://tammakiiroha.github.io/IoT-Replay-Defense-Simulator/)**
 
 - No installation needed, runs directly in browser
-- Supports all defense mechanisms and parameter configurations
-- Interactive visualization of simulation results
+- Reads the exported artifact bundle used for the public thesis showcase
+- Best for browsing figures, methodology, and validation evidence
 
-### Option 2: Graphical Interface (Desktop GUI)
+### Option 2: Graphical Interface (Legacy local compatibility)
 
-**🎨 Complete mouse operation, no typing needed!**
+**Legacy Tk entry point kept for local compatibility while Web/API is the primary runtime.**
 
 ```bash
 ./run_gui.sh
@@ -232,14 +278,9 @@ python gui.py
 
 *Figure: Main interface with parameter controls and real-time output*
 
-Features:
-- 🖱️ **100% mouse operation** - Click buttons, drag sliders
-- 🎯 Quick scenario buttons (one-click run)
-- 🔧 Custom experiment with visual controls
-- 📊 Real-time output display
-- 🌏 Bilingual interface (EN/CN/JP)
+Use this only when you specifically need the old desktop workflow. New local demos and thesis verification should start from `./start_app.sh`.
 
-### Option 3: Command Line (For automation and scripts)
+### Option 3: Command Line (Legacy script compatibility)
 
 ```bash
 python3 main.py --runs 200 --num-legit 20 --num-replay 100 --p-loss 0.05 --window-size 5

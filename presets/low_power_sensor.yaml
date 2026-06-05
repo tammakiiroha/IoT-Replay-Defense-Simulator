@@ -1,0 +1,16 @@
+name: low_power_sensor
+commands: [PING, SAMPLE, SLEEP, RESET]
+risk:
+  PING: 0.1
+  SAMPLE: 0.2
+  SLEEP: 0.3
+  RESET: 0.8
+channel:
+  model: iid
+  loss_good: 0.01
+  loss_bad: 0.60
+defense:
+  mode: oscore_like
+  window_size: 3
+  mac_tag_bits: 80
+  challenge_for: [RESET]

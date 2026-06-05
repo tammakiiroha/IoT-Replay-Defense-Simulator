@@ -12,8 +12,8 @@ Topology:
 
 Usage:
   1. Setup GRC Flowgraph for Attacker:
-     - Osmocom Source (RX) -> GFSK Demod -> Packet Decoder -> ZMQ PUSH (tcp://*:5557)
-     - ZMQ PULL (tcp://*:5558) -> Packet Encoder -> GFSK Mod -> Osmocom Sink (TX)
+     - Osmocom Source (RX) -> GFSK Demod -> Packet Decoder -> ZMQ PUSH (tcp://127.0.0.1:5557)
+     - ZMQ PULL (tcp://127.0.0.1:5558) -> Packet Encoder -> GFSK Mod -> Osmocom Sink (TX)
   
   2. Run this script:
      python scripts/attacker_relay.py --rx-port 5557 --tx-port 5558 --strategy post
@@ -42,6 +42,7 @@ def main():
     parser.add_argument("--tx-port", type=int, default=5558, help="ZMQ PUSH port (To GRC TX)")
     parser.add_argument("--strategy", default="post", choices=["post", "random_delay"])
     parser.add_argument("--delay", type=float, default=2.0, help="Delay before replaying in random_delay mode")
+    parser.add_argument("--bind-all", action="store_true", help="Bind TX ZMQ to all interfaces")
     args = parser.parse_args()
     
     logger = setup_logger()
@@ -53,7 +54,8 @@ def main():
     
     # TX to Radio (Jammer/Replayer)
     tx_socket = context.socket(zmq.PUSH)
-    tx_socket.bind(f"tcp://*:{args.tx_port}")
+    bind_host = "*" if args.bind_all else "127.0.0.1"
+    tx_socket.bind(f"tcp://{bind_host}:{args.tx_port}")
     
     logger.info(f"Mallory Active. Sniffing on {args.rx_port}, Replaying to {args.tx_port}")
     logger.info("Note: Ensure your GRC flograph handles Half-Duplex switching if using one SDR for Mallory.")

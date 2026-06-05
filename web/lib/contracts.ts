@@ -1,0 +1,1857 @@
+// AUTO-GENERATED. Do not edit by hand.
+// Source: replay.contracts.typescript
+
+export const SCHEMA_VERSION = "2026-03-16" as const;
+
+export type Mode = 'no_def' | 'rolling' | 'window' | 'challenge' | 'hsw_cr' | 'oscore_like';
+export type AttackMode = 'post' | 'inline';
+export type ChannelModel = 'iid' | 'gilbert_elliott' | 'trace';
+export type AuthProfile = 'hmac' | 'ascon';
+
+export interface SimulationSpec {
+  schema_version: typeof SCHEMA_VERSION;
+  modes: Mode[];
+  runs: number;
+  seed?: number | null;
+  p_loss: number;
+  p_reorder: number;
+  window_size: number;
+  num_legit: number;
+  num_replay: number;
+  attack_mode: AttackMode;
+  mac_length: number;
+  mac_tag_bits: number;
+  shared_key: string;
+  attacker_record_loss: number;
+  inline_attack_probability: number;
+  inline_attack_burst: number;
+  challenge_nonce_bits: number;
+  target_commands?: string[] | null;
+  command_sequence?: string[] | null;
+  command_set?: string[] | null;
+  target_ci_half_width?: number | null;
+  max_runs: number;
+  paired: boolean;
+  channel_model: ChannelModel;
+  burst_p_good_to_bad: number;
+  burst_p_bad_to_good: number;
+  loss_good: number;
+  loss_bad: number;
+  loss_trace?: boolean[] | null;
+  command_risk?: Record<string, number> | null;
+  risk_high: number;
+  auth_profile: AuthProfile;
+}
+
+export interface SimulationSpecPublic {
+  schema_version: typeof SCHEMA_VERSION;
+  modes: Mode[];
+  runs: number;
+  seed?: number | null;
+  p_loss: number;
+  p_reorder: number;
+  window_size: number;
+  num_legit: number;
+  num_replay: number;
+  attack_mode: AttackMode;
+  mac_length: number;
+  mac_tag_bits: number;
+  attacker_record_loss: number;
+  inline_attack_probability: number;
+  inline_attack_burst: number;
+  challenge_nonce_bits: number;
+  target_commands?: string[] | null;
+  command_sequence?: string[] | null;
+  command_set?: string[] | null;
+  target_ci_half_width?: number | null;
+  max_runs: number;
+  paired: boolean;
+  channel_model: ChannelModel;
+  burst_p_good_to_bad: number;
+  burst_p_bad_to_good: number;
+  loss_good: number;
+  loss_bad: number;
+  loss_trace?: boolean[] | null;
+  command_risk?: Record<string, number> | null;
+  risk_high: number;
+  auth_profile: AuthProfile;
+}
+
+export interface SimulationResultRecord {
+  mode: Mode;
+  runs: number;
+  avg_legit_rate: number;
+  std_legit_rate: number;
+  avg_attack_rate: number;
+  std_attack_rate: number;
+  p_loss: number;
+  p_reorder: number;
+  window_size: number;
+  num_legit: number;
+  num_replay: number;
+  attack_mode: AttackMode;
+  legit_accepted: number;
+  legit_total: number;
+  attack_accepted: number;
+  attack_total: number;
+  lar_ci_low: number;
+  lar_ci_high: number;
+  asr_ci_low: number;
+  asr_ci_high: number;
+  frr: number;
+  energy_proxy: number;
+  bytes_overhead: number;
+  state_bytes: number;
+  latency_ticks: number;
+  crypto_ops: number;
+  challenge_round_trips: number;
+  mac_tag_bits: number;
+  auth_profile: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface SimulationBatchResult {
+  schema_version: typeof SCHEMA_VERSION;
+  generated_at: string;
+  config: SimulationSpecPublic;
+  results: SimulationResultRecord[];
+  metadata: Record<string, unknown>;
+}
+
+export interface SweepSpec {
+  schema_version: typeof SCHEMA_VERSION;
+  sweep_type: 'p_loss' | 'p_reorder' | 'window' | 'mac_tag_bits';
+  values: Array<number>;
+  simulation: SimulationSpec;
+  fixed_p_loss?: number | null;
+  fixed_p_reorder?: number | null;
+}
+
+export interface ExperimentArtifact {
+  schema_version: typeof SCHEMA_VERSION;
+  artifact_id: string;
+  kind: string;
+  title: string;
+  description: string;
+  generated_at: string;
+  source_path?: string | null;
+  config_snapshot: Record<string, unknown>;
+  summary: Record<string, unknown>;
+  metrics: Array<Record<string, unknown>>;
+  metadata: Record<string, unknown>;
+}
+
+export interface LabValidationArtifact {
+  schema_version: typeof SCHEMA_VERSION;
+  artifact_id: string;
+  title: string;
+  generated_at: string;
+  source_path: string;
+  summary: Record<string, unknown>;
+  environment: Record<string, unknown>;
+  config: Record<string, unknown>;
+  results: Array<Record<string, unknown>>;
+  metadata: Record<string, unknown>;
+}
+
+export type SimVsHardwareArtifact = LabValidationArtifact;
+
+export interface ArtifactSummary {
+  artifact_id: string;
+  title: string;
+  kind: string;
+  path: string;
+  description?: string | null;
+  updated_at: string;
+}
+
+export interface ArtifactManifest {
+  schema_version: typeof SCHEMA_VERSION;
+  generated_at: string;
+  title: string;
+  description: string;
+  runtime_mode: 'hybrid';
+  artifacts: ArtifactSummary[];
+  highlights: Array<Record<string, unknown>>;
+  navigation: Array<Record<string, string>>;
+}
+
+export const jsonSchemas = {
+  "schemaVersion": "2026-03-16",
+  "SimulationSpec": {
+    "$defs": {
+      "AttackMode": {
+        "description": "How the attacker schedules replay attempts.",
+        "enum": [
+          "post",
+          "inline"
+        ],
+        "title": "AttackMode",
+        "type": "string"
+      },
+      "Mode": {
+        "description": "Supported receiver protection modes.",
+        "enum": [
+          "no_def",
+          "rolling",
+          "window",
+          "challenge",
+          "hsw_cr",
+          "oscore_like"
+        ],
+        "title": "Mode",
+        "type": "string"
+      }
+    },
+    "properties": {
+      "schema_version": {
+        "const": "2026-03-16",
+        "default": "2026-03-16",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "modes": {
+        "items": {
+          "$ref": "#/$defs/Mode"
+        },
+        "title": "Modes",
+        "type": "array"
+      },
+      "runs": {
+        "default": 200,
+        "maximum": 10000,
+        "minimum": 1,
+        "title": "Runs",
+        "type": "integer"
+      },
+      "seed": {
+        "anyOf": [
+          {
+            "minimum": 0,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Seed"
+      },
+      "p_loss": {
+        "default": 0.0,
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "P Loss",
+        "type": "number"
+      },
+      "p_reorder": {
+        "default": 0.0,
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "P Reorder",
+        "type": "number"
+      },
+      "window_size": {
+        "default": 5,
+        "minimum": 0,
+        "title": "Window Size",
+        "type": "integer"
+      },
+      "num_legit": {
+        "default": 20,
+        "maximum": 10000,
+        "minimum": 0,
+        "title": "Num Legit",
+        "type": "integer"
+      },
+      "num_replay": {
+        "default": 100,
+        "maximum": 10000,
+        "minimum": 0,
+        "title": "Num Replay",
+        "type": "integer"
+      },
+      "attack_mode": {
+        "$ref": "#/$defs/AttackMode",
+        "default": "post"
+      },
+      "mac_length": {
+        "default": 8,
+        "minimum": 1,
+        "title": "Mac Length",
+        "type": "integer"
+      },
+      "mac_tag_bits": {
+        "default": 80,
+        "maximum": 256,
+        "minimum": 32,
+        "title": "Mac Tag Bits",
+        "type": "integer"
+      },
+      "shared_key": {
+        "default": "sim_shared_key",
+        "minLength": 1,
+        "title": "Shared Key",
+        "type": "string"
+      },
+      "attacker_record_loss": {
+        "default": 0.0,
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Attacker Record Loss",
+        "type": "number"
+      },
+      "inline_attack_probability": {
+        "default": 0.3,
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Inline Attack Probability",
+        "type": "number"
+      },
+      "inline_attack_burst": {
+        "default": 1,
+        "minimum": 1,
+        "title": "Inline Attack Burst",
+        "type": "integer"
+      },
+      "challenge_nonce_bits": {
+        "default": 32,
+        "minimum": 1,
+        "title": "Challenge Nonce Bits",
+        "type": "integer"
+      },
+      "target_commands": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Target Commands"
+      },
+      "command_sequence": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Command Sequence"
+      },
+      "command_set": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Command Set"
+      },
+      "target_ci_half_width": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0.0,
+            "maximum": 1.0,
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Target Ci Half Width"
+      },
+      "max_runs": {
+        "default": 2000,
+        "maximum": 20000,
+        "minimum": 1,
+        "title": "Max Runs",
+        "type": "integer"
+      },
+      "paired": {
+        "default": false,
+        "title": "Paired",
+        "type": "boolean"
+      },
+      "channel_model": {
+        "default": "iid",
+        "enum": [
+          "iid",
+          "gilbert_elliott",
+          "trace"
+        ],
+        "title": "Channel Model",
+        "type": "string"
+      },
+      "burst_p_good_to_bad": {
+        "default": 0.05,
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Burst P Good To Bad",
+        "type": "number"
+      },
+      "burst_p_bad_to_good": {
+        "default": 0.3,
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Burst P Bad To Good",
+        "type": "number"
+      },
+      "loss_good": {
+        "default": 0.01,
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Loss Good",
+        "type": "number"
+      },
+      "loss_bad": {
+        "default": 0.6,
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Loss Bad",
+        "type": "number"
+      },
+      "loss_trace": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "boolean"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Loss Trace"
+      },
+      "command_risk": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Command Risk"
+      },
+      "risk_high": {
+        "default": 0.8,
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "title": "Risk High",
+        "type": "number"
+      },
+      "auth_profile": {
+        "default": "hmac",
+        "enum": [
+          "hmac",
+          "ascon"
+        ],
+        "title": "Auth Profile",
+        "type": "string"
+      }
+    },
+    "title": "SimulationSpec",
+    "type": "object"
+  },
+  "SimulationSpecPublic": {
+    "$defs": {
+      "AttackMode": {
+        "description": "How the attacker schedules replay attempts.",
+        "enum": [
+          "post",
+          "inline"
+        ],
+        "title": "AttackMode",
+        "type": "string"
+      },
+      "Mode": {
+        "description": "Supported receiver protection modes.",
+        "enum": [
+          "no_def",
+          "rolling",
+          "window",
+          "challenge",
+          "hsw_cr",
+          "oscore_like"
+        ],
+        "title": "Mode",
+        "type": "string"
+      }
+    },
+    "description": "Public, secret-free view of a SimulationSpec for API/Web responses.",
+    "properties": {
+      "schema_version": {
+        "const": "2026-03-16",
+        "default": "2026-03-16",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "modes": {
+        "items": {
+          "$ref": "#/$defs/Mode"
+        },
+        "title": "Modes",
+        "type": "array"
+      },
+      "runs": {
+        "title": "Runs",
+        "type": "integer"
+      },
+      "seed": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Seed"
+      },
+      "p_loss": {
+        "title": "P Loss",
+        "type": "number"
+      },
+      "p_reorder": {
+        "title": "P Reorder",
+        "type": "number"
+      },
+      "window_size": {
+        "title": "Window Size",
+        "type": "integer"
+      },
+      "num_legit": {
+        "title": "Num Legit",
+        "type": "integer"
+      },
+      "num_replay": {
+        "title": "Num Replay",
+        "type": "integer"
+      },
+      "attack_mode": {
+        "$ref": "#/$defs/AttackMode"
+      },
+      "mac_length": {
+        "title": "Mac Length",
+        "type": "integer"
+      },
+      "mac_tag_bits": {
+        "title": "Mac Tag Bits",
+        "type": "integer"
+      },
+      "attacker_record_loss": {
+        "title": "Attacker Record Loss",
+        "type": "number"
+      },
+      "inline_attack_probability": {
+        "title": "Inline Attack Probability",
+        "type": "number"
+      },
+      "inline_attack_burst": {
+        "title": "Inline Attack Burst",
+        "type": "integer"
+      },
+      "challenge_nonce_bits": {
+        "title": "Challenge Nonce Bits",
+        "type": "integer"
+      },
+      "target_commands": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Target Commands"
+      },
+      "command_sequence": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Command Sequence"
+      },
+      "command_set": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Command Set"
+      },
+      "target_ci_half_width": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Target Ci Half Width"
+      },
+      "max_runs": {
+        "title": "Max Runs",
+        "type": "integer"
+      },
+      "paired": {
+        "title": "Paired",
+        "type": "boolean"
+      },
+      "channel_model": {
+        "title": "Channel Model",
+        "type": "string"
+      },
+      "burst_p_good_to_bad": {
+        "title": "Burst P Good To Bad",
+        "type": "number"
+      },
+      "burst_p_bad_to_good": {
+        "title": "Burst P Bad To Good",
+        "type": "number"
+      },
+      "loss_good": {
+        "title": "Loss Good",
+        "type": "number"
+      },
+      "loss_bad": {
+        "title": "Loss Bad",
+        "type": "number"
+      },
+      "loss_trace": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "boolean"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Loss Trace"
+      },
+      "command_risk": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Command Risk"
+      },
+      "risk_high": {
+        "title": "Risk High",
+        "type": "number"
+      },
+      "auth_profile": {
+        "title": "Auth Profile",
+        "type": "string"
+      }
+    },
+    "required": [
+      "modes",
+      "runs",
+      "p_loss",
+      "p_reorder",
+      "window_size",
+      "num_legit",
+      "num_replay",
+      "attack_mode",
+      "mac_length",
+      "mac_tag_bits",
+      "attacker_record_loss",
+      "inline_attack_probability",
+      "inline_attack_burst",
+      "challenge_nonce_bits",
+      "max_runs",
+      "paired",
+      "channel_model",
+      "burst_p_good_to_bad",
+      "burst_p_bad_to_good",
+      "loss_good",
+      "loss_bad",
+      "risk_high",
+      "auth_profile"
+    ],
+    "title": "SimulationSpecPublic",
+    "type": "object"
+  },
+  "SimulationBatchResult": {
+    "$defs": {
+      "AttackMode": {
+        "description": "How the attacker schedules replay attempts.",
+        "enum": [
+          "post",
+          "inline"
+        ],
+        "title": "AttackMode",
+        "type": "string"
+      },
+      "Mode": {
+        "description": "Supported receiver protection modes.",
+        "enum": [
+          "no_def",
+          "rolling",
+          "window",
+          "challenge",
+          "hsw_cr",
+          "oscore_like"
+        ],
+        "title": "Mode",
+        "type": "string"
+      },
+      "SimulationResultRecord": {
+        "properties": {
+          "mode": {
+            "$ref": "#/$defs/Mode"
+          },
+          "runs": {
+            "title": "Runs",
+            "type": "integer"
+          },
+          "avg_legit_rate": {
+            "title": "Avg Legit Rate",
+            "type": "number"
+          },
+          "std_legit_rate": {
+            "title": "Std Legit Rate",
+            "type": "number"
+          },
+          "avg_attack_rate": {
+            "title": "Avg Attack Rate",
+            "type": "number"
+          },
+          "std_attack_rate": {
+            "title": "Std Attack Rate",
+            "type": "number"
+          },
+          "p_loss": {
+            "title": "P Loss",
+            "type": "number"
+          },
+          "p_reorder": {
+            "title": "P Reorder",
+            "type": "number"
+          },
+          "window_size": {
+            "title": "Window Size",
+            "type": "integer"
+          },
+          "num_legit": {
+            "title": "Num Legit",
+            "type": "integer"
+          },
+          "num_replay": {
+            "title": "Num Replay",
+            "type": "integer"
+          },
+          "attack_mode": {
+            "$ref": "#/$defs/AttackMode"
+          },
+          "legit_accepted": {
+            "default": 0,
+            "title": "Legit Accepted",
+            "type": "integer"
+          },
+          "legit_total": {
+            "default": 0,
+            "title": "Legit Total",
+            "type": "integer"
+          },
+          "attack_accepted": {
+            "default": 0,
+            "title": "Attack Accepted",
+            "type": "integer"
+          },
+          "attack_total": {
+            "default": 0,
+            "title": "Attack Total",
+            "type": "integer"
+          },
+          "lar_ci_low": {
+            "default": 0.0,
+            "title": "Lar Ci Low",
+            "type": "number"
+          },
+          "lar_ci_high": {
+            "default": 0.0,
+            "title": "Lar Ci High",
+            "type": "number"
+          },
+          "asr_ci_low": {
+            "default": 0.0,
+            "title": "Asr Ci Low",
+            "type": "number"
+          },
+          "asr_ci_high": {
+            "default": 0.0,
+            "title": "Asr Ci High",
+            "type": "number"
+          },
+          "frr": {
+            "default": 0.0,
+            "title": "Frr",
+            "type": "number"
+          },
+          "energy_proxy": {
+            "default": 0.0,
+            "title": "Energy Proxy",
+            "type": "number"
+          },
+          "bytes_overhead": {
+            "default": 0.0,
+            "title": "Bytes Overhead",
+            "type": "number"
+          },
+          "state_bytes": {
+            "default": 0.0,
+            "title": "State Bytes",
+            "type": "number"
+          },
+          "latency_ticks": {
+            "default": 0.0,
+            "title": "Latency Ticks",
+            "type": "number"
+          },
+          "crypto_ops": {
+            "default": 0.0,
+            "title": "Crypto Ops",
+            "type": "number"
+          },
+          "challenge_round_trips": {
+            "default": 0.0,
+            "title": "Challenge Round Trips",
+            "type": "number"
+          },
+          "mac_tag_bits": {
+            "default": 80,
+            "title": "Mac Tag Bits",
+            "type": "integer"
+          },
+          "auth_profile": {
+            "default": "hmac",
+            "title": "Auth Profile",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          }
+        },
+        "required": [
+          "mode",
+          "runs",
+          "avg_legit_rate",
+          "std_legit_rate",
+          "avg_attack_rate",
+          "std_attack_rate",
+          "p_loss",
+          "p_reorder",
+          "window_size",
+          "num_legit",
+          "num_replay",
+          "attack_mode"
+        ],
+        "title": "SimulationResultRecord",
+        "type": "object"
+      },
+      "SimulationSpecPublic": {
+        "description": "Public, secret-free view of a SimulationSpec for API/Web responses.",
+        "properties": {
+          "schema_version": {
+            "const": "2026-03-16",
+            "default": "2026-03-16",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "modes": {
+            "items": {
+              "$ref": "#/$defs/Mode"
+            },
+            "title": "Modes",
+            "type": "array"
+          },
+          "runs": {
+            "title": "Runs",
+            "type": "integer"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Seed"
+          },
+          "p_loss": {
+            "title": "P Loss",
+            "type": "number"
+          },
+          "p_reorder": {
+            "title": "P Reorder",
+            "type": "number"
+          },
+          "window_size": {
+            "title": "Window Size",
+            "type": "integer"
+          },
+          "num_legit": {
+            "title": "Num Legit",
+            "type": "integer"
+          },
+          "num_replay": {
+            "title": "Num Replay",
+            "type": "integer"
+          },
+          "attack_mode": {
+            "$ref": "#/$defs/AttackMode"
+          },
+          "mac_length": {
+            "title": "Mac Length",
+            "type": "integer"
+          },
+          "mac_tag_bits": {
+            "title": "Mac Tag Bits",
+            "type": "integer"
+          },
+          "attacker_record_loss": {
+            "title": "Attacker Record Loss",
+            "type": "number"
+          },
+          "inline_attack_probability": {
+            "title": "Inline Attack Probability",
+            "type": "number"
+          },
+          "inline_attack_burst": {
+            "title": "Inline Attack Burst",
+            "type": "integer"
+          },
+          "challenge_nonce_bits": {
+            "title": "Challenge Nonce Bits",
+            "type": "integer"
+          },
+          "target_commands": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Target Commands"
+          },
+          "command_sequence": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Command Sequence"
+          },
+          "command_set": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Command Set"
+          },
+          "target_ci_half_width": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Target Ci Half Width"
+          },
+          "max_runs": {
+            "title": "Max Runs",
+            "type": "integer"
+          },
+          "paired": {
+            "title": "Paired",
+            "type": "boolean"
+          },
+          "channel_model": {
+            "title": "Channel Model",
+            "type": "string"
+          },
+          "burst_p_good_to_bad": {
+            "title": "Burst P Good To Bad",
+            "type": "number"
+          },
+          "burst_p_bad_to_good": {
+            "title": "Burst P Bad To Good",
+            "type": "number"
+          },
+          "loss_good": {
+            "title": "Loss Good",
+            "type": "number"
+          },
+          "loss_bad": {
+            "title": "Loss Bad",
+            "type": "number"
+          },
+          "loss_trace": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "boolean"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Loss Trace"
+          },
+          "command_risk": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Command Risk"
+          },
+          "risk_high": {
+            "title": "Risk High",
+            "type": "number"
+          },
+          "auth_profile": {
+            "title": "Auth Profile",
+            "type": "string"
+          }
+        },
+        "required": [
+          "modes",
+          "runs",
+          "p_loss",
+          "p_reorder",
+          "window_size",
+          "num_legit",
+          "num_replay",
+          "attack_mode",
+          "mac_length",
+          "mac_tag_bits",
+          "attacker_record_loss",
+          "inline_attack_probability",
+          "inline_attack_burst",
+          "challenge_nonce_bits",
+          "max_runs",
+          "paired",
+          "channel_model",
+          "burst_p_good_to_bad",
+          "burst_p_bad_to_good",
+          "loss_good",
+          "loss_bad",
+          "risk_high",
+          "auth_profile"
+        ],
+        "title": "SimulationSpecPublic",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "schema_version": {
+        "const": "2026-03-16",
+        "default": "2026-03-16",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "generated_at": {
+        "format": "date-time",
+        "title": "Generated At",
+        "type": "string"
+      },
+      "config": {
+        "$ref": "#/$defs/SimulationSpecPublic"
+      },
+      "results": {
+        "items": {
+          "$ref": "#/$defs/SimulationResultRecord"
+        },
+        "title": "Results",
+        "type": "array"
+      },
+      "metadata": {
+        "additionalProperties": true,
+        "title": "Metadata",
+        "type": "object"
+      }
+    },
+    "required": [
+      "config",
+      "results"
+    ],
+    "title": "SimulationBatchResult",
+    "type": "object"
+  },
+  "SweepSpec": {
+    "$defs": {
+      "AttackMode": {
+        "description": "How the attacker schedules replay attempts.",
+        "enum": [
+          "post",
+          "inline"
+        ],
+        "title": "AttackMode",
+        "type": "string"
+      },
+      "Mode": {
+        "description": "Supported receiver protection modes.",
+        "enum": [
+          "no_def",
+          "rolling",
+          "window",
+          "challenge",
+          "hsw_cr",
+          "oscore_like"
+        ],
+        "title": "Mode",
+        "type": "string"
+      },
+      "SimulationSpec": {
+        "properties": {
+          "schema_version": {
+            "const": "2026-03-16",
+            "default": "2026-03-16",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "modes": {
+            "items": {
+              "$ref": "#/$defs/Mode"
+            },
+            "title": "Modes",
+            "type": "array"
+          },
+          "runs": {
+            "default": 200,
+            "maximum": 10000,
+            "minimum": 1,
+            "title": "Runs",
+            "type": "integer"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Seed"
+          },
+          "p_loss": {
+            "default": 0.0,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "P Loss",
+            "type": "number"
+          },
+          "p_reorder": {
+            "default": 0.0,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "P Reorder",
+            "type": "number"
+          },
+          "window_size": {
+            "default": 5,
+            "minimum": 0,
+            "title": "Window Size",
+            "type": "integer"
+          },
+          "num_legit": {
+            "default": 20,
+            "maximum": 10000,
+            "minimum": 0,
+            "title": "Num Legit",
+            "type": "integer"
+          },
+          "num_replay": {
+            "default": 100,
+            "maximum": 10000,
+            "minimum": 0,
+            "title": "Num Replay",
+            "type": "integer"
+          },
+          "attack_mode": {
+            "$ref": "#/$defs/AttackMode",
+            "default": "post"
+          },
+          "mac_length": {
+            "default": 8,
+            "minimum": 1,
+            "title": "Mac Length",
+            "type": "integer"
+          },
+          "mac_tag_bits": {
+            "default": 80,
+            "maximum": 256,
+            "minimum": 32,
+            "title": "Mac Tag Bits",
+            "type": "integer"
+          },
+          "shared_key": {
+            "default": "sim_shared_key",
+            "minLength": 1,
+            "title": "Shared Key",
+            "type": "string"
+          },
+          "attacker_record_loss": {
+            "default": 0.0,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Attacker Record Loss",
+            "type": "number"
+          },
+          "inline_attack_probability": {
+            "default": 0.3,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Inline Attack Probability",
+            "type": "number"
+          },
+          "inline_attack_burst": {
+            "default": 1,
+            "minimum": 1,
+            "title": "Inline Attack Burst",
+            "type": "integer"
+          },
+          "challenge_nonce_bits": {
+            "default": 32,
+            "minimum": 1,
+            "title": "Challenge Nonce Bits",
+            "type": "integer"
+          },
+          "target_commands": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Target Commands"
+          },
+          "command_sequence": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Command Sequence"
+          },
+          "command_set": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Command Set"
+          },
+          "target_ci_half_width": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 1.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Target Ci Half Width"
+          },
+          "max_runs": {
+            "default": 2000,
+            "maximum": 20000,
+            "minimum": 1,
+            "title": "Max Runs",
+            "type": "integer"
+          },
+          "paired": {
+            "default": false,
+            "title": "Paired",
+            "type": "boolean"
+          },
+          "channel_model": {
+            "default": "iid",
+            "enum": [
+              "iid",
+              "gilbert_elliott",
+              "trace"
+            ],
+            "title": "Channel Model",
+            "type": "string"
+          },
+          "burst_p_good_to_bad": {
+            "default": 0.05,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Burst P Good To Bad",
+            "type": "number"
+          },
+          "burst_p_bad_to_good": {
+            "default": 0.3,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Burst P Bad To Good",
+            "type": "number"
+          },
+          "loss_good": {
+            "default": 0.01,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Loss Good",
+            "type": "number"
+          },
+          "loss_bad": {
+            "default": 0.6,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Loss Bad",
+            "type": "number"
+          },
+          "loss_trace": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "boolean"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Loss Trace"
+          },
+          "command_risk": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Command Risk"
+          },
+          "risk_high": {
+            "default": 0.8,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Risk High",
+            "type": "number"
+          },
+          "auth_profile": {
+            "default": "hmac",
+            "enum": [
+              "hmac",
+              "ascon"
+            ],
+            "title": "Auth Profile",
+            "type": "string"
+          }
+        },
+        "title": "SimulationSpec",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "schema_version": {
+        "const": "2026-03-16",
+        "default": "2026-03-16",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "sweep_type": {
+        "enum": [
+          "p_loss",
+          "p_reorder",
+          "window",
+          "mac_tag_bits"
+        ],
+        "title": "Sweep Type",
+        "type": "string"
+      },
+      "values": {
+        "items": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "title": "Values",
+        "type": "array"
+      },
+      "simulation": {
+        "$ref": "#/$defs/SimulationSpec"
+      },
+      "fixed_p_loss": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Fixed P Loss"
+      },
+      "fixed_p_reorder": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Fixed P Reorder"
+      }
+    },
+    "required": [
+      "sweep_type",
+      "values",
+      "simulation"
+    ],
+    "title": "SweepSpec",
+    "type": "object"
+  },
+  "ExperimentArtifact": {
+    "properties": {
+      "schema_version": {
+        "const": "2026-03-16",
+        "default": "2026-03-16",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "artifact_id": {
+        "title": "Artifact Id",
+        "type": "string"
+      },
+      "kind": {
+        "title": "Kind",
+        "type": "string"
+      },
+      "title": {
+        "title": "Title",
+        "type": "string"
+      },
+      "description": {
+        "title": "Description",
+        "type": "string"
+      },
+      "generated_at": {
+        "format": "date-time",
+        "title": "Generated At",
+        "type": "string"
+      },
+      "source_path": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Source Path"
+      },
+      "config_snapshot": {
+        "additionalProperties": true,
+        "title": "Config Snapshot",
+        "type": "object"
+      },
+      "summary": {
+        "additionalProperties": true,
+        "title": "Summary",
+        "type": "object"
+      },
+      "metrics": {
+        "items": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "title": "Metrics",
+        "type": "array"
+      },
+      "metadata": {
+        "additionalProperties": true,
+        "title": "Metadata",
+        "type": "object"
+      }
+    },
+    "required": [
+      "artifact_id",
+      "kind",
+      "title",
+      "description"
+    ],
+    "title": "ExperimentArtifact",
+    "type": "object"
+  },
+  "LabValidationArtifact": {
+    "properties": {
+      "schema_version": {
+        "const": "2026-03-16",
+        "default": "2026-03-16",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "artifact_id": {
+        "title": "Artifact Id",
+        "type": "string"
+      },
+      "title": {
+        "title": "Title",
+        "type": "string"
+      },
+      "generated_at": {
+        "format": "date-time",
+        "title": "Generated At",
+        "type": "string"
+      },
+      "source_path": {
+        "title": "Source Path",
+        "type": "string"
+      },
+      "summary": {
+        "additionalProperties": true,
+        "title": "Summary",
+        "type": "object"
+      },
+      "environment": {
+        "additionalProperties": true,
+        "title": "Environment",
+        "type": "object"
+      },
+      "config": {
+        "additionalProperties": true,
+        "title": "Config",
+        "type": "object"
+      },
+      "results": {
+        "items": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "title": "Results",
+        "type": "array"
+      },
+      "metadata": {
+        "additionalProperties": true,
+        "title": "Metadata",
+        "type": "object"
+      }
+    },
+    "required": [
+      "artifact_id",
+      "title",
+      "source_path"
+    ],
+    "title": "LabValidationArtifact",
+    "type": "object"
+  },
+  "SimVsHardwareArtifact": {
+    "properties": {
+      "schema_version": {
+        "const": "2026-03-16",
+        "default": "2026-03-16",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "artifact_id": {
+        "title": "Artifact Id",
+        "type": "string"
+      },
+      "title": {
+        "default": "Simulation vs Hardware Validation",
+        "title": "Title",
+        "type": "string"
+      },
+      "generated_at": {
+        "format": "date-time",
+        "title": "Generated At",
+        "type": "string"
+      },
+      "source_path": {
+        "title": "Source Path",
+        "type": "string"
+      },
+      "summary": {
+        "additionalProperties": true,
+        "title": "Summary",
+        "type": "object"
+      },
+      "environment": {
+        "additionalProperties": true,
+        "title": "Environment",
+        "type": "object"
+      },
+      "config": {
+        "additionalProperties": true,
+        "title": "Config",
+        "type": "object"
+      },
+      "results": {
+        "items": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "title": "Results",
+        "type": "array"
+      },
+      "metadata": {
+        "additionalProperties": true,
+        "title": "Metadata",
+        "type": "object"
+      }
+    },
+    "required": [
+      "artifact_id",
+      "source_path"
+    ],
+    "title": "SimVsHardwareArtifact",
+    "type": "object"
+  },
+  "ArtifactManifest": {
+    "$defs": {
+      "ArtifactSummary": {
+        "properties": {
+          "artifact_id": {
+            "title": "Artifact Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "artifact_id",
+          "title",
+          "kind",
+          "path"
+        ],
+        "title": "ArtifactSummary",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "schema_version": {
+        "const": "2026-03-16",
+        "default": "2026-03-16",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "generated_at": {
+        "format": "date-time",
+        "title": "Generated At",
+        "type": "string"
+      },
+      "title": {
+        "title": "Title",
+        "type": "string"
+      },
+      "description": {
+        "title": "Description",
+        "type": "string"
+      },
+      "runtime_mode": {
+        "const": "hybrid",
+        "default": "hybrid",
+        "title": "Runtime Mode",
+        "type": "string"
+      },
+      "artifacts": {
+        "items": {
+          "$ref": "#/$defs/ArtifactSummary"
+        },
+        "title": "Artifacts",
+        "type": "array"
+      },
+      "highlights": {
+        "items": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "title": "Highlights",
+        "type": "array"
+      },
+      "navigation": {
+        "items": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "title": "Navigation",
+        "type": "array"
+      }
+    },
+    "required": [
+      "title",
+      "description",
+      "artifacts"
+    ],
+    "title": "ArtifactManifest",
+    "type": "object"
+  }
+} as const;

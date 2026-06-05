@@ -8,10 +8,8 @@ Tests for Experiment module
 - 实验参数边界条件
 """
 
-import pytest
 from sim.experiment import run_many_experiments, simulate_one_run
-from sim.types import SimulationConfig, Mode, AttackMode
-
+from sim.types import AttackMode, Mode, SimulationConfig
 
 # ============================================================================
 # Test: Basic Experiment Execution
@@ -190,6 +188,34 @@ def test_zero_variance_in_ideal_conditions():
     assert results[0].std_legit_rate < 0.01  # 允许浮点误差
 
 
+def test_performance_metadata_present_for_all_modes():
+    """性能元数据应在每个 mode 聚合项中都可用（schema 一致）"""
+    config = SimulationConfig(
+        mode=Mode.NO_DEFENSE,
+        num_legit=5,
+        num_replay=5,
+        p_loss=0.0,
+        p_reorder=0.0,
+        attacker_record_loss=0.0,
+        window_size=5,
+        rng_seed=42,
+        attack_mode=AttackMode.POST_RUN
+    )
+
+    results = run_many_experiments(
+        config,
+        modes=[Mode.NO_DEFENSE, Mode.ROLLING_MAC],
+        runs=5,
+        show_progress=False
+    )
+
+    assert len(results) == 2
+    for entry in results:
+        assert "total_time" in entry.metadata
+        assert "time_per_run" in entry.metadata
+        assert "total_runs" in entry.metadata
+
+
 # ============================================================================
 # Test: Reproducibility (Seed)
 # ============================================================================
@@ -209,10 +235,14 @@ def test_reproducibility_with_fixed_seed():
     )
     
     # 第一次运行
-    results1 = run_many_experiments(config, modes=[Mode.WINDOW], runs=30, seed=42, show_progress=False)
+    results1 = run_many_experiments(
+        config, modes=[Mode.WINDOW], runs=30, seed=42, show_progress=False
+    )
     
     # 第二次运行（相同配置）
-    results2 = run_many_experiments(config, modes=[Mode.WINDOW], runs=30, seed=42, show_progress=False)
+    results2 = run_many_experiments(
+        config, modes=[Mode.WINDOW], runs=30, seed=42, show_progress=False
+    )
     
     assert len(results1) > 0
     assert len(results2) > 0
@@ -237,8 +267,12 @@ def test_different_seeds_different_results():
         attack_mode=AttackMode.POST_RUN
     )
     
-    results1 = run_many_experiments(config, modes=[Mode.WINDOW], runs=30, seed=42, show_progress=False)
-    results2 = run_many_experiments(config, modes=[Mode.WINDOW], runs=30, seed=99, show_progress=False)
+    results1 = run_many_experiments(
+        config, modes=[Mode.WINDOW], runs=30, seed=42, show_progress=False
+    )
+    results2 = run_many_experiments(
+        config, modes=[Mode.WINDOW], runs=30, seed=99, show_progress=False
+    )
     
     # 不同种子应该产生不同结果（至少有一个不同）
     assert (results1[0].avg_legit_rate != results2[0].avg_legit_rate or
@@ -361,8 +395,12 @@ def test_packet_loss_reduces_legit_acceptance():
         attack_mode=AttackMode.POST_RUN
     )
     
-    results_no_loss = run_many_experiments(config_no_loss, modes=[Mode.WINDOW], runs=20, show_progress=False)
-    results_high_loss = run_many_experiments(config_high_loss, modes=[Mode.WINDOW], runs=20, show_progress=False)
+    results_no_loss = run_many_experiments(
+        config_no_loss, modes=[Mode.WINDOW], runs=20, show_progress=False
+    )
+    results_high_loss = run_many_experiments(
+        config_high_loss, modes=[Mode.WINDOW], runs=20, show_progress=False
+    )
     
     # 高丢包应该降低接受率
     assert results_high_loss[0].avg_legit_rate < results_no_loss[0].avg_legit_rate
@@ -396,8 +434,12 @@ def test_window_size_effect():
         attack_mode=AttackMode.POST_RUN
     )
     
-    results_small = run_many_experiments(config_small, modes=[Mode.WINDOW], runs=30, show_progress=False)
-    results_large = run_many_experiments(config_large, modes=[Mode.WINDOW], runs=30, show_progress=False)
+    results_small = run_many_experiments(
+        config_small, modes=[Mode.WINDOW], runs=30, show_progress=False
+    )
+    results_large = run_many_experiments(
+        config_large, modes=[Mode.WINDOW], runs=30, show_progress=False
+    )
     
     # 大窗口应该更好地处理乱序
     assert results_large[0].avg_legit_rate >= results_small[0].avg_legit_rate
@@ -431,8 +473,12 @@ def test_attacker_loss_reduces_attack_success():
         attack_mode=AttackMode.POST_RUN
     )
     
-    results_no_loss = run_many_experiments(config_no_loss, modes=[Mode.NO_DEFENSE], runs=20, show_progress=False)
-    results_high_loss = run_many_experiments(config_high_loss, modes=[Mode.NO_DEFENSE], runs=20, show_progress=False)
+    results_no_loss = run_many_experiments(
+        config_no_loss, modes=[Mode.NO_DEFENSE], runs=20, show_progress=False
+    )
+    results_high_loss = run_many_experiments(
+        config_high_loss, modes=[Mode.NO_DEFENSE], runs=20, show_progress=False
+    )
     
     # 攻击者丢包应该降低攻击成功率
     assert results_high_loss[0].avg_attack_rate <= results_no_loss[0].avg_attack_rate

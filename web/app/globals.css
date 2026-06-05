@@ -1,26 +1,124 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #efe6d6;
+  --foreground: #1e1a16;
+  --panel: rgba(255, 252, 246, 0.72);
+  --panel-border: rgba(41, 33, 26, 0.12);
+  --accent: #c96b3d;
+  --accent-2: #0f766e;
+  --font-sans: var(--font-space-grotesk);
+  --font-mono: var(--font-plex-mono);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
+  margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.eyebrow {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(30, 26, 22, 0.62);
+}
+
+.panel {
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  border-radius: 2rem;
+  padding: 1.5rem;
+  box-shadow: 0 22px 60px rgba(50, 35, 20, 0.08);
+  backdrop-filter: blur(22px);
+}
+
+.nav-pill {
+  border: 1px solid rgba(30, 26, 22, 0.14);
+  border-radius: 999px;
+  padding: 0.8rem 1rem;
+  font-size: 0.9rem;
+  background: rgba(255, 255, 255, 0.5);
+  transition: transform 140ms ease, background 140ms ease;
+}
+
+.nav-pill:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.action-button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.95rem 1.4rem;
+  background: linear-gradient(135deg, var(--accent), #a94633);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.action-button:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.field span {
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(30, 26, 22, 0.56);
+}
+
+.field input,
+.field select {
+  width: 100%;
+  border: 1px solid rgba(30, 26, 22, 0.12);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.9rem 1rem;
+  font: inherit;
+  color: inherit;
+}
+
+.toggle-pill {
+  border: 1px solid rgba(30, 26, 22, 0.12);
+  border-radius: 999px;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.toggle-pill.active {
+  background: rgba(15, 118, 110, 0.12);
+  border-color: rgba(15, 118, 110, 0.3);
+  color: #115e59;
 }

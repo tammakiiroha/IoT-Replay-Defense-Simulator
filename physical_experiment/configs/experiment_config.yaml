@@ -1,0 +1,273 @@
+# =============================================================================
+# Physical Experiment Configuration - 唯一配置源
+# IoT Replay Attack Defense - Hardware Validation
+# =============================================================================
+#
+# 重要：所有参数必须在此文件中定义，脚本中禁止硬编码默认值。
+#
+# =============================================================================
+
+# 配置版本号（用于结果文件追溯）
+config_version: "1.0.0"
+
+# -----------------------------------------------------------------------------
+# 平台要求
+# -----------------------------------------------------------------------------
+platform:
+  os: "Ubuntu"
+  os_versions: ["22.04", "24.04"]
+  python_min_version: "3.9"
+
+# -----------------------------------------------------------------------------
+# 实验元信息
+# -----------------------------------------------------------------------------
+experiment:
+  name: "replay_defense_hardware_validation"
+  description: "Validate simulation results with real HackRF hardware"
+  runs_per_config: 10            # 每配置运行次数
+  random_seed: 42                # 随机种子（可复现）
+
+# -----------------------------------------------------------------------------
+# 硬件配置 (HackRF One) - 对应论文第3章
+# -----------------------------------------------------------------------------
+hardware:
+  # RF 参数（对应论文3.3节，使用 Hz 避免浮点误差）
+  frequency_hz: 2475000000       # 2.475 GHz (论文特定的中心频率)
+  sample_rate_hz: 2000000        # 2 Msps (论文3.3节)
+  bandwidth_hz: 2000000          # 2 MHz (论文3.3节)
+
+  # 发送端配置
+  tx:
+    gain_db: 20                  # TX 增益 (0-47 dB)
+    if_gain_db: 30               # IF 增益
+    device_serial: null          # null = 自动选择，或指定序列号后8位如 "a1b2c3d4"
+    device_args: ""              # gr-osmosdr 设备参数，如 "hackrf=a1b2c3d4"
+                                 # 留空时自动根据 device_serial 生成
+
+  # 接收端配置
+  rx:
+    lna_gain_db: 24              # LNA 增益 (0, 8, 16, 24, 32, 40 dB)
+    vga_gain_db: 20              # VGA 增益 (0-62 dB, 步进 2)
+    device_serial: null          # null = 自动选择，或指定序列号后8位
+    device_args: ""              # gr-osmosdr 设备参数
+
+  # 调制参数（对应论文3.4节）
+  modulation:
+    type: "FSK"                  # 调制类型：2値FSK (论文3.4节)
+    samples_per_symbol: 2        # Samples/Symbol (URH 设置)
+    bits_per_symbol: 1           # Bits/Symbol (URH 设置)
+    deviation_hz: 101562         # 频偏 (URH 显示值约 101.562 kHz)
+
+# -----------------------------------------------------------------------------
+# 论文第3章 フレーム構造（对应论文3.4节）
+# -----------------------------------------------------------------------------
+chapter3_frame:
+  # 共通ヘッダ（prefix）- 19 bytes，所有コマンドで共通
+  prefix: "20aab824caebda25da7020cf6e76b67cde28c7"
+
+  # 制御フィールド（tail）- 5 bytes，コマンドごとに異なる
+  commands:
+    light: "0636b64700"           # 灯光 ON/OFF
+    demo: "3646cd4500"            # デモ走行
+    left_back: "24549a2700"       # 左輪後退
+    left_forward: "2252d85780"    # 左輪前進
+    right_forward: "2757ff1700"   # 右輪前進
+    right_back: "26d64d8f00"      # 右輪後退
+    both_forward: "2353fb4780"    # 両輪前進
+    both_back: "24d40baf00"       # 両輪後退
+    lb_rf: "2555b93700"           # 逆時針旋回 (LB+RF)
+    rb_lf: "22d249df80"           # 順時針旋回 (RB+LF)
+
+  # GF(2) 差分マスク（论文3.4.2节）
+  xor_masks:
+    M_L: "0606427080"             # 左輪方向反転マスク
+    M_R: "0181b29800"             # 右輪方向反転マスク
+    M_FB: "0787f0e880"            # 前進↔後退反転マスク
+    v_light: "20606a4000"         # 灯光付与ベクトル
+
+  # 合成コマンド例（论文3.4.2节）
+  synthesized_examples:
+    both_forward_light: "0333910780"   # 両輪前進 + 灯光
+    left_forward_light: "0232b21780"   # 左輪前進 + 灯光
+    right_forward_light: "0737955700"  # 右輪前進 + 灯光
+
+# -----------------------------------------------------------------------------
+# 论文第5章 モンテカルロシミュレーション条件
+# -----------------------------------------------------------------------------
+chapter5_montecarlo:
+  N_runs: 200                     # 試行回数 (论文5.4节)
+  N_legit: 20                     # 每試行正規フレーム数 (论文5.4节)
+  N_attack: 100                   # 每試行攻撃フレーム数 (论文5.4节)
+  random_seed: 42                 # 再現性確保
+
+# -----------------------------------------------------------------------------
+# 论文第4章 防御メカニズム
+# -----------------------------------------------------------------------------
+chapter4_defense:
+  modes:
+    - no_def                      # 4.3节: 防御なしベースライン
+    - rolling                     # 4.4节: ローリングカウンタ + MAC
+    - window                      # 4.5节: スライディングウィンドウ
+    - challenge                   # 4.6节: チャレンジレスポンス
+
+  # 论文6.3节: ウィンドウ幅スキャン
+  window_sizes: [1, 3, 5, 7, 9, 15, 20]
+
+# -----------------------------------------------------------------------------
+# ZeroMQ 通信配置
+# -----------------------------------------------------------------------------
+zmq:
+  host: "127.0.0.1"
+  tx_port: 5555                  # Python -> GNU Radio TX
+  rx_port: 5556                  # GNU Radio RX -> Python
+  attacker_rx_port: 5557         # GNU Radio Sniffer -> Attacker (预留)
+  attacker_tx_port: 5558         # Attacker -> GNU Radio Replay TX (预留)
+  timeout_ms: 2000               # 数据包超时 (ms)
+  hwm: 1000                      # High Water Mark (消息队列大小)
+
+# -----------------------------------------------------------------------------
+# 流量配置
+# -----------------------------------------------------------------------------
+traffic:
+  num_legit_frames: 100          # 每轮合法帧数量
+  num_replay_attempts: 50        # 每轮重放攻击次数
+  frame_interval_ms: 50          # 帧间隔 (ms)
+  commands:                      # 模拟的命令类型
+    - "FWD"
+    - "BACK"
+    - "LEFT"
+    - "RIGHT"
+    - "STOP"
+
+# -----------------------------------------------------------------------------
+# 防御模式配置
+# -----------------------------------------------------------------------------
+modes:
+  - name: "no_def"
+    enabled: true
+    description: "无防御基线"
+
+  - name: "rolling"
+    enabled: true
+    description: "滚动计数器 + MAC"
+
+  - name: "window"
+    enabled: true
+    description: "滑动窗口 + MAC"
+    window_sizes: [3, 5, 8]      # 测试多个窗口大小
+
+  - name: "challenge"
+    enabled: true
+    description: "挑战响应"
+
+# -----------------------------------------------------------------------------
+# 攻击配置
+# -----------------------------------------------------------------------------
+attack:
+  mode: "post"                   # "post" (批量重放) 或 "inline" (实时重放)
+  target_commands: null          # null = 全部, 或 ["FWD", "STOP"] 选择性攻击
+  delay_before_replay_s: 2.0     # post 模式下重放前的延迟 (秒)
+  inline_probability: 0.3        # inline 模式下每帧触发攻击的概率
+  inline_burst: 1                # inline 模式下最大连续攻击次数
+
+# -----------------------------------------------------------------------------
+# 攻击者配置（与 sim/types.py:SimulationConfig 对齐）
+# -----------------------------------------------------------------------------
+attacker:
+  record_loss: 0.0               # 攻击者录制帧丢失概率
+  target_commands: null          # null = 录制全部
+
+# -----------------------------------------------------------------------------
+# 协议配置
+# -----------------------------------------------------------------------------
+protocol:
+  shared_key: "hardware_experiment_key_2024"
+  mac_length: 16                 # HMAC-SHA256 截断到 128 bits
+  nonce_bits: 32                 # 挑战 nonce 大小
+
+  frame_format:
+    preamble: "A5A5A5A5"         # 同步字 (hex)
+    crc_type: "CRC16"            # CRC 类型
+
+# -----------------------------------------------------------------------------
+# 校准配置
+# -----------------------------------------------------------------------------
+calibration:
+  enabled: true
+  packets: 1000                  # 校准发包数量
+  interval_ms: 50                # 校准帧间隔 (ms)
+  distances_m: [1, 5, 10]        # 测试距离 (米)
+
+# -----------------------------------------------------------------------------
+# 信道参数（由校准测量，或手动设置用于 Loopback 模式）
+# -----------------------------------------------------------------------------
+channel:
+  p_loss: 0.0                    # 丢包率（Loopback 模式用 0）
+  p_reorder: 0.0                 # 重排率（Loopback 模式用 0）
+
+# -----------------------------------------------------------------------------
+# 仿真对比基线
+# -----------------------------------------------------------------------------
+simulation_baseline:
+  enabled: true
+  runs: 200                      # Monte Carlo 仿真次数
+  p_loss_values: [0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+  p_reorder_values: [0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+
+# -----------------------------------------------------------------------------
+# 实验阶段配置
+# -----------------------------------------------------------------------------
+phases:
+  calibration:
+    enabled: true
+    packets: 1000
+    distances: ["1m", "5m", "10m"]
+
+  defense_comparison:
+    enabled: true
+    modes: ["no_def", "rolling", "window", "challenge"]
+    runs_per_mode: 10
+
+  window_sweep:
+    enabled: true
+    window_sizes: [3, 5, 8, 10, 15]
+    runs_per_size: 5
+
+  analysis:
+    enabled: true
+    generate_figures: true
+    generate_latex: true
+
+# -----------------------------------------------------------------------------
+# 输出配置
+# -----------------------------------------------------------------------------
+output:
+  results_dir: "physical_experiment/results"
+  logs_dir: "physical_experiment/logs"
+  figures_dir: "figures"
+  reports_dir: "physical_experiment/reports"
+
+  formats:
+    - json                       # 机器可读
+    - csv                        # 电子表格分析
+
+  generate_figures: true
+  figure_formats: ["png", "pdf"]
+  figure_dpi: 300
+
+# -----------------------------------------------------------------------------
+# 流图管理配置
+# -----------------------------------------------------------------------------
+flowgraph:
+  auto_start: true               # 自动启动 TX/RX 流图
+  startup_timeout_s: 10          # 流图启动超时 (秒)
+  shutdown_timeout_s: 5          # 流图关闭超时 (秒)
+  tx_script: "physical_experiment/flowgraphs/tx_flowgraph.py"
+  rx_script: "physical_experiment/flowgraphs/rx_flowgraph.py"
+
+# -----------------------------------------------------------------------------
+# 自检配置
+# -----------------------------------------------------------------------------
+doctor:
+  run_before_experiment: true    # 实验前自动运行自检
+  fail_on_warning: false         # 警告是否视为失败

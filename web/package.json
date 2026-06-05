@@ -2,11 +2,13 @@
   "name": "web",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build && touch out/.nojekyll",
+    "build": "next build --webpack && touch out/.nojekyll",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:contracts": "node ./scripts/check-contracts.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",

@@ -13,15 +13,25 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from sim.commands import DEFAULT_COMMANDS, load_command_sequence
+from sim.defaults import (
+    DEFAULT_ATTACK_MODE,
+    DEFAULT_INLINE_ATTACK_BURST,
+    DEFAULT_INLINE_ATTACK_PROBABILITY,
+    DEFAULT_NUM_LEGIT,
+    DEFAULT_NUM_REPLAY,
+    DEFAULT_SHARED_KEY,
+    DEFAULT_RUNS,
+    DEFAULT_WINDOW_SIZE,
+)
 from sim.experiment import run_many_experiments
 from sim.types import AttackMode, Mode, SimulationConfig
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run replay-attack parameter sweeps")
-    parser.add_argument("--runs", type=int, default=200, help="Monte Carlo runs per condition")
-    parser.add_argument("--num-legit", type=int, default=20, help="Legitimate transmissions per run")
-    parser.add_argument("--num-replay", type=int, default=100, help="Replay attempts per run (post-attack mode)")
+    parser.add_argument("--runs", type=int, default=DEFAULT_RUNS, help="Monte Carlo runs per condition")
+    parser.add_argument("--num-legit", type=int, default=DEFAULT_NUM_LEGIT, help="Legitimate transmissions per run")
+    parser.add_argument("--num-replay", type=int, default=DEFAULT_NUM_REPLAY, help="Replay attempts per run (post-attack mode)")
     parser.add_argument("--modes", nargs="+", 
                         default=[Mode.NO_DEFENSE.value, Mode.ROLLING_MAC.value, Mode.WINDOW.value, Mode.CHALLENGE.value],
                         help="Modes to include in the sweep outputs")
@@ -31,7 +41,7 @@ def parse_args() -> argparse.Namespace:
                         help="Packet-reorder probabilities to evaluate")
     parser.add_argument("--window-values", type=int, nargs="*", default=[1, 3, 5, 7, 9, 15, 20],
                         help="Window sizes to evaluate (applies to window mode)")
-    parser.add_argument("--window-size-base", type=int, default=5,
+    parser.add_argument("--window-size-base", type=int, default=DEFAULT_WINDOW_SIZE,
                         help="Window size used in modes that rely on a fixed window during p_loss sweeps")
     parser.add_argument("--fixed-p-loss", type=float, default=None,
                         help="Fixed p_loss value for p_reorder sweep (default: 0.10 for isolating reorder effect)")
@@ -41,11 +51,11 @@ def parse_args() -> argparse.Namespace:
                         help="Fixed p_loss value for window size sweep (default: 0.15 for moderate stress)")
     parser.add_argument("--window-p-reorder", type=float, default=0.15,
                         help="Fixed p_reorder value for window size sweep (default: 0.15 for moderate stress)")
-    parser.add_argument("--attack-mode", choices=[mode.value for mode in AttackMode], default=AttackMode.POST_RUN.value,
+    parser.add_argument("--attack-mode", choices=[mode.value for mode in AttackMode], default=DEFAULT_ATTACK_MODE.value,
                         help="Replay scheduling strategy for all sweeps")
-    parser.add_argument("--inline-attack-prob", type=float, default=0.3,
+    parser.add_argument("--inline-attack-prob", type=float, default=DEFAULT_INLINE_ATTACK_PROBABILITY,
                         help="Inline attack probability per legitimate frame (if inline mode)")
-    parser.add_argument("--inline-attack-burst", type=int, default=1,
+    parser.add_argument("--inline-attack-burst", type=int, default=DEFAULT_INLINE_ATTACK_BURST,
                         help="Max inline replay attempts per legitimate frame")
     parser.add_argument("--p-loss-output", type=str, default="results/p_loss_sweep.json",
                         help="Where to write the p_loss sweep JSON")
@@ -77,7 +87,7 @@ def main() -> None:
         command_sequence=command_sequence,
         command_set=DEFAULT_COMMANDS,
         rng_seed=args.seed,
-        shared_key="sim_shared_key",
+        shared_key=DEFAULT_SHARED_KEY,
         window_size=args.window_size_base,
         inline_attack_probability=args.inline_attack_prob,
         inline_attack_burst=args.inline_attack_burst,

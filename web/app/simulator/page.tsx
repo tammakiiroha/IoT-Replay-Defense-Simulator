@@ -1,19 +1,31 @@
-import { Panel, SiteShell } from '../../components/site-shell';
-import { SimulatorPanel } from '../../components/simulator-panel';
+import { SimulatorPageContent } from '../../components/simulator-page-content';
+import { SiteShell } from '../../components/site-shell';
 
 export default function SimulatorPage() {
   return (
     <SiteShell
       eyebrow="Simulator"
-      title="Interactive when local, honest when static."
-      intro="This page only submits work to the authoritative API. In public static mode it will show the boundary clearly instead of silently forking the simulation logic in JavaScript."
+      title="Run replay-defense scenarios in the browser."
+      intro="The simulator uses the Python API when available and falls back to a browser-side demo model on static GitHub Pages. Authoritative research runs still belong to the Python core."
+      shellCopy={{
+        eyebrow: {
+          en: 'Simulator',
+          ja: 'シミュレータ',
+          zh: '模拟器',
+        },
+        title: {
+          en: 'Run replay-defense scenarios in the browser.',
+          ja: 'ブラウザでリプレイ防御シナリオを実行。',
+          zh: '在浏览器中运行重放防御场景。',
+        },
+        intro: {
+          en: 'The simulator uses the Python API when available and falls back to a browser-side demo model on static GitHub Pages. Authoritative research runs still belong to the Python core.',
+          ja: 'Python API が利用可能な場合はそれを使い、静的な GitHub Pages ではブラウザ内のデモモデルに切り替わります。研究用の正式な実行結果は引き続き Python コアを基準にします。',
+          zh: '模拟器会在可用时调用 Python API；在静态 GitHub Pages 上则自动切换为浏览器端演示模型。正式研究结果仍以 Python 核心为准。',
+        },
+      }}
     >
-      <Panel
-        title="Interactive control surface"
-        description="Run the same Python implementation used by the CLI, the API, the sweep scripts, and the physical-validation comparison."
-      >
-        <SimulatorPanel />
-      </Panel>
+      <SimulatorPageContent />
     </SiteShell>
   );
 }

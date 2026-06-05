@@ -7,7 +7,7 @@ export default function HomePage() {
     <SiteShell
       eyebrow="Replay Research Platform"
       title="One research product, two runtime modes."
-      intro="The public site is a static, evidence-backed showcase. The local full-stack mode runs the same Python core used for Monte Carlo sweeps, physical validation, and thesis artifacts."
+      intro="The public site is a static, evidence-backed showcase with a browser-side simulator demo. The local full-stack mode runs the Python core used for Monte Carlo sweeps, physical validation, and thesis artifacts."
     >
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <Panel
@@ -19,8 +19,8 @@ export default function HomePage() {
               <p className="eyebrow">Public deploy</p>
               <h3 className="mt-3 text-xl font-semibold">Static exhibition mode</h3>
               <p className="mt-2 text-sm leading-6 text-stone-600">
-                Serves artifact-backed charts, explanations, methodology, and reproducibility notes without
-                inventing browser-side simulation results.
+                Serves artifact-backed charts, explanations, methodology, reproducibility notes, and an
+                interactive browser demo for quick scenario exploration.
               </p>
             </div>
             <div className="rounded-3xl border border-stone-900/10 bg-white/70 p-5">
@@ -83,8 +83,8 @@ export default function HomePage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Panel title="Authority boundary">
           <p className="text-sm leading-7 text-stone-700">
-            The browser is no longer a second simulation engine. It is a display surface and local control
-            panel for the Python runtime.
+            The browser demo is for interactive exploration. The Python runtime remains the authority for
+            release artifacts, CLI/API runs, and research-grade numbers.
           </p>
         </Panel>
         <Panel title="Experiment boundary">

@@ -742,16 +742,6 @@ _`results/ideal_p0.json` からの参照ベースライン_
 
 コントリビューションを歓迎します！開発環境のセットアップ、コードスタイルガイドライン、変更の提出方法については、[CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。
 
-## コントリビューター
-
-このプロジェクトの改善に協力してくださったすべてのコントリビューターに感謝します！
-
-<a href="https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=tammakiiroha/IoT-Replay-Defense-Simulator" />
-</a>
-
-[contrib.rocks](https://contrib.rocks) で生成。
-
 ## ⭐ Star 履歴
 
 <div align="center">

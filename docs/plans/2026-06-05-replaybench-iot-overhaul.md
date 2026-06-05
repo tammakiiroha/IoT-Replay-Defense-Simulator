@@ -1,7 +1,5 @@
 # ReplayBench-IoT Overhaul Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
 **Goal:** Turn the existing IoT Replay-Defense Simulator into a research-grade, reproducible benchmark platform ("ReplayBench-IoT") by fixing P0 research-validity bugs, adding statistical rigor, modeling realistic channels/costs, introducing adaptive + standards-aligned defenses, and packaging it for public/academic use.
 
 **Architecture:** The codebase is layered: `src/replay/core/` (pure simulation engine: sender/receiver/attacker/channel/experiment/stats), `src/replay/contracts/` (Pydantic models shared by CLI/API/Web), `src/replay/services/` (simulation + lab orchestration), `src/replay/api/` (FastAPI), `src/replay/cli/` (argparse CLI), and `web/` (Next.js demo). `sim/` and root wrappers (`main.py`, `api.py`) are thin re-export compatibility layers over `src/replay/core`. We extend the core engine with new strategy objects (channel models, authenticators, risk policy, cost model) behind protocols, surface them through contracts, and keep every change behind tests. Statistics utilities already prototyped in `physical_experiment/scripts/run_validation.py` (Wilson CI, Gilbert-Elliott) are promoted into `core`.

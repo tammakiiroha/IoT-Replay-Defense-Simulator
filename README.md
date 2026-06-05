@@ -791,16 +791,6 @@ Related data files:
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style guidelines, and how to submit changes.
 
-## Contributors
-
-Thanks to all contributors who have helped improve this project!
-
-<a href="https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=tammakiiroha/IoT-Replay-Defense-Simulator" />
-</a>
-
-Made with [contrib.rocks](https://contrib.rocks).
-
 ## ⭐ Star History
 
 <div align="center">

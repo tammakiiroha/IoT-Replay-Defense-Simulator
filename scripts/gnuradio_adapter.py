@@ -60,7 +60,11 @@ def run_tx(args, logger):
 
     # Initialize Sender logic
     # Note: Using DEFAULT_KEY from commands or a fixed one for demo
-    sender = Sender(mode=Mode(args.sim_mode), shared_key="gnuradio_key")
+    sender = Sender(
+        mode=Mode(args.sim_mode),
+        shared_key="gnuradio_key",
+        mac_length=args.mac_length,
+    )
     
     # Simple demo command sequence
     commands = ["FWD", "FWD", "LEFT", "RIGHT", "STOP", "FWD", "STOP"]
@@ -69,7 +73,11 @@ def run_tx(args, logger):
         while True:
             for cmd in commands:
                 # 1. Logic Layer: Generate Frame
-                frame = sender.next_frame(cmd)
+                if sender.mode is Mode.CHALLENGE:
+                    nonce = f"{int(time.time() * 1000) & 0xFFFFFFFF:08x}"
+                    frame = sender.next_frame(cmd, nonce=nonce)
+                else:
+                    frame = sender.next_frame(cmd)
                 
                 # 2. Serialization Layer: Convert to bytes
                 # Format: JSON string + newline (simple text protocol)
@@ -110,7 +118,12 @@ def run_rx(args, logger):
     
     logger.info(f"RX Mode: Connecting to {address}...")
 
-    receiver = Receiver(mode=Mode(args.sim_mode), shared_key="gnuradio_key")
+    receiver = Receiver(
+        mode=Mode(args.sim_mode),
+        shared_key="gnuradio_key",
+        mac_length=args.mac_length,
+        window_size=args.window_size,
+    )
 
     try:
         while True:
@@ -127,23 +140,23 @@ def run_rx(args, logger):
                     nonce = data.get("n")
                     
                     # 3. Logic Layer: Validate
-                    # Make a pure object structure if Receiver needs it, 
-                    # but current Receiver.receive takes explicit args or a Frame object?
-                    # Let's check Receiver.receive signature. 
-                    # Warning: Need to ensure type compatibility.
-                    
-                    # Assuming Receiver.receive(frame) or similar.
-                    # Let's import Frame to be safe
                     from sim.types import Frame
                     
                     frame = Frame(command=cmd, counter=counter, mac=mac, nonce=nonce)
-                    is_valid = receiver.receive(frame)
+                    if receiver.mode is Mode.CHALLENGE and receiver.state.expected_nonce is None:
+                        receiver.state.expected_nonce = nonce
+
+                    verification = receiver.process(frame)
+                    is_valid = verification.accepted
                     
                     status = "ACCEPTED" if is_valid else "REJECTED"
                     color = "\033[92m" if is_valid else "\033[91m"
                     reset = "\033[0m"
                     
-                    logger.info(f"Received: {frame} => {color}{status}{reset}")
+                    logger.info(
+                        f"Received: {frame} => {color}{status}{reset} "
+                        f"(reason={verification.reason})"
+                    )
                     
                 except json.JSONDecodeError:
                     logger.warning(f"Received non-JSON data: {msg}")
@@ -169,12 +182,16 @@ def main():
     tx_parser.add_argument("--host", default=DEFAULT_ZMQ_HOST, help="ZMQ Host")
     tx_parser.add_argument("--port", type=int, default=DEFAULT_TX_PORT, help="ZMQ Port")
     tx_parser.add_argument("--sim-mode", default="window", choices=["no_def", "rolling", "window", "challenge"], help="Protection Mode")
+    tx_parser.add_argument("--mac-length", type=int, default=8, help="Truncated MAC length (hex chars)")
+    tx_parser.add_argument("--window-size", type=int, default=5, help="Window size for window mode")
 
     # RX Arguments
     rx_parser = subparsers.add_parser("rx", help="Receiver Mode (Receive from GNURadio)")
     rx_parser.add_argument("--host", default=DEFAULT_ZMQ_HOST, help="ZMQ Host")
     rx_parser.add_argument("--port", type=int, default=DEFAULT_RX_PORT, help="ZMQ Port (Source form GNURadio)")
     rx_parser.add_argument("--sim-mode", default="window", choices=["no_def", "rolling", "window", "challenge"], help="Protection Mode")
+    rx_parser.add_argument("--mac-length", type=int, default=8, help="Truncated MAC length (hex chars)")
+    rx_parser.add_argument("--window-size", type=int, default=5, help="Window size for window mode")
     
     args = parser.parse_args()
     logger = setup_logger()

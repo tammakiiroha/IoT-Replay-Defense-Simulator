@@ -26,6 +26,8 @@ from sim.defaults import (
 from sim.experiment import run_many_experiments
 from sim.types import AttackMode, Mode, SimulationConfig
 
+VOLATILE_RESULT_KEYS = {"total_time", "time_per_run"}
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run replay-attack parameter sweeps")
@@ -41,6 +43,9 @@ def parse_args() -> argparse.Namespace:
                         help="Packet-reorder probabilities to evaluate")
     parser.add_argument("--window-values", type=int, nargs="*", default=[1, 3, 5, 7, 9, 15, 20],
                         help="Window sizes to evaluate (applies to window mode)")
+    parser.add_argument("--sweeps", nargs="+", choices=["p_loss", "p_reorder", "window"],
+                        default=["p_loss", "p_reorder", "window"],
+                        help="Which sweep datasets to generate")
     parser.add_argument("--window-size-base", type=int, default=DEFAULT_WINDOW_SIZE,
                         help="Window size used in modes that rely on a fixed window during p_loss sweeps")
     parser.add_argument("--fixed-p-loss", type=float, default=None,
@@ -99,17 +104,43 @@ def main() -> None:
     fixed_p_reorder_for_loss = args.fixed_p_reorder if args.fixed_p_reorder is not None else 0.0
     fixed_p_loss_for_reorder = args.fixed_p_loss if args.fixed_p_loss is not None else 0.10
 
-    p_loss_records = _sweep_p_loss(base_config, requested_modes, args.p_loss_values, args.runs, args.seed, fixed_p_reorder_for_loss)
-    p_reorder_records = _sweep_p_reorder(base_config, requested_modes, args.p_reorder_values, args.runs, args.seed, fixed_p_loss_for_reorder)
-    window_records = _sweep_window(base_config, requested_modes, args.window_values, args.runs, args.seed, args.window_p_loss, args.window_p_reorder)
+    selected_sweeps = set(args.sweeps)
+    if "p_loss" in selected_sweeps:
+        p_loss_records = _sweep_p_loss(
+            base_config,
+            requested_modes,
+            args.p_loss_values,
+            args.runs,
+            args.seed,
+            fixed_p_reorder_for_loss,
+        )
+        _write_json(Path(args.p_loss_output), p_loss_records)
+        print(f"Saved p_loss sweep: {args.p_loss_output}")
 
-    _write_json(Path(args.p_loss_output), p_loss_records)
-    _write_json(Path(args.p_reorder_output), p_reorder_records)
-    _write_json(Path(args.window_output), window_records)
+    if "p_reorder" in selected_sweeps:
+        p_reorder_records = _sweep_p_reorder(
+            base_config,
+            requested_modes,
+            args.p_reorder_values,
+            args.runs,
+            args.seed,
+            fixed_p_loss_for_reorder,
+        )
+        _write_json(Path(args.p_reorder_output), p_reorder_records)
+        print(f"Saved p_reorder sweep: {args.p_reorder_output}")
 
-    print(f"Saved p_loss sweep: {args.p_loss_output}")
-    print(f"Saved p_reorder sweep: {args.p_reorder_output}")
-    print(f"Saved window sweep: {args.window_output}")
+    if "window" in selected_sweeps:
+        window_records = _sweep_window(
+            base_config,
+            requested_modes,
+            args.window_values,
+            args.runs,
+            args.seed,
+            args.window_p_loss,
+            args.window_p_reorder,
+        )
+        _write_json(Path(args.window_output), window_records)
+        print(f"Saved window sweep: {args.window_output}")
 
 
 def _parse_modes(raw_modes: List[str]) -> List[Mode]:
@@ -141,7 +172,7 @@ def _sweep_p_loss(
         config = dataclasses.replace(base_config, p_loss=value, p_reorder=fixed_p_reorder)
         stats = run_many_experiments(config, modes=modes, runs=runs, seed=seed)
         for entry in stats:
-            record = entry.as_dict()
+            record = _stable_result_record(entry.as_dict())
             record.update({"sweep_type": "p_loss", "sweep_value": value})
             records.append(record)
     return records
@@ -166,7 +197,7 @@ def _sweep_p_reorder(
         config = dataclasses.replace(base_config, p_reorder=value, p_loss=fixed_p_loss)
         stats = run_many_experiments(config, modes=modes, runs=runs, seed=seed)
         for entry in stats:
-            record = entry.as_dict()
+            record = _stable_result_record(entry.as_dict())
             record.update({"sweep_type": "p_reorder", "sweep_value": value})
             records.append(record)
     return records
@@ -198,10 +229,15 @@ def _sweep_window(
         )
         stats = run_many_experiments(config, modes=modes, runs=runs, seed=seed)
         for entry in stats:
-            record = entry.as_dict()
+            record = _stable_result_record(entry.as_dict())
             record.update({"sweep_type": "window", "sweep_value": value})
             records.append(record)
     return records
+
+
+def _stable_result_record(record: dict) -> dict:
+    """Remove host-dependent fields from versioned sweep artifacts."""
+    return {key: value for key, value in record.items() if key not in VOLATILE_RESULT_KEYS}
 
 
 def _write_json(path: Path, payload: List[dict]) -> None:

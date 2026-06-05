@@ -25,6 +25,15 @@ def pct(value: float) -> str:
     return f"{value * 100:.2f}%"
 
 
+def fmt_prob(value: float, decimals: int = 2) -> str:
+    """Format probabilities without collapsing distinct sweep points."""
+    text = f"{value:.{decimals}f}"
+    text = text.rstrip("0").rstrip(".")
+    if "." not in text:
+        text += ".0"
+    return text
+
+
 def make_preorder_table() -> str:
     """Generate p_reorder sweep table (Rolling vs Window only)."""
     try:
@@ -41,7 +50,7 @@ def make_preorder_table() -> str:
         
         if rolling_entry and window_entry:
             rows.append(
-                f"| {p:.1f} | {pct(rolling_entry['avg_legit_rate'])} | {pct(window_entry['avg_legit_rate'])} |"
+                f"| {fmt_prob(p)} | {pct(rolling_entry['avg_legit_rate'])} | {pct(window_entry['avg_legit_rate'])} |"
             )
     
     if not rows:

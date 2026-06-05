@@ -1,0 +1,54 @@
+% 攻撃者モデル図 (Threat Model Diagram)
+% 独立可編集ファイル。lualatex で出力。
+\documentclass[border=5mm]{standalone}
+
+\usepackage{luatexja}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta}
+
+\begin{document}
+
+\begin{tikzpicture}[
+    box/.style={draw, rounded corners, align=center,
+                minimum width=26mm, minimum height=12mm, font=\small},
+    attacker/.style={draw, rounded corners, align=center,
+                minimum width=32mm, minimum height=18mm,
+                fill=red!8, font=\small},
+    channel/.style={draw, dashed, rounded corners, align=center,
+                minimum width=22mm, minimum height=10mm,
+                fill=blue!5, font=\footnotesize},
+    small/.style={font=\footnotesize},
+    tiny/.style={font=\scriptsize},
+    >=Latex
+  ]
+
+  % ===== 主經路：送信機 → 無線チャネル → 受信機 =====
+  \node[box] (TX) {送信機\\(Controller)};
+  \node[channel, right=14mm of TX] (CH) {無線チャネル};
+  \node[box, right=14mm of CH] (RX) {受信機\\(Device)};
+
+  % 正規通信の矢印
+  \draw[-Latex, thick] (TX) -- (CH);
+  \draw[-Latex, thick] (CH) -- (RX);
+
+  % ===== 攻撃者（チャネルの下に配置） =====
+  \node[attacker, below=20mm of CH] (A)
+    {攻撃者 A\\[2pt]
+     {\scriptsize Listen / Record / Replay}};
+
+  % 傍受の破線矢印（チャネル → 攻撃者）
+  \draw[dashed, -Latex, thick, red!60!black]
+    (CH.south) -- node[small, left, pos=0.5]{傍受} (A.north);
+
+  % 再送の破線矢印（攻撃者 → 受信機）
+  \draw[dashed, -Latex, thick, red!60!black]
+    (A.east) to[bend left=25]
+    node[small, right, pos=0.5]{再送} (RX.south);
+
+  % ===== 図下の注記 =====
+  \node[tiny, below=6mm of A]
+    {想定：鍵は不所持だが，傍受・再送は可能};
+
+\end{tikzpicture}
+
+\end{document}

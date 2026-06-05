@@ -1,0 +1,24 @@
+{
+  "label": "loopback_test",
+  "timestamp": "2026-01-12T22:51:17.695479",
+  "num_sent": 100,
+  "num_received": 100,
+  "num_lost": 0,
+  "num_reordered": 0,
+  "packet_loss_rate": 0.0,
+  "reorder_rate": 0.0,
+  "latency_mean": 64.06649827957153,
+  "latency_std": 36.49351795126681,
+  "latency_min": 1.4467239379882812,
+  "latency_max": 126.55496597290039,
+  "latency_p50": 64.5599365234375,
+  "latency_p95": 121.54102325439453,
+  "latency_p99": 126.55496597290039,
+  "max_reorder_offset": 0,
+  "reorder_offsets": [],
+  "recommended_params": {
+    "p_loss": 0.0,
+    "p_reorder": 0.0,
+    "min_window_size": 3
+  }
+}

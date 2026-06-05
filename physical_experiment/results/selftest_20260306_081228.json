@@ -1,0 +1,16 @@
+{
+  "test_type": "link_selftest",
+  "passed": true,
+  "stats": {
+    "frames_sent": 100,
+    "frames_received": 100,
+    "loss_rate": 0.0,
+    "lar": 1.0,
+    "lar_ci_95": [
+      0.9630051925239981,
+      0.9999999999999999
+    ],
+    "mode": "loopback"
+  },
+  "timestamp": "2026-03-06T08:12:28.771351"
+}

@@ -1,0 +1,24 @@
+{
+  "label": "loopback_smoke",
+  "timestamp": "2026-02-06T08:54:43.959196",
+  "num_sent": 10,
+  "num_received": 10,
+  "num_lost": 0,
+  "num_reordered": 0,
+  "packet_loss_rate": 0.0,
+  "reorder_rate": 0.0,
+  "latency_mean": 8.247804641723633,
+  "latency_std": 4.2692071312974855,
+  "latency_min": 1.5230178833007812,
+  "latency_max": 14.952898025512695,
+  "latency_p50": 9.066104888916016,
+  "latency_p95": 14.952898025512695,
+  "latency_p99": 14.952898025512695,
+  "max_reorder_offset": 0,
+  "reorder_offsets": [],
+  "recommended_params": {
+    "p_loss": 0.0,
+    "p_reorder": 0.0,
+    "min_window_size": 3
+  }
+}

@@ -69,14 +69,40 @@ a {
   background: rgba(255, 255, 255, 0.82);
 }
 
+.language-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.language-pill {
+  border: 1px solid rgba(30, 26, 22, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.48);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0.45rem 0.7rem;
+}
+
+.language-pill.active {
+  background: rgba(15, 118, 110, 0.12);
+  border-color: rgba(15, 118, 110, 0.32);
+  color: #115e59;
+  font-weight: 700;
+}
+
 .action-button {
   border: 0;
   border-radius: 999px;
+  min-width: 7rem;
   padding: 0.95rem 1.4rem;
   background: linear-gradient(135deg, var(--accent), #a94633);
   color: white;
   font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .action-button:disabled {

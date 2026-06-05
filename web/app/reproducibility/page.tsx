@@ -5,7 +5,7 @@ export default function ReproducibilityPage() {
     <SiteShell
       eyebrow="Reproducibility"
       title="Artifacts, commands, and evidence are now easier to audit."
-      intro="This page frames the repository as a reproducible research product: static data for examiners, local authoritative runtime for deep verification, and explicit contracts between them."
+      intro="This page frames the repository as a reproducible research product: static data for examiners, browser demo runs for quick exploration, local authoritative runtime for deep verification, and explicit contracts between them."
     >
       <div className="grid gap-6 lg:grid-cols-3">
         <Panel title="Static data">
@@ -17,6 +17,11 @@ export default function ReproducibilityPage() {
           <p className="text-sm leading-7 text-stone-700">
             `start_app.sh` runs FastAPI plus Next.js so the site can submit authoritative simulations to the
             Python backend.
+          </p>
+        </Panel>
+        <Panel title="Static simulator">
+          <p className="text-sm leading-7 text-stone-700">
+            The public `/simulator` page falls back to a browser-side demo model when the Python API is absent.
           </p>
         </Panel>
         <Panel title="Validation chain">

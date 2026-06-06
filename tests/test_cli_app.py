@@ -50,3 +50,21 @@ def test_cli_advise_reads_profile(capsys):
     body = json.loads(capsys.readouterr().out)
     assert body["mode"] == "hsw_cr"
     assert "UNLOCK" in body["challenge_for"]
+
+
+def test_cli_sim_run_accepts_sw_resync_and_g_hard(monkeypatch):
+    captured = {}
+
+    def fake_simulate_batch(spec, *, show_progress):
+        captured["spec"] = spec
+        return SimulationBatchResult(
+            config=SimulationSpecPublic.from_spec(spec),
+            results=[],
+        )
+
+    monkeypatch.setattr(cli_app, "simulate_batch", fake_simulate_batch)
+
+    assert cli_app.main(["sim", "run", "--modes", "sw_resync", "--g-hard", "32"]) == 0
+    spec = captured["spec"]
+    assert spec.modes == ["sw_resync"]
+    assert spec.g_hard == 32

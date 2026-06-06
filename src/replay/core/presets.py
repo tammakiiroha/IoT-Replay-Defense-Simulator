@@ -7,6 +7,7 @@ from typing import Any, Literal, cast
 import yaml
 
 from replay.contracts import SimulationSpec
+from replay.core.defaults import DEFAULT_G_HARD
 from replay.core.types import Mode
 
 ChannelModelName = Literal["iid", "gilbert_elliott", "trace"]
@@ -59,6 +60,7 @@ def spec_from_preset_payload(payload: dict[str, Any]) -> SimulationSpec:
         burst_p_good_to_bad=float(channel.get("p_good_to_bad", 0.05)),
         burst_p_bad_to_good=float(channel.get("p_bad_to_good", 0.30)),
         window_size=int(defense.get("window_size", 5)),
+        g_hard=int(defense.get("g_hard", DEFAULT_G_HARD)),
         mac_tag_bits=int(defense.get("mac_tag_bits", 80)),
         paired=True,
     )

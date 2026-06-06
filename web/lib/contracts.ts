@@ -3,7 +3,14 @@
 
 export const SCHEMA_VERSION = "2026-03-16" as const;
 
-export type Mode = 'no_def' | 'rolling' | 'window' | 'challenge' | 'hsw_cr' | 'oscore_like';
+export type Mode =
+  | 'no_def'
+  | 'rolling'
+  | 'window'
+  | 'sw_resync'
+  | 'challenge'
+  | 'hsw_cr'
+  | 'oscore_like';
 export type AttackMode = 'post' | 'inline';
 export type ChannelModel = 'iid' | 'gilbert_elliott' | 'trace';
 export type AuthProfile = 'hmac' | 'ascon';
@@ -16,6 +23,7 @@ export interface SimulationSpec {
   p_loss: number;
   p_reorder: number;
   window_size: number;
+  g_hard: number;
   num_legit: number;
   num_replay: number;
   attack_mode: AttackMode;
@@ -51,6 +59,7 @@ export interface SimulationSpecPublic {
   p_loss: number;
   p_reorder: number;
   window_size: number;
+  g_hard: number;
   num_legit: number;
   num_replay: number;
   attack_mode: AttackMode;
@@ -195,6 +204,7 @@ export const jsonSchemas = {
           "no_def",
           "rolling",
           "window",
+          "sw_resync",
           "challenge",
           "hsw_cr",
           "oscore_like"
@@ -255,6 +265,12 @@ export const jsonSchemas = {
         "default": 5,
         "minimum": 0,
         "title": "Window Size",
+        "type": "integer"
+      },
+      "g_hard": {
+        "default": 16,
+        "minimum": 0,
+        "title": "G Hard",
         "type": "integer"
       },
       "num_legit": {
@@ -495,6 +511,7 @@ export const jsonSchemas = {
           "no_def",
           "rolling",
           "window",
+          "sw_resync",
           "challenge",
           "hsw_cr",
           "oscore_like"
@@ -544,6 +561,10 @@ export const jsonSchemas = {
       },
       "window_size": {
         "title": "Window Size",
+        "type": "integer"
+      },
+      "g_hard": {
+        "title": "G Hard",
         "type": "integer"
       },
       "num_legit": {
@@ -711,6 +732,7 @@ export const jsonSchemas = {
       "p_loss",
       "p_reorder",
       "window_size",
+      "g_hard",
       "num_legit",
       "num_replay",
       "attack_mode",
@@ -750,6 +772,7 @@ export const jsonSchemas = {
           "no_def",
           "rolling",
           "window",
+          "sw_resync",
           "challenge",
           "hsw_cr",
           "oscore_like"
@@ -957,6 +980,10 @@ export const jsonSchemas = {
             "title": "Window Size",
             "type": "integer"
           },
+          "g_hard": {
+            "title": "G Hard",
+            "type": "integer"
+          },
           "num_legit": {
             "title": "Num Legit",
             "type": "integer"
@@ -1122,6 +1149,7 @@ export const jsonSchemas = {
           "p_loss",
           "p_reorder",
           "window_size",
+          "g_hard",
           "num_legit",
           "num_replay",
           "attack_mode",
@@ -1197,6 +1225,7 @@ export const jsonSchemas = {
           "no_def",
           "rolling",
           "window",
+          "sw_resync",
           "challenge",
           "hsw_cr",
           "oscore_like"
@@ -1257,6 +1286,12 @@ export const jsonSchemas = {
             "default": 5,
             "minimum": 0,
             "title": "Window Size",
+            "type": "integer"
+          },
+          "g_hard": {
+            "default": 16,
+            "minimum": 0,
+            "title": "G Hard",
             "type": "integer"
           },
           "num_legit": {

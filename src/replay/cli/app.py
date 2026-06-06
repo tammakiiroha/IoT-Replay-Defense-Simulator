@@ -69,6 +69,7 @@ def _add_simulation_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--p-loss", type=float)
     parser.add_argument("--p-reorder", type=float)
     parser.add_argument("--window-size", type=int)
+    parser.add_argument("--g-hard", type=int)
     parser.add_argument("--num-legit", type=int)
     parser.add_argument("--num-replay", type=int)
     parser.add_argument(
@@ -109,6 +110,7 @@ def _simulation_spec_from_args(args: argparse.Namespace) -> SimulationSpec:
         ("p_loss", "p_loss"),
         ("p_reorder", "p_reorder"),
         ("window_size", "window_size"),
+        ("g_hard", "g_hard"),
         ("num_legit", "num_legit"),
         ("num_replay", "num_replay"),
         ("mac_length", "mac_length"),

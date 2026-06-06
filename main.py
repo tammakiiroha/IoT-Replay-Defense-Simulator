@@ -13,6 +13,7 @@ from replay.core import (
     DEFAULT_ATTACKER_RECORD_LOSS,
     DEFAULT_CHALLENGE_NONCE_BITS,
     DEFAULT_COMMANDS,
+    DEFAULT_G_HARD,
     DEFAULT_INLINE_ATTACK_BURST,
     DEFAULT_INLINE_ATTACK_PROBABILITY,
     DEFAULT_MAC_LENGTH,
@@ -75,6 +76,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=DEFAULT_WINDOW_SIZE,
         help="Window size for window mode",
+    )
+    parser.add_argument(
+        "--g-hard",
+        type=int,
+        default=DEFAULT_G_HARD,
+        help="Forward-jump gate; bigger jumps need authenticated resync (sw_resync/hsw_cr)",
     )
     parser.add_argument(
         "--mac-length",
@@ -178,6 +185,7 @@ def _build_simulation_spec(args: argparse.Namespace) -> SimulationSpec:
             p_loss=args.p_loss,
             p_reorder=args.p_reorder,
             window_size=args.window_size,
+            g_hard=args.g_hard,
             num_legit=args.num_legit,
             num_replay=args.num_replay,
             attack_mode=args.attack_mode,

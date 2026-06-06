@@ -8,7 +8,7 @@ from .defaults import DEFAULT_CHALLENGE_TTL_TICKS, DEFAULT_MAX_OUTSTANDING_CHALL
 from .kernel.acceptance import SwDecision, classify, needs_resync
 from .kernel.window_commit import window_commit
 from .rng import RandomLike
-from .types import Frame, Mode, ReceiverState
+from .types import WINDOW_VERIFY_MODES, Frame, Mode, ReceiverState
 
 
 @dataclass
@@ -205,7 +205,7 @@ class Receiver:
                 mac_length=self.mac_length,
                 authenticator=self.authenticator,
             )
-        if self.mode in {Mode.WINDOW, Mode.OSCORE_LIKE, Mode.SW_RESYNC}:
+        if self.mode in WINDOW_VERIFY_MODES:
             return verify_with_window(
                 frame,
                 self.state,

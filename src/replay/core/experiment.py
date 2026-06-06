@@ -19,6 +19,7 @@ from .sender import Sender
 from .stats import wilson_ci
 from .trace import ScenarioTrace, generate_trace
 from .types import (
+    WINDOW_SIZED_MODES,
     AggregateStats,
     AttackMode,
     Frame,
@@ -119,6 +120,7 @@ def simulate_one_run(
         shared_key=config.shared_key,
         mac_length=max(1, tag_bits // 4),
         window_size=config.window_size or 1,
+        g_hard=config.g_hard,
         authenticator=authenticator,
         max_outstanding_challenges=config.max_outstanding_challenges,
         challenge_ttl_ticks=config.challenge_ttl_ticks,
@@ -268,7 +270,7 @@ def _aggregate_results(
     attack_total = sum(result.attack_attempts for result in results)
     lar_ci = wilson_ci(legit_accepted, legit_total)
     asr_ci = wilson_ci(attack_accepted, attack_total)
-    window_value = config.window_size if mode in {Mode.WINDOW, Mode.HSW_CR, Mode.OSCORE_LIKE} else 0
+    window_value = config.window_size if mode in WINDOW_SIZED_MODES else 0
     return AggregateStats(
         mode=mode,
         runs=len(results),
@@ -409,6 +411,7 @@ def simulate_one_run_with_trace(
         shared_key=config.shared_key,
         mac_length=max(1, tag_bits // 4),
         window_size=config.window_size or 1,
+        g_hard=config.g_hard,
         authenticator=authenticator,
         max_outstanding_challenges=config.max_outstanding_challenges,
         challenge_ttl_ticks=config.challenge_ttl_ticks,

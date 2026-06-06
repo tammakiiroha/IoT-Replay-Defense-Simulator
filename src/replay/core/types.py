@@ -18,6 +18,12 @@ class Mode(str, Enum):
     OSCORE_LIKE = "oscore_like"
 
 
+# 走 window 验证路径（classify + window_commit）的 mode；SW_RESYNC 仅在此基础上加 resync 闸门。
+WINDOW_VERIFY_MODES = frozenset({Mode.WINDOW, Mode.SW_RESYNC, Mode.OSCORE_LIKE})
+# 需要 window_size 的 mode（含自带 resync 的 HSW_CR）；用于契约校验与结果聚合，避免散落集合漏项。
+WINDOW_SIZED_MODES = WINDOW_VERIFY_MODES | {Mode.HSW_CR}
+
+
 class AttackMode(str, Enum):
     """How the attacker schedules replay attempts."""
 

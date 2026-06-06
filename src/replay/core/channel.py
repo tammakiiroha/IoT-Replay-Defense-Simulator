@@ -1,11 +1,11 @@
 """Simple lossy and reordering channel model."""
 from __future__ import annotations
 
-import heapq
 from dataclasses import dataclass, field
 
 from .channel_models import DelayModel, IidLoss, LossModel, ReorderDelay
 from .rng import RandomLike
+from .scheduler import EventScheduler
 from .types import Frame
 
 
@@ -31,36 +31,25 @@ class Channel:
         self.rng = rng
         self.loss_model = loss_model if loss_model is not None else IidLoss(p_loss)
         self.delay_model = delay_model if delay_model is not None else ReorderDelay(p_reorder)
-        self.pq: list[ScheduledFrame] = []
-        self.current_tick = 0
-        self.seq_counter = 0
+        self._scheduler = EventScheduler()
 
     def send(self, frame: Frame) -> list[Frame]:
         """Process a frame transmission and return frames delivered at this tick."""
 
-        self.current_tick += 1
+        tick = self._scheduler.tick()
         if self.rng is None:
             raise ValueError("Channel requires an RNG")
         if self.loss_model.dropped(self.rng):
             pass
         else:
             delay = self.delay_model.delay(self.rng)
-            delivery_tick = self.current_tick + delay
-            heapq.heappush(self.pq, ScheduledFrame(delivery_tick, self.seq_counter, frame))
-            self.seq_counter += 1
-
-        arrived: list[Frame] = []
-        while self.pq and self.pq[0].delivery_tick <= self.current_tick:
-            arrived.append(heapq.heappop(self.pq).frame)
-        return arrived
+            self._scheduler.submit(frame, delivery_tick=tick + delay)
+        return self._scheduler.pop_due()
 
     def flush(self) -> list[Frame]:
         """Force deliver all remaining frames."""
 
-        arrived: list[Frame] = []
-        while self.pq:
-            arrived.append(heapq.heappop(self.pq).frame)
-        return arrived
+        return self._scheduler.flush()
 
 
 def should_drop(probability: float, rng: RandomLike) -> bool:

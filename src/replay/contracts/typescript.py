@@ -152,6 +152,9 @@ export interface SimulationResultRecord {{
   resync_initiated: number;
   resync_completed: number;
   resync_timeout: number;
+  crit_prepared: number;
+  crit_committed: number;
+  crit_rejected: number;
   mac_tag_bits: number;
   auth_profile: string;
   metadata: Record<string, unknown>;

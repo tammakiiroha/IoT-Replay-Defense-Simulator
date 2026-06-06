@@ -265,6 +265,9 @@ class AggregateStats:
     resync_initiated: int = 0
     resync_completed: int = 0
     resync_timeout: int = 0
+    crit_prepared: int = 0
+    crit_committed: int = 0
+    crit_rejected: int = 0
     mac_tag_bits: int = 80
     auth_profile: str = "hmac"
     metadata: dict[str, object] = field(default_factory=dict)
@@ -301,6 +304,9 @@ class AggregateStats:
             "resync_initiated": self.resync_initiated,
             "resync_completed": self.resync_completed,
             "resync_timeout": self.resync_timeout,
+            "crit_prepared": self.crit_prepared,
+            "crit_committed": self.crit_committed,
+            "crit_rejected": self.crit_rejected,
             "mac_tag_bits": self.mac_tag_bits,
             "auth_profile": self.auth_profile,
         }

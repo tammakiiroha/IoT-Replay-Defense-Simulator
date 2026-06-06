@@ -731,6 +731,21 @@
             "title": "Resync Timeout",
             "type": "integer"
           },
+          "crit_prepared": {
+            "default": 0,
+            "title": "Crit Prepared",
+            "type": "integer"
+          },
+          "crit_committed": {
+            "default": 0,
+            "title": "Crit Committed",
+            "type": "integer"
+          },
+          "crit_rejected": {
+            "default": 0,
+            "title": "Crit Rejected",
+            "type": "integer"
+          },
           "mac_tag_bits": {
             "default": 80,
             "title": "Mac Tag Bits",

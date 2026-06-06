@@ -117,6 +117,9 @@ export interface SimulationResultRecord {
   resync_initiated: number;
   resync_completed: number;
   resync_timeout: number;
+  crit_prepared: number;
+  crit_committed: number;
+  crit_rejected: number;
   mac_tag_bits: number;
   auth_profile: string;
   metadata: Record<string, unknown>;
@@ -919,6 +922,21 @@ export const jsonSchemas = {
           "resync_timeout": {
             "default": 0,
             "title": "Resync Timeout",
+            "type": "integer"
+          },
+          "crit_prepared": {
+            "default": 0,
+            "title": "Crit Prepared",
+            "type": "integer"
+          },
+          "crit_committed": {
+            "default": 0,
+            "title": "Crit Committed",
+            "type": "integer"
+          },
+          "crit_rejected": {
+            "default": 0,
+            "title": "Crit Rejected",
             "type": "integer"
           },
           "mac_tag_bits": {

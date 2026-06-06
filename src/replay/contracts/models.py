@@ -209,6 +209,9 @@ class SimulationResultRecord(ReplayBaseModel):
     resync_initiated: int = 0
     resync_completed: int = 0
     resync_timeout: int = 0
+    crit_prepared: int = 0
+    crit_committed: int = 0
+    crit_rejected: int = 0
     mac_tag_bits: int = DEFAULT_MAC_TAG_BITS
     auth_profile: str = "hmac"
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -247,6 +250,9 @@ class SimulationResultRecord(ReplayBaseModel):
             resync_initiated=entry.resync_initiated,
             resync_completed=entry.resync_completed,
             resync_timeout=entry.resync_timeout,
+            crit_prepared=entry.crit_prepared,
+            crit_committed=entry.crit_committed,
+            crit_rejected=entry.crit_rejected,
             mac_tag_bits=entry.mac_tag_bits,
             auth_profile=entry.auth_profile,
             metadata=metadata,

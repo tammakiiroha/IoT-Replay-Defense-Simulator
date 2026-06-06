@@ -182,6 +182,7 @@ class SimulationConfig:
     resync_rtt_ticks: int = 1    # 反向往返基础 RTT（tick）
     critical_pending_capacity: int = 2   # pending_critical 表上界 N_p（C3）
     critical_ttl_ticks: int = 16         # critical challenge/confirm TTL（tick）
+    tau_intent_ticks: int = 16           # 发送端用户意图有效窗口 τ_intent（§4.5）
 
     def effective_command_set(self) -> Sequence[str]:
         from .commands import DEFAULT_COMMANDS
@@ -210,6 +211,9 @@ class SimulationRunResult:
     resync_initiated: int = 0
     resync_completed: int = 0
     resync_timeout: int = 0
+    crit_prepared: int = 0
+    crit_committed: int = 0
+    crit_rejected: int = 0
     metadata: dict[str, object] = field(default_factory=dict)
 
     @property

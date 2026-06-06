@@ -24,6 +24,11 @@ class ScenarioTrace:
     resync_challenge_delay: list[int] = field(default_factory=list)
     resync_confirm_dropped: list[bool] = field(default_factory=list)
     resync_confirm_delay: list[int] = field(default_factory=list)
+    # 反向 critical 两阶段信道决策（paired 路径；按 critical 尝试序号索引，§4.4）
+    critical_challenge_dropped: list[bool] = field(default_factory=list)
+    critical_challenge_delay: list[int] = field(default_factory=list)
+    critical_confirm_dropped: list[bool] = field(default_factory=list)
+    critical_confirm_delay: list[int] = field(default_factory=list)
 
     def digest(self) -> str:
         payload = json.dumps(asdict(self), sort_keys=True, separators=(",", ":"))
@@ -87,6 +92,18 @@ def generate_trace(config: SimulationConfig, seed: int) -> ScenarioTrace:
         resync_confirm_dropped.append(_dropped(rng, config.p_loss))
         resync_confirm_delay.append(_delay(rng, config.p_reorder))
 
+    # 反向 critical 信道决策——同样追加在所有现有抽取之后（末尾），保持非 critical 模式
+    # paired 数值逐字节不变（与 resync 同一 append 技巧，§Phase 3）。
+    critical_challenge_dropped: list[bool] = []
+    critical_challenge_delay: list[int] = []
+    critical_confirm_dropped: list[bool] = []
+    critical_confirm_delay: list[int] = []
+    for _ in range(config.num_legit):
+        critical_challenge_dropped.append(_dropped(rng, config.p_loss))
+        critical_challenge_delay.append(_delay(rng, config.p_reorder))
+        critical_confirm_dropped.append(_dropped(rng, config.p_loss))
+        critical_confirm_delay.append(_delay(rng, config.p_reorder))
+
     return ScenarioTrace(
         commands=commands,
         legit_dropped=legit_dropped,
@@ -100,4 +117,8 @@ def generate_trace(config: SimulationConfig, seed: int) -> ScenarioTrace:
         resync_challenge_delay=resync_challenge_delay,
         resync_confirm_dropped=resync_confirm_dropped,
         resync_confirm_delay=resync_confirm_delay,
+        critical_challenge_dropped=critical_challenge_dropped,
+        critical_challenge_delay=critical_challenge_delay,
+        critical_confirm_dropped=critical_confirm_dropped,
+        critical_confirm_delay=critical_confirm_delay,
     )

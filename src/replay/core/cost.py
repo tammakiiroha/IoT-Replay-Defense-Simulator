@@ -26,6 +26,9 @@ class CostStats:
     resync_initiated: int = 0
     resync_completed: int = 0
     resync_timeout: int = 0
+    crit_prepared: int = 0
+    crit_committed: int = 0
+    crit_rejected: int = 0
 
 
 def estimate_energy(stats: CostStats, model: CostModel | None = None) -> float:

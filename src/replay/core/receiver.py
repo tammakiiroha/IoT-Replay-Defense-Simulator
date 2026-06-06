@@ -341,6 +341,10 @@ class Receiver:
         """清空在途 RESYNC_PENDING（challenge/confirm 丢失或 TTL 到期），回 NORMAL（§4.3 异常）。"""
         self.state.resync_pending = None
 
+    def time_out_critical(self, pid: int) -> None:
+        """清理在途 critical pending（challenge/confirm 丢失或放弃），不影响已 committed。"""
+        self.state.pending_critical.pop(pid, None)
+
     def issue_resync_challenge(
         self, rng: RandomLike, *, now_tick: int, ttl_ticks: int
     ) -> Frame:

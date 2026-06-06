@@ -12,6 +12,7 @@ from .auth import AsconAeadAuthenticator, Authenticator, HmacAuthenticator
 from .channel import Channel
 from .channel_models import GilbertElliottLoss, IidLoss, LossModel, ReorderDelay, TraceLoss
 from .cost import CostModel, CostStats, estimate_energy
+from .kernel.critical_commit import payload_digest, pid_for
 from .receiver import Receiver
 from .rng import DeterministicRNG, RandomLike
 from .scheduler import EventScheduler
@@ -92,11 +93,15 @@ def _state_bytes(config: SimulationConfig, receiver: Receiver) -> int:
 
 
 def _should_challenge(config: SimulationConfig, command: str) -> bool:
-    if config.mode is Mode.CHALLENGE:
-        return True
-    if config.mode is Mode.HSW_CR:
-        return (config.command_risk or {}).get(command, 0.0) >= config.risk_high
-    return False
+    # 单阶段 challenge 仅用于 CHALLENGE baseline；HSW_CR 高风险改走两阶段 critical（D5）。
+    return config.mode is Mode.CHALLENGE
+
+
+def _is_two_phase_critical(config: SimulationConfig, command: str) -> bool:
+    """HSW_CR 高风险命令走两阶段 critical commit（§4.4，D5）；其余走 window/单阶段。"""
+    if config.mode is not Mode.HSW_CR:
+        return False
+    return (config.command_risk or {}).get(command, 0.0) >= config.risk_high
 
 
 def _roll_drop_delay(rng: RandomLike, p_loss: float, p_reorder: float) -> tuple[bool, int]:
@@ -137,6 +142,52 @@ def _resolve_resync(
     else:                                       # ttl_expired（pending 已清）或其它 -> 超时
         receiver.time_out_resync()
         cost_stats.resync_timeout += 1
+
+
+def _resolve_critical(
+    receiver: Receiver,
+    sender: Sender,
+    cost_stats: CostStats,
+    *,
+    frame: Frame,
+    rng: RandomLike,
+    now_tick: int,
+    ttl_ticks: int,
+    rtt_ticks: int,
+    tau_intent: int,
+    transport: Callable[[], tuple[bool, int, bool, int]],
+) -> bool:
+    """有界 critical 两阶段子泵（§4.4/§4.5, Option A）。返回是否 commit（命令执行一次）。
+    prepare 受理 -> R2T challenge -> sender 用户意图门控 confirm -> 反向送回 -> 原子 commit。
+    attacker 重放 prepare 走同路径但无匹配意图（或已 committed）-> 不 commit。
+    transport 决定 challenge/confirm 的 loss/delay（与 resync 同源建模）。"""
+    if frame.counter is None:
+        return False
+    prep = receiver.process_crit_prepare(frame, rng, now_tick=now_tick)
+    if prep.reason != "critical_prepared":
+        cost_stats.crit_rejected += 1   # not_critical/mac_mismatch/pending_full/already_committed
+        return False
+    cost_stats.crit_prepared += 1
+    ph = payload_digest(frame.payload)
+    pid = pid_for(epoch=frame.epoch, ctr=frame.counter, cmd=frame.command, payload_hash=ph)
+    challenge = receiver.issue_crit_challenge(pid)
+    ch_dropped, ch_delay, cf_dropped, cf_delay = transport()
+    if ch_dropped or cf_dropped:        # challenge/confirm 丢失 -> 放弃、清 pending
+        receiver.time_out_critical(pid)
+        cost_stats.crit_rejected += 1
+        return False
+    arrival = now_tick + rtt_ticks + ch_delay + cf_delay
+    confirm = sender.confirm_critical_challenge(challenge, now_tick=arrival, tau_intent=tau_intent)
+    if confirm is None:                 # 无意图/洗白/过期 -> 不 confirm（attacker 重放落此）
+        receiver.time_out_critical(pid)
+        cost_stats.crit_rejected += 1
+        return False
+    result = receiver.process_crit_confirm(confirm, now_tick=arrival)
+    if result.accepted:
+        cost_stats.crit_committed += 1
+        return True
+    cost_stats.crit_rejected += 1       # ttl/sw_reject（pending 已在 confirm 内清理）
+    return False
 
 
 def simulate_one_run(
@@ -198,6 +249,11 @@ def simulate_one_run(
         cf_dropped, cf_delay = _roll_drop_delay(local_rng, config.p_loss, config.p_reorder)
         return ch_dropped, ch_delay, cf_dropped, cf_delay
 
+    def _critical_transport() -> tuple[bool, int, bool, int]:
+        ch_dropped, ch_delay = _roll_drop_delay(local_rng, config.p_loss, config.p_reorder)
+        cf_dropped, cf_delay = _roll_drop_delay(local_rng, config.p_loss, config.p_reorder)
+        return ch_dropped, ch_delay, cf_dropped, cf_delay
+
     def record_tx(frame: Frame) -> None:
         size = _frame_bytes(frame, tag_bits, config.challenge_nonce_bits)
         cost_stats.tx_bytes += size
@@ -215,7 +271,6 @@ def simulate_one_run(
         nonlocal attack_success, legit_accepted
         for frame in frames:
             cost_stats.rx_bytes += _frame_bytes(frame, tag_bits, config.challenge_nonce_bits)
-            result = receiver.process(frame)
             if frame.mac is not None:
                 if authenticator.profile == "ascon":
                     cost_stats.ascon_ops += 1
@@ -225,6 +280,27 @@ def simulate_one_run(
                 cost_stats.state_bytes_peak,
                 _state_bytes(config, receiver),
             )
+            if frame.flags == Frame.FLAG_CRIT_PREPARE:   # 两阶段 critical 路由（D2）
+                committed = _resolve_critical(
+                    receiver,
+                    sender,
+                    cost_stats,
+                    frame=frame,
+                    rng=local_rng,
+                    now_tick=_resync_now_tick(),
+                    ttl_ticks=config.critical_ttl_ticks,
+                    rtt_ticks=config.resync_rtt_ticks,
+                    tau_intent=config.tau_intent_ticks,
+                    transport=_critical_transport,
+                )
+                if committed:
+                    cost_stats.accepted_frames += 1
+                    if frame.is_attack:
+                        attack_success += 1
+                    else:
+                        legit_accepted += 1
+                continue
+            result = receiver.process(frame)
             if result.accepted:
                 cost_stats.accepted_frames += 1
                 if frame.is_attack:
@@ -245,16 +321,25 @@ def simulate_one_run(
 
     for index in range(config.num_legit):
         command = _choose_command(config, index, local_rng)
-        nonce = None
-        if _should_challenge(config, command):
-            nonce = receiver.issue_nonce(
-                local_rng,
-                bits=config.challenge_nonce_bits,
-                tick=index + 1,
+        if _is_two_phase_critical(config, command):
+            frame = sender.begin_critical_intent(
+                command,
+                command.encode("utf-8"),
+                epoch=receiver.state.epoch,
+                key_id=0,
+                now_tick=channel.current_tick,
             )
-            cost_stats.challenge_round_trips += 1
+        else:
+            nonce = None
+            if _should_challenge(config, command):
+                nonce = receiver.issue_nonce(
+                    local_rng,
+                    bits=config.challenge_nonce_bits,
+                    tick=index + 1,
+                )
+                cost_stats.challenge_round_trips += 1
+            frame = sender.next_frame(command, nonce=nonce)
 
-        frame = sender.next_frame(command, nonce=nonce)
         record_tx(frame)
         legit_sent += 1
         attacker.observe(frame, local_rng)
@@ -312,6 +397,9 @@ def simulate_one_run(
         resync_initiated=cost_stats.resync_initiated,
         resync_completed=cost_stats.resync_completed,
         resync_timeout=cost_stats.resync_timeout,
+        crit_prepared=cost_stats.crit_prepared,
+        crit_committed=cost_stats.crit_committed,
+        crit_rejected=cost_stats.crit_rejected,
         metadata={
             "p_loss": config.p_loss,
             "p_reorder": config.p_reorder,
@@ -503,6 +591,7 @@ def simulate_one_run_with_trace(
 
     _resync_rng = nonce_rng
     resync_index = 0
+    critical_index = 0
 
     def _resync_now_tick() -> int:
         return scheduler.current_tick
@@ -518,6 +607,19 @@ def simulate_one_run_with_trace(
             trace.resync_challenge_delay[i],
             trace.resync_confirm_dropped[i],
             trace.resync_confirm_delay[i],
+        )
+
+    def _critical_transport() -> tuple[bool, int, bool, int]:
+        nonlocal critical_index
+        i = critical_index
+        critical_index += 1
+        if i >= len(trace.critical_challenge_dropped):
+            return False, 0, False, 0
+        return (
+            trace.critical_challenge_dropped[i],
+            trace.critical_challenge_delay[i],
+            trace.critical_confirm_dropped[i],
+            trace.critical_confirm_delay[i],
         )
 
     def record_tx(frame: Frame) -> None:
@@ -537,7 +639,6 @@ def simulate_one_run_with_trace(
         nonlocal attack_success, legit_accepted
         for frame in frames:
             cost_stats.rx_bytes += _frame_bytes(frame, tag_bits, config.challenge_nonce_bits)
-            result = receiver.process(frame)
             if frame.mac is not None:
                 if authenticator.profile == "ascon":
                     cost_stats.ascon_ops += 1
@@ -547,6 +648,27 @@ def simulate_one_run_with_trace(
                 cost_stats.state_bytes_peak,
                 _state_bytes(config, receiver),
             )
+            if frame.flags == Frame.FLAG_CRIT_PREPARE:   # 两阶段 critical 路由（D2）
+                committed = _resolve_critical(
+                    receiver,
+                    sender,
+                    cost_stats,
+                    frame=frame,
+                    rng=nonce_rng,
+                    now_tick=_resync_now_tick(),
+                    ttl_ticks=config.critical_ttl_ticks,
+                    rtt_ticks=config.resync_rtt_ticks,
+                    tau_intent=config.tau_intent_ticks,
+                    transport=_critical_transport,
+                )
+                if committed:
+                    cost_stats.accepted_frames += 1
+                    if frame.is_attack:
+                        attack_success += 1
+                    else:
+                        legit_accepted += 1
+                continue
+            result = receiver.process(frame)
             if result.accepted:
                 cost_stats.accepted_frames += 1
                 if frame.is_attack:
@@ -606,16 +728,25 @@ def simulate_one_run_with_trace(
         return True
 
     for index, command in enumerate(trace.commands[: config.num_legit]):
-        nonce = None
-        if _should_challenge(config, command):
-            nonce = receiver.issue_nonce(
-                nonce_rng,
-                bits=config.challenge_nonce_bits,
-                tick=index + 1,
+        if _is_two_phase_critical(config, command):
+            frame = sender.begin_critical_intent(
+                command,
+                command.encode("utf-8"),
+                epoch=receiver.state.epoch,
+                key_id=0,
+                now_tick=scheduler.current_tick,
             )
-            cost_stats.challenge_round_trips += 1
+        else:
+            nonce = None
+            if _should_challenge(config, command):
+                nonce = receiver.issue_nonce(
+                    nonce_rng,
+                    bits=config.challenge_nonce_bits,
+                    tick=index + 1,
+                )
+                cost_stats.challenge_round_trips += 1
+            frame = sender.next_frame(command, nonce=nonce)
 
-        frame = sender.next_frame(command, nonce=nonce)
         record_tx(frame)
         legit_sent += 1
         if not trace.attacker_record_dropped[index]:
@@ -670,6 +801,9 @@ def simulate_one_run_with_trace(
         resync_initiated=cost_stats.resync_initiated,
         resync_completed=cost_stats.resync_completed,
         resync_timeout=cost_stats.resync_timeout,
+        crit_prepared=cost_stats.crit_prepared,
+        crit_committed=cost_stats.crit_committed,
+        crit_rejected=cost_stats.crit_rejected,
         metadata={
             "p_loss": config.p_loss,
             "p_reorder": config.p_reorder,

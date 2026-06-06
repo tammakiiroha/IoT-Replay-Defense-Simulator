@@ -25,7 +25,7 @@ def test_sender_confirm_uses_tx_counter_as_new_h_and_receiver_commits():
     sender = Sender(Mode.SW_RESYNC, shared_key=KEY, mac_length=MAC_LEN)
     sender.tx_counter = 200                                  # 发送端当前 counter
     confirm = sender.respond_resync_challenge(challenge)
-    assert confirm.counter == 200                            # new_h == tx_counter（非 challenge.counter）
+    assert confirm.counter == 200                            # new_h == tx_counter
     assert confirm.flags == Frame.FLAG_RESYNC_CONFIRM
     assert confirm.nonce == challenge.nonce
     assert confirm.ttl == challenge.ttl

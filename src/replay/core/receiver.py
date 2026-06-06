@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from .auth import Authenticator, HmacAuthenticator
 from .defaults import DEFAULT_CHALLENGE_TTL_TICKS, DEFAULT_MAX_OUTSTANDING_CHALLENGES
 from .kernel.acceptance import SwDecision, classify, needs_resync
-from .kernel.critical_commit import payload_digest, pid_for
-from .kernel.mac_domains import crit_prepare_tag, resync_confirm_tag
+from .kernel.critical_commit import critical_commit, payload_digest, pid_for
+from .kernel.mac_domains import crit_confirm_tag, crit_prepare_tag, resync_confirm_tag
 from .kernel.resync_commit import resync_commit_same_epoch
 from .kernel.window_commit import window_commit
 from .rng import RandomLike
@@ -427,6 +427,52 @@ class Receiver:
             nonce_id=pending.nonce_id,
             payload_hash=pending.payload_hash,
         )
+
+    def process_crit_confirm(self, frame: Frame, *, now_tick: int) -> VerificationResult:
+        """引擎对 flags==FLAG_CRIT_CONFIRM 的帧专用入口（§4.4 阶段2，Accept_critical）。
+        顺序 committed→pending→MAC→TTL→SW→原子 commit（MAC-before-everything, C4）；
+        通过 → critical_commit 封窗 + 执行一次（accepted=True, C6）+ 删 pending + 记 committed。
+        dev_id/key_id 取自 confirm 帧（与 Phase 2 resync 一致）；身份/绑定靠 pid + MAC。"""
+        state = self.state
+        if self.mode is not Mode.HSW_CR:
+            return VerificationResult(False, "unexpected_crit_confirm", state)
+        pid = frame.pid
+        if pid in state.committed_critical:
+            return VerificationResult(False, "critical_already_committed", state)   # C2
+        pending = state.pending_critical.get(pid)
+        if pending is None:
+            return VerificationResult(False, "critical_no_pending", state)   # fake challenge 防线
+        expected = crit_confirm_tag(
+            self.shared_key, frame.dev_id, frame.key_id, pending.epoch, pending.ctr,
+            pending.cmd, pending.payload_hash, pid, pending.nonce_id, pending.nonce_r,
+            pending.ttl_ticks, Frame.FLAG_CRIT_CONFIRM,
+        )
+        if frame.mac is None or not constant_time_compare(frame.mac, expected):
+            return VerificationResult(False, "mac_mismatch", state)   # C4 保留 pending
+        if now_tick > pending.expire_tick:
+            del state.pending_critical[pid]
+            return VerificationResult(False, "critical_ttl_expired", state)
+        # SW 可接受性：dup/old ctr 不得借 confirm 提交（防回退/重放）
+        if state.last_counter < 0:
+            # 初始帧：直接建窗（与 verify_with_window 初始一致），不调 classify（空 mask）
+            state.last_counter = pending.ctr
+            state.received_mask = [1] + [0] * (self.window_size - 1)
+        else:
+            decision = classify(
+                pending.ctr, state.last_counter, state.received_mask, self.window_size
+            )
+            if decision in (SwDecision.REJECT_DUP, SwDecision.REJECT_OLD):
+                del state.pending_critical[pid]
+                return VerificationResult(False, "critical_sw_reject", state)
+            new_h, new_mask = critical_commit(
+                n=pending.ctr, h=state.last_counter, mask=state.received_mask, w=self.window_size
+            )
+            state.last_counter = new_h
+            state.received_mask = new_mask
+        # 原子 commit（C6）：窗口已更新 + 删 pending + 记 committed
+        del state.pending_critical[pid]
+        state.committed_critical.add(pid)
+        return VerificationResult(True, "critical_committed", state)   # accepted=True = 执行一次
 
     def reset(self) -> None:
         self.state = ReceiverState()

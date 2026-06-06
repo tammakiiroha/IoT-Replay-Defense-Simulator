@@ -6,12 +6,20 @@ from dataclasses import dataclass
 from .auth import Authenticator, HmacAuthenticator
 from .defaults import DEFAULT_CHALLENGE_TTL_TICKS, DEFAULT_MAX_OUTSTANDING_CHALLENGES
 from .kernel.acceptance import SwDecision, classify, needs_resync
-from .kernel.mac_domains import resync_confirm_tag
+from .kernel.critical_commit import payload_digest, pid_for
+from .kernel.mac_domains import crit_prepare_tag, resync_confirm_tag
 from .kernel.resync_commit import resync_commit_same_epoch
 from .kernel.window_commit import window_commit
 from .rng import RandomLike
 from .security import constant_time_compare
-from .types import WINDOW_VERIFY_MODES, Frame, Mode, ReceiverState, ResyncPending
+from .types import (
+    WINDOW_VERIFY_MODES,
+    CriticalPending,
+    Frame,
+    Mode,
+    ReceiverState,
+    ResyncPending,
+)
 
 
 @dataclass
@@ -235,6 +243,8 @@ class Receiver:
         challenge_ttl_ticks: int = DEFAULT_CHALLENGE_TTL_TICKS,
         command_risk: dict[str, float] | None = None,
         risk_high: float = 0.8,
+        critical_pending_capacity: int = 2,
+        critical_ttl_ticks: int = 16,
     ):
         self.mode = mode
         self.shared_key = shared_key
@@ -246,6 +256,8 @@ class Receiver:
         self.challenge_ttl_ticks = challenge_ttl_ticks
         self.command_risk = command_risk
         self.risk_high = risk_high
+        self.critical_pending_capacity = critical_pending_capacity
+        self.critical_ttl_ticks = critical_ttl_ticks
         self._issue_tick = 0
         self.state = ReceiverState()
 
@@ -350,6 +362,70 @@ class Receiver:
             epoch=self.state.epoch,
             counter=pending.h_at_challenge,
             ttl=pending.ttl_ticks,
+        )
+
+    def process_crit_prepare(
+        self, frame: Frame, rng: RandomLike, *, now_tick: int
+    ) -> VerificationResult:
+        """引擎对 flags==FLAG_CRIT_PREPARE 的帧专用入口（§4.4 阶段1）。
+        登记有界 pending、不动窗口/不执行命令（C1）；MAC-before-everything（C4）；
+        N_p 有界拒绝新 prepare（C3）；同 pid 幂等、committed 早拒（C2）。"""
+        state = self.state
+        if self.mode is not Mode.HSW_CR:
+            return VerificationResult(False, "unexpected_crit_prepare", state)
+        if (self.command_risk or {}).get(frame.command, 0.0) < self.risk_high:
+            return VerificationResult(False, "not_critical", state)        # 策略：仅高风险走两阶段
+        if frame.counter is None:
+            return VerificationResult(False, "crit_missing_counter", state)
+        ph = payload_digest(frame.payload)
+        expected = crit_prepare_tag(
+            self.shared_key, frame.dev_id, frame.key_id, frame.epoch, frame.counter,
+            frame.command, ph, Frame.FLAG_CRIT_PREPARE,
+        )
+        if frame.mac is None or not constant_time_compare(frame.mac, expected):
+            return VerificationResult(False, "mac_mismatch", state)         # C4：先 MAC
+        pid = pid_for(epoch=frame.epoch, ctr=frame.counter, cmd=frame.command, payload_hash=ph)
+        if pid in state.committed_critical:
+            return VerificationResult(False, "critical_already_committed", state)   # C2 早拒
+        if pid in state.pending_critical:
+            # 幂等：不递增 seq、不刷新 nonce/TTL；引擎仍可 issue_crit_challenge(pid) 取同一挑战
+            return VerificationResult(False, "critical_prepared", state)
+        if len(state.pending_critical) >= self.critical_pending_capacity:
+            return VerificationResult(False, "critical_pending_full", state)        # C3 拒绝新
+        # 首次登记（不动 H/M_W、不执行）—— C1
+        nonce_id = state.crit_nonce_seq
+        state.crit_nonce_seq += 1
+        bits = 96
+        nonce_r = f"{rng.getrandbits(bits):0{(bits + 3) // 4}x}"
+        state.pending_critical[pid] = CriticalPending(
+            epoch=frame.epoch,
+            ctr=frame.counter,
+            cmd=frame.command,
+            payload_hash=ph,
+            nonce_id=nonce_id,
+            nonce_r=nonce_r,
+            ttl_ticks=self.critical_ttl_ticks,
+            expire_tick=now_tick + self.critical_ttl_ticks,
+            sender_id=frame.dev_id,
+        )
+        return VerificationResult(False, "critical_prepared", state)
+
+    def issue_crit_challenge(self, pid: int) -> Frame:
+        """交付 R2T CRIT_CHALLENGE（幂等：从 pending_critical[pid] 读取，不改 pending）。
+        dev_id/key_id 沿用默认 0（与 Phase 2 resync 一致）；身份绑定靠 pid + MAC。"""
+        pending = self.state.pending_critical.get(pid)
+        if pending is None:
+            raise RuntimeError("issue_crit_challenge requires an active pending_critical entry")
+        return Frame(
+            command=pending.cmd,
+            flags=Frame.FLAG_CRIT_CHALLENGE,
+            counter=pending.ctr,
+            epoch=pending.epoch,
+            nonce=pending.nonce_r,
+            ttl=pending.ttl_ticks,
+            pid=pid,
+            nonce_id=pending.nonce_id,
+            payload_hash=pending.payload_hash,
         )
 
     def reset(self) -> None:

@@ -36,10 +36,14 @@ class AttackMode(str, Enum):
 class Frame:
     """Simplified abstraction of an RF control frame."""
 
-    # 帧类型（flags 语义，研究计划 §3.3）；critical prepare/confirm 留给 Phase 3
+    # 帧类型（flags 语义，研究计划 §3.3）。0=NORMAL, 3/4=RESYNC challenge/confirm；
+    # critical 两阶段（Phase 3）：1=PREPARE, 2=CONFIRM, 5=R2T CHALLENGE。
     FLAG_NORMAL_REQ: ClassVar[int] = 0
+    FLAG_CRIT_PREPARE: ClassVar[int] = 1
+    FLAG_CRIT_CONFIRM: ClassVar[int] = 2
     FLAG_RESYNC_CHALLENGE: ClassVar[int] = 3
     FLAG_RESYNC_CONFIRM: ClassVar[int] = 4
+    FLAG_CRIT_CHALLENGE: ClassVar[int] = 5
 
     command: str
     counter: int | None = None
@@ -53,6 +57,10 @@ class Frame:
     flags: int = 0
     payload: bytes = b""
     ttl: int = 0   # challenge/confirm 携带的 TTL（绑进 resync_confirm_tag，两侧一致）
+    # critical 两阶段载体（Phase 3）：pid=请求标识、nonce_id=R 端挑战序号、payload_hash=定长摘要
+    pid: int = 0
+    nonce_id: int = 0
+    payload_hash: bytes = b""
 
     def clone(self) -> Frame:
         return Frame(
@@ -67,6 +75,9 @@ class Frame:
             flags=self.flags,
             payload=self.payload,
             ttl=self.ttl,
+            pid=self.pid,
+            nonce_id=self.nonce_id,
+            payload_hash=self.payload_hash,
         )
 
 
@@ -152,6 +163,8 @@ class SimulationConfig:
     mac_tag_bits: int = 80
     resync_ttl_ticks: int = 16   # RESYNC challenge/confirm 的 TTL（tick）
     resync_rtt_ticks: int = 1    # 反向往返基础 RTT（tick）
+    critical_pending_capacity: int = 2   # pending_critical 表上界 N_p（C3）
+    critical_ttl_ticks: int = 16         # critical challenge/confirm TTL（tick）
 
     def effective_command_set(self) -> Sequence[str]:
         from .commands import DEFAULT_COMMANDS

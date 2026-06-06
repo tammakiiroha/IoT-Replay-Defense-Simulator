@@ -166,6 +166,8 @@ def simulate_one_run(
         challenge_ttl_ticks=config.challenge_ttl_ticks,
         command_risk=config.command_risk,
         risk_high=config.risk_high,
+        critical_pending_capacity=config.critical_pending_capacity,
+        critical_ttl_ticks=config.critical_ttl_ticks,
     )
     attacker = Attacker(
         record_loss=config.attacker_record_loss,
@@ -484,6 +486,8 @@ def simulate_one_run_with_trace(
         challenge_ttl_ticks=config.challenge_ttl_ticks,
         command_risk=config.command_risk,
         risk_high=config.risk_high,
+        critical_pending_capacity=config.critical_pending_capacity,
+        critical_ttl_ticks=config.critical_ttl_ticks,
     )
 
     scheduler = EventScheduler()

@@ -33,6 +33,11 @@ class Channel:
         self.delay_model = delay_model if delay_model is not None else ReorderDelay(p_reorder)
         self._scheduler = EventScheduler()
 
+    @property
+    def current_tick(self) -> int:
+        """Read-only view of the internal scheduler tick (backward-compatible attribute)."""
+        return self._scheduler.current_tick
+
     def send(self, frame: Frame) -> list[Frame]:
         """Process a frame transmission and return frames delivered at this tick."""
 

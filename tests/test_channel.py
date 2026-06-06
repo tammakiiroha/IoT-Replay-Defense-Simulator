@@ -505,3 +505,13 @@ def test_send_rng_call_order_unchanged():
     )
 
     assert legacy == injected
+
+
+def test_current_tick_exposes_scheduler_tick():
+    """current_tick 只读暴露内部调度器 tick（向后兼容旧属性读取）"""
+    channel = Channel(p_loss=0.0, p_reorder=0.0, rng=random.Random(0))
+    assert channel.current_tick == 0
+    channel.send(create_frame(1))
+    assert channel.current_tick == 1
+    channel.send(create_frame(2))
+    assert channel.current_tick == 2

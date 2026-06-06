@@ -33,6 +33,12 @@ class Frame:
     mac: str | None = None
     nonce: str | None = None
     is_attack: bool = False
+    # HSW-CR 扩展（研究计划 §3.3）
+    dev_id: int = 0
+    key_id: int = 0
+    epoch: int = 0
+    flags: int = 0
+    payload: bytes = b""
 
     def clone(self) -> Frame:
         return Frame(
@@ -41,6 +47,11 @@ class Frame:
             mac=self.mac,
             nonce=self.nonce,
             is_attack=self.is_attack,
+            dev_id=self.dev_id,
+            key_id=self.key_id,
+            epoch=self.epoch,
+            flags=self.flags,
+            payload=self.payload,
         )
 
 

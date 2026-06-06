@@ -275,11 +275,14 @@ def test_issue_resync_challenge_emits_r2t_frame_with_nonce_and_ttl():
       return (False, "resync_nonce_mismatch")   # 保持 PENDING
   if frame.epoch != pending.epoch:
       return (False, "resync_epoch_mismatch")   # 保持 PENDING
-  # ④ TTL 最后：仅过期才清 pending
+  # ④ counter 不变量（防状态回退，§4.3 confirm 验 ctr）：new_h 必须覆盖触发 counter
+  if frame.counter < pending.trigger_counter:
+      return (False, "resync_counter_mismatch") # 保持 PENDING；否则 new_h=11 会把 H 从 10 改成 11
+  # ⑤ TTL 最后：仅过期才清 pending
   if now_tick > pending.expire_tick:
       state.resync_pending = None
       return (False, "resync_ttl_expired")
-  # ⑤ 全过 → 封窗提交（H2），不执行命令（H1）
+  # ⑥ 全过 → 封窗提交（H2），不执行命令（H1）
   new_h = frame.counter   # = sender.tx_counter（见 Task 2.4 D5），confirm 携带商定的 new_H
   state.last_counter, state.received_mask = resync_commit_same_epoch(new_h, W)
   state.resync_pending = None
@@ -303,7 +306,7 @@ def test_issue_resync_challenge_emits_r2t_frame_with_nonce_and_ttl():
 - `test_baseline_modes_unchanged_with_resync_engine`：复跑 `engine_baseline.json` 对应配置，非 resync 模式逐值不变（D3 零影响验证）。
 
 **做法骨架（Option A）：**
-1. `process_arrived` 中某 legit 帧得 `resync_required` 且现处 PENDING → `challenge = receiver.issue_resync_challenge(rng, now_tick=now_tick, ttl_ticks=cfg.resync_ttl_ticks)`；经反向信道送出（经历 loss/delay）；`cost_stats.resync_initiated += 1`。
+1. `process_arrived` 中某 legit 帧得 `resync_required` 且现处 PENDING → `challenge = receiver.issue_resync_challenge(rng, now_tick=now_tick, ttl_ticks=cfg.resync_ttl_ticks)`；经反向信道送出（经历 loss/delay）。**幂等守卫**：`issue_resync_challenge` 已实现"仅首次签发、之后重发同一挑战"（见 Task 2.2 修复），故子泵**只在首次进 PENDING（`pending.nonce_r == ""`）时 `cost_stats.resync_initiated += 1` 并真正发出**；in-flight 期间后到的远跳帧不重新签发、不重置 TTL、不计数。
 2. 信道交付 challenge（未丢/未过 TTL）→ `confirm = sender.respond_resync_challenge(challenge)` → 经信道送回 → 引擎调 `receiver.process_resync_confirm(confirm, now_tick=now_tick')`。
 3. `resync_committed` → `resync_completed += 1`（窗口已重建）；challenge 或 confirm 被丢弃 / `now_tick > expire_tick` → `resync_timeout += 1`，pending 按 TTL 清空、回 NORMAL。
 4. **不显式重发触发命令（D3）**；后续 legit 帧自然走正常接受。

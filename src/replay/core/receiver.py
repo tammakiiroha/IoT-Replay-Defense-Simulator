@@ -6,8 +6,11 @@ from dataclasses import dataclass
 from .auth import Authenticator, HmacAuthenticator
 from .defaults import DEFAULT_CHALLENGE_TTL_TICKS, DEFAULT_MAX_OUTSTANDING_CHALLENGES
 from .kernel.acceptance import SwDecision, classify, needs_resync
+from .kernel.mac_domains import resync_confirm_tag
+from .kernel.resync_commit import resync_commit_same_epoch
 from .kernel.window_commit import window_commit
 from .rng import RandomLike
+from .security import constant_time_compare
 from .types import WINDOW_VERIFY_MODES, Frame, Mode, ReceiverState, ResyncPending
 
 
@@ -173,6 +176,46 @@ def verify_hsw_cr(
     )
 
 
+def verify_resync_confirm(
+    frame: Frame,
+    state: ReceiverState,
+    *,
+    shared_key: str,
+    window_size: int,
+    now_tick: int,
+) -> VerificationResult:
+    """验证 RESYNC_CONFIRM 并封窗提交（§4.3）。
+    顺序 MAC→nonce→epoch→TTL（MAC-before-everything）；失败保持 PENDING，仅 TTL 过期清 pending。
+    通过 → resync_commit_same_epoch（H2 封窗）、不执行命令（H1）。"""
+    pending = state.resync_pending
+    if pending is None:
+        return VerificationResult(False, "resync_no_pending", state)
+    if frame.counter is None:   # 结构性校验：confirm 必须携带 new_h（早拒，narrow 类型）
+        return VerificationResult(False, "resync_missing_new_h", state)
+    # ① MAC：用 pending 固化的 old_h/old_epoch/ttl + confirm 的 new_h(=frame.counter)/new_epoch
+    expected = resync_confirm_tag(
+        shared_key, frame.dev_id, frame.key_id, pending.epoch, frame.epoch,
+        pending.h_at_challenge, frame.counter, pending.nonce_r, pending.ttl_ticks, frame.flags,
+    )
+    if frame.mac is None or not constant_time_compare(frame.mac, expected):
+        return VerificationResult(False, "mac_mismatch", state)             # 保持 PENDING
+    # ② nonce ③ epoch（同 epoch 路径）
+    if frame.nonce != pending.nonce_r:
+        return VerificationResult(False, "resync_nonce_mismatch", state)    # 保持 PENDING
+    if frame.epoch != pending.epoch:
+        return VerificationResult(False, "resync_epoch_mismatch", state)    # 保持 PENDING
+    # ④ TTL 最后：仅过期才清 pending
+    if now_tick > pending.expire_tick:
+        state.resync_pending = None
+        return VerificationResult(False, "resync_ttl_expired", state)
+    # ⑤ 封窗提交（H2），不执行命令（H1）
+    new_h, new_mask = resync_commit_same_epoch(frame.counter, window_size)
+    state.last_counter = new_h
+    state.received_mask = new_mask
+    state.resync_pending = None
+    return VerificationResult(False, "resync_committed", state)
+
+
 class Receiver:
     """Unified receiver that dispatches to the correct verification routine."""
 
@@ -266,6 +309,18 @@ class Receiver:
         self.state.outstanding_nonces[nonce_hex] = self._issue_tick
         self.state.expected_nonce = nonce_hex
         return nonce_hex
+
+    def process_resync_confirm(self, frame: Frame, *, now_tick: int) -> VerificationResult:
+        """引擎对 flags==FLAG_RESYNC_CONFIRM 的帧专用入口（D2：now_tick 经此注入验 TTL）。"""
+        if self.mode not in {Mode.SW_RESYNC, Mode.HSW_CR}:
+            return VerificationResult(False, "unexpected_resync_confirm", self.state)
+        return verify_resync_confirm(
+            frame,
+            self.state,
+            shared_key=self.shared_key,
+            window_size=self.window_size,
+            now_tick=now_tick,
+        )
 
     def issue_resync_challenge(
         self, rng: RandomLike, *, now_tick: int, ttl_ticks: int

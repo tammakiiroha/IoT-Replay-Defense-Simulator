@@ -122,6 +122,7 @@ class CriticalPending:
     ttl_ticks: int
     expire_tick: int
     sender_id: int
+    key_id: int               # prepare 的 key_id；challenge 回显、confirm 用此权威值绑定（§4.5）
 
 
 @dataclass

@@ -1,5 +1,7 @@
 import random
 
+import pytest
+
 from replay.core.kernel.critical_commit import payload_digest, pid_for
 from replay.core.receiver import Receiver
 from replay.core.sender import Sender
@@ -97,19 +99,23 @@ def test_old_prepare_same_cmd_payload_rejected_by_pid():
     assert s.confirm_critical_challenge(ch, now_tick=1, tau_intent=10) is None
 
 
-def test_full_round_trip_sender_receiver_commits_once():
+@pytest.mark.parametrize("key_id", [0, 7])
+def test_full_round_trip_honours_key_id(key_id):
     # 端到端：sender prepare -> receiver prepare -> challenge -> sender confirm -> receiver commit
+    # 非零 key_id 必须全程回显并绑定（修 P1：之前 challenge 默认丢回 0 -> confirm=None）
     s = _sender()
     rcv = Receiver(
         Mode.HSW_CR, shared_key=KEY, mac_length=8, window_size=8,
         command_risk={"OPEN": 0.9}, risk_high=0.8,
     )
-    prep = s.begin_critical_intent("OPEN", b"data", epoch=1, key_id=0, now_tick=0)
+    prep = s.begin_critical_intent("OPEN", b"data", epoch=1, key_id=key_id, now_tick=0)
+    assert prep.key_id == key_id
     r1 = rcv.process_crit_prepare(prep, random.Random(1), now_tick=0)
     assert r1.reason == "critical_prepared"
     challenge = rcv.issue_crit_challenge(s.pending_intent.pid)
+    assert challenge.key_id == key_id            # R 端回显 prepare 的 key_id
     confirm = s.confirm_critical_challenge(challenge, now_tick=1, tau_intent=10)
-    assert confirm is not None
+    assert confirm is not None                    # key_id=7 也能 confirm
     r2 = rcv.process_crit_confirm(confirm, now_tick=2)
     assert r2.accepted is True and r2.reason == "critical_committed"
     assert rcv.state.last_counter == 1

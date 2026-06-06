@@ -19,7 +19,9 @@ def test_critical_pending_holds_confirm_binding_fields():
         ttl_ticks=20,
         expire_tick=25,
         sender_id=2,
+        key_id=5,
     )
     assert p.cmd == "OPEN" and p.payload_hash == b"ab"
     assert p.nonce_id == 3 and p.nonce_r == "rr"
     assert p.expire_tick == 25 and p.sender_id == 2
+    assert p.key_id == 5

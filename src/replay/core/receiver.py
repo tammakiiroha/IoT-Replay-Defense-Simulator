@@ -407,12 +407,14 @@ class Receiver:
             ttl_ticks=self.critical_ttl_ticks,
             expire_tick=now_tick + self.critical_ttl_ticks,
             sender_id=frame.dev_id,
+            key_id=frame.key_id,
         )
         return VerificationResult(False, "critical_prepared", state)
 
     def issue_crit_challenge(self, pid: int) -> Frame:
         """交付 R2T CRIT_CHALLENGE（幂等：从 pending_critical[pid] 读取，不改 pending）。
-        dev_id/key_id 沿用默认 0（与 Phase 2 resync 一致）；身份绑定靠 pid + MAC。"""
+        回显 prepare 的 dev_id/key_id，使非零 key_id 的两阶段往返也能闭合（修 P1）；
+        身份绑定靠 pid + MAC + confirm 端用 pending 权威 dev_id/key_id 复核。"""
         pending = self.state.pending_critical.get(pid)
         if pending is None:
             raise RuntimeError("issue_crit_challenge requires an active pending_critical entry")
@@ -423,6 +425,8 @@ class Receiver:
             epoch=pending.epoch,
             nonce=pending.nonce_r,
             ttl=pending.ttl_ticks,
+            dev_id=pending.sender_id,
+            key_id=pending.key_id,
             pid=pid,
             nonce_id=pending.nonce_id,
             payload_hash=pending.payload_hash,
@@ -432,7 +436,7 @@ class Receiver:
         """引擎对 flags==FLAG_CRIT_CONFIRM 的帧专用入口（§4.4 阶段2，Accept_critical）。
         顺序 committed→pending→MAC→TTL→SW→原子 commit（MAC-before-everything, C4）；
         通过 → critical_commit 封窗 + 执行一次（accepted=True, C6）+ 删 pending + 记 committed。
-        dev_id/key_id 取自 confirm 帧（与 Phase 2 resync 一致）；身份/绑定靠 pid + MAC。"""
+        dev_id/key_id 取自 pending 权威值（prepare 时固化）而非 confirm 帧；绑定靠 pid + MAC。"""
         state = self.state
         if self.mode is not Mode.HSW_CR:
             return VerificationResult(False, "unexpected_crit_confirm", state)
@@ -443,7 +447,7 @@ class Receiver:
         if pending is None:
             return VerificationResult(False, "critical_no_pending", state)   # fake challenge 防线
         expected = crit_confirm_tag(
-            self.shared_key, frame.dev_id, frame.key_id, pending.epoch, pending.ctr,
+            self.shared_key, pending.sender_id, pending.key_id, pending.epoch, pending.ctr,
             pending.cmd, pending.payload_hash, pid, pending.nonce_id, pending.nonce_r,
             pending.ttl_ticks, Frame.FLAG_CRIT_CONFIRM,
         )

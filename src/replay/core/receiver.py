@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from .auth import Authenticator, HmacAuthenticator
 from .defaults import DEFAULT_CHALLENGE_TTL_TICKS, DEFAULT_MAX_OUTSTANDING_CHALLENGES
-from .kernel.acceptance import SwDecision, classify
+from .kernel.acceptance import SwDecision, classify, needs_resync
 from .kernel.window_commit import window_commit
 from .rng import RandomLike
 from .types import Frame, Mode, ReceiverState
@@ -51,6 +51,8 @@ def verify_with_window(
     shared_key: str,
     mac_length: int,
     window_size: int,
+    g_hard: int = 0,
+    enable_resync: bool = False,
     authenticator: Authenticator | None = None,
 ) -> VerificationResult:
     if window_size < 1:
@@ -68,6 +70,11 @@ def verify_with_window(
         state.last_counter = frame.counter
         state.received_mask = [1] + [0] * (window_size - 1)
         return VerificationResult(True, "window_accept_initial", state)
+
+    # G_hard 闸门（§5.3）：MAC 已通过，前跳越闸需认证重同步。占位——不执行命令、不改状态
+    # （窗口更新留给 Phase 2 的 resync confirm）。纯 SW baseline(enable_resync=False)不受此污染。
+    if enable_resync and needs_resync(frame.counter, state.last_counter, g_hard):
+        return VerificationResult(False, "resync_required", state)
 
     # 此后 received_mask 恒为长度 W 的 list，安全交给 kernel 判定。
     decision = classify(frame.counter, state.last_counter, state.received_mask, window_size)
@@ -133,6 +140,7 @@ def verify_hsw_cr(
     window_size: int,
     command_risk: dict[str, float] | None,
     risk_high: float,
+    g_hard: int = 0,
     authenticator: Authenticator | None = None,
 ) -> VerificationResult:
     is_high_risk = (command_risk or {}).get(frame.command, 0.0) >= risk_high
@@ -150,6 +158,8 @@ def verify_hsw_cr(
         shared_key=shared_key,
         mac_length=mac_length,
         window_size=window_size,
+        g_hard=g_hard,
+        enable_resync=True,
         authenticator=authenticator,
     )
 
@@ -164,6 +174,7 @@ class Receiver:
         shared_key: str,
         mac_length: int,
         window_size: int = 0,
+        g_hard: int = 16,
         authenticator: Authenticator | None = None,
         max_outstanding_challenges: int = DEFAULT_MAX_OUTSTANDING_CHALLENGES,
         challenge_ttl_ticks: int = DEFAULT_CHALLENGE_TTL_TICKS,
@@ -174,6 +185,7 @@ class Receiver:
         self.shared_key = shared_key
         self.mac_length = mac_length
         self.window_size = window_size
+        self.g_hard = g_hard
         self.authenticator = authenticator or HmacAuthenticator(shared_key, mac_length * 4)
         self.max_outstanding_challenges = max_outstanding_challenges
         self.challenge_ttl_ticks = challenge_ttl_ticks
@@ -193,13 +205,15 @@ class Receiver:
                 mac_length=self.mac_length,
                 authenticator=self.authenticator,
             )
-        if self.mode in {Mode.WINDOW, Mode.OSCORE_LIKE}:
+        if self.mode in {Mode.WINDOW, Mode.OSCORE_LIKE, Mode.SW_RESYNC}:
             return verify_with_window(
                 frame,
                 self.state,
                 shared_key=self.shared_key,
                 mac_length=self.mac_length,
                 window_size=self.window_size,
+                g_hard=self.g_hard,
+                enable_resync=self.mode is Mode.SW_RESYNC,
                 authenticator=self.authenticator,
             )
         if self.mode is Mode.CHALLENGE:
@@ -219,6 +233,7 @@ class Receiver:
                 window_size=self.window_size,
                 command_risk=self.command_risk,
                 risk_high=self.risk_high,
+                g_hard=self.g_hard,
                 authenticator=self.authenticator,
             )
         raise ValueError(f"Unsupported mode: {self.mode}")

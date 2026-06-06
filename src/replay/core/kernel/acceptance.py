@@ -17,3 +17,9 @@ def classify(n: int, h: int, mask: list[int], w: int) -> SwDecision:
     if h - w + 1 <= n <= h:
         return SwDecision.REJECT_DUP if mask[h - n] == 1 else SwDecision.ACCEPT_IN_WINDOW
     return SwDecision.REJECT_OLD
+
+
+def needs_resync(n: int, h: int, g_hard: int) -> bool:
+    """前跳超过 G_hard 闸门则需认证重同步（§5.3）。前跳 gap = n - h。
+    仅在 MAC 验证通过之后调用（MAC-before-G_hard 顺序硬规则）。"""
+    return n > h and (n - h) > g_hard

@@ -12,6 +12,7 @@ class Mode(str, Enum):
     NO_DEFENSE = "no_def"
     ROLLING_MAC = "rolling"
     WINDOW = "window"
+    SW_RESYNC = "sw_resync"
     CHALLENGE = "challenge"
     HSW_CR = "hsw_cr"
     OSCORE_LIKE = "oscore_like"
@@ -77,6 +78,7 @@ class SimulationConfig:
     p_loss: float = 0.0
     p_reorder: float = 0.0
     window_size: int = 0
+    g_hard: int = 16
     command_sequence: Sequence[str] | None = None
     command_set: Sequence[str] | None = None
     target_commands: Sequence[str] | None = None

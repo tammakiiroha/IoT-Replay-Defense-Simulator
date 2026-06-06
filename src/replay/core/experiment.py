@@ -5,7 +5,7 @@ import dataclasses
 import statistics
 import sys
 import time
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from .attacker import Attacker
 from .auth import AsconAeadAuthenticator, Authenticator, HmacAuthenticator
@@ -99,6 +99,46 @@ def _should_challenge(config: SimulationConfig, command: str) -> bool:
     return False
 
 
+def _roll_drop_delay(rng: RandomLike, p_loss: float, p_reorder: float) -> tuple[bool, int]:
+    """单跳 drop/delay 决策（与 trace._dropped/_delay 同语义），用于 live 路径的 resync 信道。"""
+    dropped = p_loss > 0.0 and rng.random() < p_loss
+    delay = rng.randint(1, 3) if (p_reorder > 0.0 and rng.random() < p_reorder) else 0
+    return dropped, delay
+
+
+def _resolve_resync(
+    receiver: Receiver,
+    sender: Sender,
+    cost_stats: CostStats,
+    *,
+    rng: RandomLike,
+    now_tick: int,
+    ttl_ticks: int,
+    rtt_ticks: int,
+    transport: Callable[[], tuple[bool, int, bool, int]],
+) -> None:
+    """有界 resync 子泵（§4.3, Option A）：触发帧那步内解算 challenge->confirm 往返。
+    仅首次进 PENDING（nonce_r==""）才发起；transport 决定 challenge/confirm 的 loss/delay/TTL。"""
+    pending = receiver.state.resync_pending
+    if pending is None or pending.nonce_r != "":
+        return
+    challenge = receiver.issue_resync_challenge(rng, now_tick=now_tick, ttl_ticks=ttl_ticks)
+    cost_stats.resync_initiated += 1
+    ch_dropped, ch_delay, cf_dropped, cf_delay = transport()
+    if ch_dropped or cf_dropped:               # challenge 或 confirm 丢失 -> 超时
+        receiver.time_out_resync()
+        cost_stats.resync_timeout += 1
+        return
+    confirm = sender.respond_resync_challenge(challenge)
+    arrival = now_tick + rtt_ticks + ch_delay + cf_delay
+    result = receiver.process_resync_confirm(confirm, now_tick=arrival)
+    if result.reason == "resync_committed":
+        cost_stats.resync_completed += 1
+    else:                                       # ttl_expired（pending 已清）或其它 -> 超时
+        receiver.time_out_resync()
+        cost_stats.resync_timeout += 1
+
+
 def simulate_one_run(
     config: SimulationConfig,
     rng: RandomLike | None = None,
@@ -146,6 +186,16 @@ def simulate_one_run(
     remaining_replays = config.num_replay
     cost_stats = CostStats()
 
+    _resync_rng = local_rng
+
+    def _resync_now_tick() -> int:
+        return channel.current_tick
+
+    def _resync_transport() -> tuple[bool, int, bool, int]:
+        ch_dropped, ch_delay = _roll_drop_delay(local_rng, config.p_loss, config.p_reorder)
+        cf_dropped, cf_delay = _roll_drop_delay(local_rng, config.p_loss, config.p_reorder)
+        return ch_dropped, ch_delay, cf_dropped, cf_delay
+
     def record_tx(frame: Frame) -> None:
         size = _frame_bytes(frame, tag_bits, config.challenge_nonce_bits)
         cost_stats.tx_bytes += size
@@ -179,6 +229,17 @@ def simulate_one_run(
                     attack_success += 1
                 else:
                     legit_accepted += 1
+            elif result.reason == "resync_required":
+                _resolve_resync(
+                    receiver,
+                    sender,
+                    cost_stats,
+                    rng=_resync_rng,
+                    now_tick=_resync_now_tick(),
+                    ttl_ticks=config.resync_ttl_ticks,
+                    rtt_ticks=config.resync_rtt_ticks,
+                    transport=_resync_transport,
+                )
 
     for index in range(config.num_legit):
         command = _choose_command(config, index, local_rng)
@@ -252,6 +313,9 @@ def simulate_one_run(
             "window_size": config.window_size,
             "attack_mode": config.attack_mode.value,
             "auth_profile": authenticator.profile,
+            "resync_initiated": cost_stats.resync_initiated,
+            "resync_completed": cost_stats.resync_completed,
+            "resync_timeout": cost_stats.resync_timeout,
         },
     )
 
@@ -430,6 +494,25 @@ def simulate_one_run_with_trace(
     inline_slot = 0
     cost_stats = CostStats()
 
+    _resync_rng = nonce_rng
+    resync_index = 0
+
+    def _resync_now_tick() -> int:
+        return scheduler.current_tick
+
+    def _resync_transport() -> tuple[bool, int, bool, int]:
+        nonlocal resync_index
+        i = resync_index
+        resync_index += 1
+        if i >= len(trace.resync_challenge_dropped):
+            return False, 0, False, 0
+        return (
+            trace.resync_challenge_dropped[i],
+            trace.resync_challenge_delay[i],
+            trace.resync_confirm_dropped[i],
+            trace.resync_confirm_delay[i],
+        )
+
     def record_tx(frame: Frame) -> None:
         size = _frame_bytes(frame, tag_bits, config.challenge_nonce_bits)
         cost_stats.tx_bytes += size
@@ -463,6 +546,17 @@ def simulate_one_run_with_trace(
                     attack_success += 1
                 else:
                     legit_accepted += 1
+            elif result.reason == "resync_required":
+                _resolve_resync(
+                    receiver,
+                    sender,
+                    cost_stats,
+                    rng=_resync_rng,
+                    now_tick=_resync_now_tick(),
+                    ttl_ticks=config.resync_ttl_ticks,
+                    rtt_ticks=config.resync_rtt_ticks,
+                    transport=_resync_transport,
+                )
 
     def send_traced(frame: Frame, *, dropped: bool, delay: int) -> list[Frame]:
         tick = scheduler.tick()
@@ -572,6 +666,9 @@ def simulate_one_run_with_trace(
             "window_size": config.window_size,
             "attack_mode": config.attack_mode.value,
             "auth_profile": authenticator.profile,
+            "resync_initiated": cost_stats.resync_initiated,
+            "resync_completed": cost_stats.resync_completed,
+            "resync_timeout": cost_stats.resync_timeout,
             "trace_digest": trace.digest(),
             "legit_drop_count": trace.legit_drop_count,
         },

@@ -132,6 +132,8 @@ class SimulationConfig:
     risk_high: float = 0.8
     auth_profile: str = "hmac"
     mac_tag_bits: int = 80
+    resync_ttl_ticks: int = 16   # RESYNC challenge/confirm 的 TTL（tick）
+    resync_rtt_ticks: int = 1    # 反向往返基础 RTT（tick）
 
     def effective_command_set(self) -> Sequence[str]:
         from .commands import DEFAULT_COMMANDS

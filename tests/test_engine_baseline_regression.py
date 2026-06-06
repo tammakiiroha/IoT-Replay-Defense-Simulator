@@ -9,13 +9,13 @@ from replay.core.types import AttackMode
 _BASELINE = json.loads(Path("tests/fixtures/engine_baseline.json").read_text())
 SEED = _BASELINE["seed"]
 RUNS = _BASELINE["runs"]
-MODES = [
+# Phase 2 起 SW_RESYNC/HSW_CR 会真正执行 resync 往返，数值按设计改变；
+# 冻结基线只保留无 resync 行为的模式（其余由 tests/test_resync_engine.py 专门覆盖）。
+STABLE_MODES = [
     Mode.NO_DEFENSE,
     Mode.ROLLING_MAC,
     Mode.WINDOW,
-    Mode.SW_RESYNC,
     Mode.CHALLENGE,
-    Mode.HSW_CR,
     Mode.OSCORE_LIKE,
 ]
 RISK = {"UNLOCK": 1.0}
@@ -54,17 +54,19 @@ def _snap(stats_list) -> dict:
 def test_normal_path_matches_baseline(attack_mode):
     got = _snap(
         run_many_experiments(
-            _base(attack_mode), modes=MODES, runs=RUNS, seed=SEED, show_progress=False
+            _base(attack_mode), modes=STABLE_MODES, runs=RUNS, seed=SEED, show_progress=False
         )
     )
-    assert got == _BASELINE["cases"][f"normal/{attack_mode.value}"]
+    expected = {m: _BASELINE["cases"][f"normal/{attack_mode.value}"][m] for m in got}
+    assert got == expected
 
 
 @pytest.mark.parametrize("attack_mode", [AttackMode.POST_RUN, AttackMode.INLINE])
 def test_paired_path_matches_baseline(attack_mode):
     got = _snap(
         run_paired_experiments(
-            _base(attack_mode), modes=MODES, runs=RUNS, seed=SEED, show_progress=False
+            _base(attack_mode), modes=STABLE_MODES, runs=RUNS, seed=SEED, show_progress=False
         )
     )
-    assert got == _BASELINE["cases"][f"paired/{attack_mode.value}"]
+    expected = {m: _BASELINE["cases"][f"paired/{attack_mode.value}"][m] for m in got}
+    assert got == expected

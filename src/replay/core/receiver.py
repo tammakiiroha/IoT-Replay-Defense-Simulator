@@ -325,6 +325,10 @@ class Receiver:
             now_tick=now_tick,
         )
 
+    def time_out_resync(self) -> None:
+        """清空在途 RESYNC_PENDING（challenge/confirm 丢失或 TTL 到期），回 NORMAL（§4.3 异常）。"""
+        self.state.resync_pending = None
+
     def issue_resync_challenge(
         self, rng: RandomLike, *, now_tick: int, ttl_ticks: int
     ) -> Frame:

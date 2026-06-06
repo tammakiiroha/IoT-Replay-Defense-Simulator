@@ -40,3 +40,16 @@ def test_issue_resync_challenge_emits_r2t_frame_with_nonce_and_ttl():
     assert r.state.resync_pending.nonce_r == challenge.nonce
     assert r.state.resync_pending.ttl_ticks == 20
     assert r.state.resync_pending.expire_tick == 25     # now_tick + ttl_ticks
+
+
+def test_repeated_issue_does_not_overwrite_inflight_challenge():
+    # 防 in-flight 失效化：已签发的挑战，重复 issue 必须幂等（不换 nonce、不移 TTL 截止）
+    r = _recv()
+    r.process(_frame(10))
+    r.process(_frame(100))
+    c1 = r.issue_resync_challenge(random.Random(0), now_tick=5, ttl_ticks=20)
+    expire1 = r.state.resync_pending.expire_tick
+    c2 = r.issue_resync_challenge(random.Random(999), now_tick=50, ttl_ticks=99)
+    assert c2.nonce == c1.nonce                            # 同一 in-flight nonce
+    assert r.state.resync_pending.expire_tick == expire1   # 截止不变
+    assert r.state.resync_pending.ttl_ticks == 20

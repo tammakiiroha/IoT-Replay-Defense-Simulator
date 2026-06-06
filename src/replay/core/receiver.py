@@ -204,11 +204,14 @@ def verify_resync_confirm(
         return VerificationResult(False, "resync_nonce_mismatch", state)    # 保持 PENDING
     if frame.epoch != pending.epoch:
         return VerificationResult(False, "resync_epoch_mismatch", state)    # 保持 PENDING
-    # ④ TTL 最后：仅过期才清 pending
+    # ④ counter 不变量（防状态回退）：new_h 必须覆盖触发 resync 的 counter（§4.3 confirm 验 ctr）
+    if frame.counter < pending.trigger_counter:
+        return VerificationResult(False, "resync_counter_mismatch", state)  # 保持 PENDING
+    # ⑤ TTL 最后：仅过期才清 pending
     if now_tick > pending.expire_tick:
         state.resync_pending = None
         return VerificationResult(False, "resync_ttl_expired", state)
-    # ⑤ 封窗提交（H2），不执行命令（H1）
+    # ⑥ 封窗提交（H2），不执行命令（H1）
     new_h, new_mask = resync_commit_same_epoch(frame.counter, window_size)
     state.last_counter = new_h
     state.received_mask = new_mask
@@ -330,18 +333,19 @@ class Receiver:
         pending = self.state.resync_pending
         if pending is None:
             raise RuntimeError("issue_resync_challenge requires an active RESYNC_PENDING")
-        bits = 96
-        nonce_hex = f"{rng.getrandbits(bits):0{(bits + 3) // 4}x}"
-        pending.nonce_r = nonce_hex
-        pending.ttl_ticks = ttl_ticks
-        pending.expire_tick = now_tick + ttl_ticks
+        if pending.nonce_r == "":   # 首次签发：生成 nonce + 固化 TTL
+            bits = 96
+            pending.nonce_r = f"{rng.getrandbits(bits):0{(bits + 3) // 4}x}"
+            pending.ttl_ticks = ttl_ticks
+            pending.expire_tick = now_tick + ttl_ticks
+        # 已签发 → 幂等重发同一挑战（不覆盖 nonce/expire，避免后到的远跳帧使 in-flight 失效）
         return Frame(
             command="RESYNC_CHALLENGE",
             flags=Frame.FLAG_RESYNC_CHALLENGE,
-            nonce=nonce_hex,
+            nonce=pending.nonce_r,
             epoch=self.state.epoch,
-            counter=self.state.last_counter,
-            ttl=ttl_ticks,
+            counter=pending.h_at_challenge,
+            ttl=pending.ttl_ticks,
         )
 
     def reset(self) -> None:

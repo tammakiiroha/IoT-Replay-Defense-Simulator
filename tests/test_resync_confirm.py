@@ -87,3 +87,13 @@ def test_expired_confirm_clears_pending():
     res = r.process_resync_confirm(_valid_confirm(r, 200), now_tick=26)   # 26 > 25 过期
     assert res.reason == "resync_ttl_expired"
     assert r.state.resync_pending is None
+
+
+def test_confirm_with_new_h_below_trigger_rejected():
+    # 防状态回退：new_h 必须 >= 触发 resync 的 counter；MAC 合法的 new_h=11 也要拒
+    r = _pending_recv(200)                                       # trigger_counter=200, H=10
+    res = r.process_resync_confirm(_valid_confirm(r, 11), now_tick=10)   # new_h=11 < 200
+    assert res.reason == "resync_counter_mismatch"
+    assert r.state.resync_pending is not None                   # 保持 PENDING
+    assert r.state.last_counter == 10                           # 窗口未回退
+    assert r.state.received_mask == [1, 0, 0, 0, 0]

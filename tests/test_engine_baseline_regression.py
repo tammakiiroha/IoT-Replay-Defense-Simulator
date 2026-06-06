@@ -53,7 +53,9 @@ def _snap(stats_list) -> dict:
 @pytest.mark.parametrize("attack_mode", [AttackMode.POST_RUN, AttackMode.INLINE])
 def test_normal_path_matches_baseline(attack_mode):
     got = _snap(
-        run_many_experiments(_base(attack_mode), modes=MODES, runs=RUNS, seed=SEED, show_progress=False)
+        run_many_experiments(
+            _base(attack_mode), modes=MODES, runs=RUNS, seed=SEED, show_progress=False
+        )
     )
     assert got == _BASELINE["cases"][f"normal/{attack_mode.value}"]
 
@@ -61,6 +63,8 @@ def test_normal_path_matches_baseline(attack_mode):
 @pytest.mark.parametrize("attack_mode", [AttackMode.POST_RUN, AttackMode.INLINE])
 def test_paired_path_matches_baseline(attack_mode):
     got = _snap(
-        run_paired_experiments(_base(attack_mode), modes=MODES, runs=RUNS, seed=SEED, show_progress=False)
+        run_paired_experiments(
+            _base(attack_mode), modes=MODES, runs=RUNS, seed=SEED, show_progress=False
+        )
     )
     assert got == _BASELINE["cases"][f"paired/{attack_mode.value}"]

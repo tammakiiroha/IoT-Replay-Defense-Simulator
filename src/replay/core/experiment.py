@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import dataclasses
-import heapq
 import statistics
 import sys
 import time
@@ -15,6 +14,7 @@ from .channel_models import GilbertElliottLoss, IidLoss, LossModel, ReorderDelay
 from .cost import CostModel, CostStats, estimate_energy
 from .receiver import Receiver
 from .rng import DeterministicRNG, RandomLike
+from .scheduler import EventScheduler
 from .sender import Sender
 from .stats import wilson_ci
 from .trace import ScenarioTrace, generate_trace
@@ -419,9 +419,7 @@ def simulate_one_run_with_trace(
         risk_high=config.risk_high,
     )
 
-    tick = 0
-    seq = 0
-    scheduled: list[tuple[int, int, Frame]] = []
+    scheduler = EventScheduler()
     recorded: list[Frame] = []
     legit_sent = 0
     legit_accepted = 0
@@ -467,21 +465,13 @@ def simulate_one_run_with_trace(
                     legit_accepted += 1
 
     def send_traced(frame: Frame, *, dropped: bool, delay: int) -> list[Frame]:
-        nonlocal tick, seq
-        tick += 1
+        tick = scheduler.tick()
         if not dropped:
-            heapq.heappush(scheduled, (tick + delay, seq, frame))
-            seq += 1
-        arrived: list[Frame] = []
-        while scheduled and scheduled[0][0] <= tick:
-            arrived.append(heapq.heappop(scheduled)[2])
-        return arrived
+            scheduler.submit(frame, delivery_tick=tick + delay)
+        return scheduler.pop_due()
 
     def flush_traced() -> list[Frame]:
-        arrived: list[Frame] = []
-        while scheduled:
-            arrived.append(heapq.heappop(scheduled)[2])
-        return arrived
+        return scheduler.flush()
 
     def pick_replay(raw_pick: int) -> Frame | None:
         if config.target_commands:

@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import ClassVar
 
 
 class Mode(str, Enum):
@@ -35,6 +36,11 @@ class AttackMode(str, Enum):
 class Frame:
     """Simplified abstraction of an RF control frame."""
 
+    # 帧类型（flags 语义，研究计划 §3.3）；critical prepare/confirm 留给 Phase 3
+    FLAG_NORMAL_REQ: ClassVar[int] = 0
+    FLAG_RESYNC_CHALLENGE: ClassVar[int] = 3
+    FLAG_RESYNC_CONFIRM: ClassVar[int] = 4
+
     command: str
     counter: int | None = None
     mac: str | None = None
@@ -46,6 +52,7 @@ class Frame:
     epoch: int = 0
     flags: int = 0
     payload: bytes = b""
+    ttl: int = 0   # challenge/confirm 携带的 TTL（绑进 resync_confirm_tag，两侧一致）
 
     def clone(self) -> Frame:
         return Frame(
@@ -59,6 +66,7 @@ class Frame:
             epoch=self.epoch,
             flags=self.flags,
             payload=self.payload,
+            ttl=self.ttl,
         )
 
 

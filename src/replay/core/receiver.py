@@ -8,7 +8,7 @@ from .defaults import DEFAULT_CHALLENGE_TTL_TICKS, DEFAULT_MAX_OUTSTANDING_CHALL
 from .kernel.acceptance import SwDecision, classify, needs_resync
 from .kernel.window_commit import window_commit
 from .rng import RandomLike
-from .types import WINDOW_VERIFY_MODES, Frame, Mode, ReceiverState
+from .types import WINDOW_VERIFY_MODES, Frame, Mode, ReceiverState, ResyncPending
 
 
 @dataclass
@@ -74,6 +74,15 @@ def verify_with_window(
     # G_hard 闸门（§5.3）：MAC 已通过，前跳越闸需认证重同步。占位——不执行命令、不改状态
     # （窗口更新留给 Phase 2 的 resync confirm）。纯 SW baseline(enable_resync=False)不受此污染。
     if enable_resync and needs_resync(frame.counter, state.last_counter, g_hard):
+        if state.resync_pending is None:   # 进 PENDING（占位 nonce/ttl/expire，待 issue 填）
+            state.resync_pending = ResyncPending(
+                nonce_r="",
+                trigger_counter=frame.counter,
+                epoch=state.epoch,
+                h_at_challenge=state.last_counter,
+                ttl_ticks=0,
+                expire_tick=-1,
+            )
         return VerificationResult(False, "resync_required", state)
 
     # 此后 received_mask 恒为长度 W 的 list，安全交给 kernel 判定。
@@ -257,6 +266,28 @@ class Receiver:
         self.state.outstanding_nonces[nonce_hex] = self._issue_tick
         self.state.expected_nonce = nonce_hex
         return nonce_hex
+
+    def issue_resync_challenge(
+        self, rng: RandomLike, *, now_tick: int, ttl_ticks: int
+    ) -> Frame:
+        """生成 nonce_R + 固化 TTL，产出 R2T RESYNC_CHALLENGE（§4.3 step 3）。
+        challenge 携带 counter=当前 H(old_h)、epoch、ttl，供 sender 构造 confirm。"""
+        pending = self.state.resync_pending
+        if pending is None:
+            raise RuntimeError("issue_resync_challenge requires an active RESYNC_PENDING")
+        bits = 96
+        nonce_hex = f"{rng.getrandbits(bits):0{(bits + 3) // 4}x}"
+        pending.nonce_r = nonce_hex
+        pending.ttl_ticks = ttl_ticks
+        pending.expire_tick = now_tick + ttl_ticks
+        return Frame(
+            command="RESYNC_CHALLENGE",
+            flags=Frame.FLAG_RESYNC_CHALLENGE,
+            nonce=nonce_hex,
+            epoch=self.state.epoch,
+            counter=self.state.last_counter,
+            ttl=ttl_ticks,
+        )
 
     def reset(self) -> None:
         self.state = ReceiverState()

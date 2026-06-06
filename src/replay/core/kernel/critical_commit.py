@@ -13,7 +13,9 @@ def payload_digest(payload: bytes) -> bytes:
 
 def pid_for(*, epoch: int, ctr: int, cmd: str, payload_hash: bytes) -> int:
     raw = f"{epoch}|{ctr}|{cmd}|".encode() + payload_hash
-    return int.from_bytes(hashlib.sha256(raw).digest()[:8], "big")  # 确定性 int pid（去重键）
+    # 取 63 位：确定性、非负，且落在 MAC 编码器 _to_typed_bytes 的 signed 8-byte 范围内
+    # （crit_confirm_tag 把 pid 喂进 HMAC，全 64 位会触发 to_bytes(8, signed=True) 溢出）
+    return int.from_bytes(hashlib.sha256(raw).digest()[:8], "big") & 0x7FFF_FFFF_FFFF_FFFF
 
 
 def critical_commit(*, n: int, h: int, mask: list[int], w: int) -> tuple[int, list[int]]:

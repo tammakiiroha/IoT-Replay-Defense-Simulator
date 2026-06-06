@@ -63,6 +63,18 @@ class Frame:
 
 
 @dataclass
+class ResyncPending:
+    """RESYNC_PENDING 期间的挑战上下文（§4.3 step 2-3）。"""
+
+    nonce_r: str
+    trigger_counter: int      # 触发 resync 的 ctr（供 step-6 / 指标）
+    epoch: int                # 发挑战时的 epoch
+    h_at_challenge: int       # 发挑战时的 H（confirm tag 的 old_h）
+    ttl_ticks: int            # TTL（绑进 resync_confirm_tag，两侧必须一致）
+    expire_tick: int          # TTL 截止 tick = issued_tick + ttl_ticks
+
+
+@dataclass
 class ReceiverState:
     """Mutable state that the receiver persists across frames."""
 
@@ -71,6 +83,8 @@ class ReceiverState:
     received_mask: list[int] = field(default_factory=list)
     outstanding_nonces: dict[str, int] = field(default_factory=dict)
     used_nonces: set[str] = field(default_factory=set)
+    epoch: int = 0
+    resync_pending: ResyncPending | None = None
 
 
 @dataclass

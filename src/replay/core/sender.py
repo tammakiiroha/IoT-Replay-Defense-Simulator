@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .auth import Authenticator, HmacAuthenticator
+from .kernel.mac_domains import resync_confirm_tag
 from .types import Frame, Mode
 
 
@@ -37,6 +38,31 @@ class Sender:
         self.tx_counter += 1
         mac = auth.tag(self.tx_counter, command)
         return Frame(command=command, counter=self.tx_counter, mac=mac)
+
+    def respond_resync_challenge(self, challenge: Frame) -> Frame:
+        """对 R2T RESYNC_CHALLENGE 应答 RESYNC_CONFIRM（§4.3 step 4）。
+        new_h 取发送端自己的 tx_counter（不是 challenge.counter=receiver old_h），防状态回退。"""
+        old_h = challenge.counter
+        nonce_r = challenge.nonce
+        if old_h is None or nonce_r is None:
+            raise ValueError("RESYNC_CHALLENGE missing counter/nonce")
+        epoch = challenge.epoch
+        new_h = self.tx_counter
+        tag = resync_confirm_tag(
+            self.shared_key, challenge.dev_id, challenge.key_id, epoch, epoch,
+            old_h, new_h, nonce_r, challenge.ttl, Frame.FLAG_RESYNC_CONFIRM,
+        )
+        return Frame(
+            command="RESYNC_CONFIRM",
+            flags=Frame.FLAG_RESYNC_CONFIRM,
+            counter=new_h,
+            epoch=epoch,
+            nonce=nonce_r,
+            ttl=challenge.ttl,
+            dev_id=challenge.dev_id,
+            key_id=challenge.key_id,
+            mac=tag,
+        )
 
     def reset(self) -> None:
         self.tx_counter = 0

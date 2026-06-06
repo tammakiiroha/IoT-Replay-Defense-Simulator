@@ -94,6 +94,22 @@ class ResyncPending:
 
 
 @dataclass
+class PendingUserIntent:
+    """发送端自发 critical 命令时记录的用户意图（§4.5 防 challenge 洗白）。
+    绑定完整身份（含 pid=epoch/ctr/cmd/payload_hash 派生），而非仅 (cmd, payload)，
+    使攻击者重放旧 prepare（旧 epoch/ctr）即便同 cmd/payload 也无法借真发送端 confirm。"""
+
+    epoch: int
+    ctr: int
+    cmd: str
+    payload_hash: bytes
+    pid: int
+    key_id: int
+    t_intent: int
+    consumed: bool = False
+
+
+@dataclass
 class CriticalPending:
     """pending_critical[pid] 表项（§4.4 阶段1）。confirm 绑定字段全在此固化。"""
 

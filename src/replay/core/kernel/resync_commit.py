@@ -1,4 +1,4 @@
-"""Resync 提交原语（§4.3）：同 epoch 封窗（H2）与 reboot epoch bump。纯函数，engine/protocol 共用。"""
+"""Resync 提交原语（§4.3）：同 epoch 封窗（H2）+ reboot epoch bump。engine/protocol 共用。"""
 from __future__ import annotations
 
 

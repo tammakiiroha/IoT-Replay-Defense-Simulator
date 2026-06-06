@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 from .auth import Authenticator, HmacAuthenticator
 from .defaults import DEFAULT_CHALLENGE_TTL_TICKS, DEFAULT_MAX_OUTSTANDING_CHALLENGES
+from .kernel.acceptance import SwDecision, classify
+from .kernel.window_commit import window_commit
 from .rng import RandomLike
 from .types import Frame, Mode, ReceiverState
 
@@ -53,7 +55,6 @@ def verify_with_window(
 ) -> VerificationResult:
     if window_size < 1:
         raise ValueError("window_size must be >= 1 for window mode")
-    mask_limit = (1 << window_size) - 1
 
     if frame.counter is None or frame.mac is None:
         return VerificationResult(False, "missing_security_fields", state)
@@ -62,29 +63,26 @@ def verify_with_window(
     if not auth.verify(frame.counter, frame.command, frame.mac):
         return VerificationResult(False, "mac_mismatch", state)
 
+    # 初始帧：空 list -> 长度 W 的位图，仅顶位置位（mask[0]=1 表示 H 已收）。
     if state.last_counter < 0:
         state.last_counter = frame.counter
-        state.received_mask = 1
+        state.received_mask = [1] + [0] * (window_size - 1)
         return VerificationResult(True, "window_accept_initial", state)
 
-    diff = frame.counter - state.last_counter
-    if diff > 0:
-        if diff >= window_size:
-            state.received_mask = 1
-        else:
-            state.received_mask = ((state.received_mask << diff) | 1) & mask_limit
-        state.last_counter = frame.counter
-        return VerificationResult(True, "window_accept_new", state)
-
-    offset = -diff
-    if offset >= window_size:
-        return VerificationResult(False, "counter_too_old", state)
-    if (state.received_mask >> offset) & 1:
+    # 此后 received_mask 恒为长度 W 的 list，安全交给 kernel 判定。
+    decision = classify(frame.counter, state.last_counter, state.received_mask, window_size)
+    if decision is SwDecision.REJECT_DUP:
         return VerificationResult(False, "counter_replay", state)
+    if decision is SwDecision.REJECT_OLD:
+        return VerificationResult(False, "counter_too_old", state)
 
-    state.received_mask |= 1 << offset
-    state.received_mask &= mask_limit
-    return VerificationResult(True, "window_accept_old", state)
+    new_h, new_mask = window_commit(
+        frame.counter, state.last_counter, state.received_mask, window_size
+    )
+    state.last_counter = new_h
+    state.received_mask = new_mask
+    reason = "window_accept_new" if decision is SwDecision.ACCEPT_FORWARD else "window_accept_old"
+    return VerificationResult(True, reason, state)
 
 
 def verify_challenge_response(

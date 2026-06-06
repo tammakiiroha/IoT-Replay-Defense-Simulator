@@ -61,7 +61,7 @@ class ReceiverState:
 
     last_counter: int = -1
     expected_nonce: str | None = None
-    received_mask: int = 0
+    received_mask: list[int] = field(default_factory=list)
     outstanding_nonces: dict[str, int] = field(default_factory=dict)
     used_nonces: set[str] = field(default_factory=set)
 

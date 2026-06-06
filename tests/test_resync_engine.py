@@ -22,13 +22,12 @@ def _resync_cfg():
 
 def test_resync_sub_pump_initiates_and_resolves():
     res = simulate_one_run(_resync_cfg(), rng=DeterministicRNG(7))
-    md = res.metadata
-    assert md["resync_initiated"] >= 1
+    assert res.resync_initiated >= 1
     # 每个发起的 resync 必须解析为 completed 或 timeout（无悬挂）
-    assert md["resync_initiated"] == md["resync_completed"] + md["resync_timeout"]
+    assert res.resync_initiated == res.resync_completed + res.resync_timeout
 
 
 def test_resync_completes_at_least_once_in_engine():
     # 引擎内确实完成过重同步（challenge+confirm 存活 -> 封窗恢复）
     res = simulate_one_run(_resync_cfg(), rng=DeterministicRNG(7))
-    assert res.metadata["resync_completed"] >= 1
+    assert res.resync_completed >= 1

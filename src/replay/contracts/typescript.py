@@ -149,6 +149,9 @@ export interface SimulationResultRecord {{
   latency_ticks: number;
   crypto_ops: number;
   challenge_round_trips: number;
+  resync_initiated: number;
+  resync_completed: number;
+  resync_timeout: number;
   mac_tag_bits: number;
   auth_profile: string;
   metadata: Record<string, unknown>;

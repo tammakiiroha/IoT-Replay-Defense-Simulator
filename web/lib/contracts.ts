@@ -114,6 +114,9 @@ export interface SimulationResultRecord {
   latency_ticks: number;
   crypto_ops: number;
   challenge_round_trips: number;
+  resync_initiated: number;
+  resync_completed: number;
+  resync_timeout: number;
   mac_tag_bits: number;
   auth_profile: string;
   metadata: Record<string, unknown>;
@@ -902,6 +905,21 @@ export const jsonSchemas = {
             "default": 0.0,
             "title": "Challenge Round Trips",
             "type": "number"
+          },
+          "resync_initiated": {
+            "default": 0,
+            "title": "Resync Initiated",
+            "type": "integer"
+          },
+          "resync_completed": {
+            "default": 0,
+            "title": "Resync Completed",
+            "type": "integer"
+          },
+          "resync_timeout": {
+            "default": 0,
+            "title": "Resync Timeout",
+            "type": "integer"
           },
           "mac_tag_bits": {
             "default": 80,

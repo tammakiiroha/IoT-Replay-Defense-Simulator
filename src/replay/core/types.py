@@ -159,6 +159,9 @@ class SimulationRunResult:
     latency_ticks: float = 0.0
     crypto_ops: float = 0.0
     challenge_round_trips: float = 0.0
+    resync_initiated: int = 0
+    resync_completed: int = 0
+    resync_timeout: int = 0
     metadata: dict[str, object] = field(default_factory=dict)
 
     @property
@@ -207,6 +210,9 @@ class AggregateStats:
     latency_ticks: float = 0.0
     crypto_ops: float = 0.0
     challenge_round_trips: float = 0.0
+    resync_initiated: int = 0
+    resync_completed: int = 0
+    resync_timeout: int = 0
     mac_tag_bits: int = 80
     auth_profile: str = "hmac"
     metadata: dict[str, object] = field(default_factory=dict)

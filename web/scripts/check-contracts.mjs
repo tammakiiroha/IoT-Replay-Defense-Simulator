@@ -22,6 +22,10 @@ if (!contractsSource.includes('g_hard')) {
   throw new Error('contracts.ts is missing g_hard');
 }
 
+if (!contractsSource.includes('resync_initiated')) {
+  throw new Error('contracts.ts is missing resync counters');
+}
+
 const manifest = JSON.parse(manifestSource);
 if (!Array.isArray(manifest.artifacts) || manifest.artifacts.length === 0) {
   throw new Error('manifest.json does not contain any artifacts');

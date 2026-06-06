@@ -83,6 +83,21 @@ class ResyncPending:
 
 
 @dataclass
+class CriticalPending:
+    """pending_critical[pid] 表项（§4.4 阶段1）。confirm 绑定字段全在此固化。"""
+
+    epoch: int
+    ctr: int
+    cmd: str
+    payload_hash: bytes       # 与 crit_*_tag 的 payload_hash: bytes 对齐
+    nonce_id: int
+    nonce_r: str
+    ttl_ticks: int
+    expire_tick: int
+    sender_id: int
+
+
+@dataclass
 class ReceiverState:
     """Mutable state that the receiver persists across frames."""
 
@@ -93,6 +108,9 @@ class ReceiverState:
     used_nonces: set[str] = field(default_factory=set)
     epoch: int = 0
     resync_pending: ResyncPending | None = None
+    pending_critical: dict[int, CriticalPending] = field(default_factory=dict)  # key=pid:int
+    committed_critical: set[int] = field(default_factory=set)  # 已提交 pid，去重(C2)
+    crit_nonce_seq: int = 0  # nonce_id 自增源
 
 
 @dataclass

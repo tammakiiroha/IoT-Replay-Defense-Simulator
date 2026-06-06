@@ -135,3 +135,7 @@ web/tsconfig.tsbuildinfo
 .env
 .env.*
 !.env.example
+
+# macOS Finder copy duplicates under generated data dir only
+web/public/data/* [0-9].json
+web/public/data/artifacts/* [0-9].json

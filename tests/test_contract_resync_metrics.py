@@ -33,3 +33,11 @@ def test_result_record_resync_counters_default_zero():
     assert rec.resync_initiated == 0
     assert rec.resync_completed == 0
     assert rec.resync_timeout == 0
+
+
+def test_aggregate_as_dict_includes_resync_counters():
+    # 导出面：凡走 entry.as_dict()（如 scripts/run_sweeps.py）都必须带这三指标
+    d = _agg(resync_initiated=5, resync_completed=3, resync_timeout=2).as_dict()
+    assert d["resync_initiated"] == 5
+    assert d["resync_completed"] == 3
+    assert d["resync_timeout"] == 2

@@ -246,6 +246,9 @@ class AggregateStats:
             "latency_ticks": self.latency_ticks,
             "crypto_ops": self.crypto_ops,
             "challenge_round_trips": self.challenge_round_trips,
+            "resync_initiated": self.resync_initiated,
+            "resync_completed": self.resync_completed,
+            "resync_timeout": self.resync_timeout,
             "mac_tag_bits": self.mac_tag_bits,
             "auth_profile": self.auth_profile,
         }

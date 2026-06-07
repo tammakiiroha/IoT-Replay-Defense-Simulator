@@ -109,7 +109,7 @@
 - **不动**：`attack_success/legit_accepted` 归因语义（攻击者增强只改"攻击者怎么选帧/信道概率"，不改"什么算 accept/attack success"）。
 
 > **已拍板（2026-06-08 review）：** D1=AttackerStrategy 抽象（random 默认零漂移）✅；D2=位置×强度映射表已定稿（`ind/strong`=现状零漂移，`tx/rx/weak` opt-in，附 live/paired 落地语义）✅；D3=`analytic/models.py` 纯函数先做，`w_star` 签名已定 ✅；D4=四独立枚举值 `random/adaptive_lostframe/adaptive_resync/adaptive_critical`（不做自动 `"adaptive"`）+ 能力边界写死（adaptive_resync 只挑越闸已录制帧、不伪造）✅；D4b=strategy 双入口覆盖 live+paired（`pick_frame`/`pick_recorded`）✅；D5=固定 `r` 网格逐点、受控 MC 复用真实 `Receiver`、解析∈MC-CI 验收 ✅；D6=`SimulationSpec` 加 attacker 三字段、**不动归因**✅。
-> **唯一可回退点**：D5 取方案 A（固定 `r` 逐点）；若你要方案 B（R 分布取均值）告知即可切。
+> **D5 已锁定**：**本 Phase 固定方案 A（固定 `r` 逐点）；方案 B（R 分布取均值）后置，不在本 Phase 切换。**
 > **第二轮 review 修正（2026-06-08）：** ①D5/P4 受控 MC 改为"录 `c`→模拟 `c+1..c+r` 随机送达→重放 `c`"，否则 `r>=W` 恒 `REJECT_OLD`→测不出 `p_loss^(r-W+1)`；②`adaptive_lostframe` 候选补 `received_mask[offset]==0`（否则 `REJECT_DUP`）；③`adaptive_resync` 只选 normal 非 critical 帧（critical prepare 不走 SW resync 路径）；④D2 概率表标注"仅 iid 解析"，实现以实际 delivery 为准（兼容 `gilbert_elliott`/`trace`）；⑤`pick_frame`/`pick_recorded` 的 `context` 改可选默认 `None`（薄壳兼容）。
 
 ---

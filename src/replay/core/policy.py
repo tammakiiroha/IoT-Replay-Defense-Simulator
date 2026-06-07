@@ -9,7 +9,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 # H_k 六维：{phys, property, privacy, availability, auth, recovery} ∈ {0..4}；I(c)=max
-ImpactVector = tuple[int, int, int, int, int, int]
+# 类型用变长 tuple[int, ...]（max 对任意长度成立），与 SimulationConfig.command_impact 对齐；
+# 「6 维」是语义约定（默认表与构造遵守），不用定长 tuple 强约束以免与 config 类型漂移。
+ImpactVector = tuple[int, ...]
 
 
 @dataclass(frozen=True)
@@ -100,13 +102,25 @@ class PolicyTable:
         policy_source: str,
         profile: str,
         command_impact: dict[str, ImpactVector] | None,
-        command_set: list[str],
         command_risk: dict[str, float] | None,
         risk_high: float,
     ) -> PolicyTable:
+        """构造时离线算好 critical 集。命令域由 policy_source 自身决定：
+        legacy=command_risk 键、default_table=DEFAULT_COMMAND_IMPACT 键、custom=command_impact 键。
+        域外命令 -> is_critical False（normal）。"""
+        if policy_source == "legacy":
+            universe: list[str] = list((command_risk or {}).keys())
+        elif policy_source == "default_table":
+            universe = list(DEFAULT_COMMAND_IMPACT.keys())
+        elif policy_source == "custom":
+            if command_impact is None:
+                raise ValueError("policy_source='custom' requires command_impact")
+            universe = list(command_impact.keys())
+        else:
+            raise ValueError(f"unknown policy_source: {policy_source!r}")
         critical = frozenset(
             cmd
-            for cmd in command_set
+            for cmd in universe
             if classify_critical(
                 cmd,
                 policy_source=policy_source,

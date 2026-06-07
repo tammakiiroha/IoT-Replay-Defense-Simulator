@@ -4,7 +4,8 @@ import type {
   SimulationBatchResult,
   SimulationSpec,
 } from './contracts';
-import { apiUrl, withBasePath } from './site';
+import { runStaticSimulation } from './static-simulator';
+import { apiBase, apiUrl, withBasePath } from './site';
 
 async function fetchJson<T>(urls: string[]): Promise<T> {
   let lastError: unknown;
@@ -40,18 +41,28 @@ export async function loadArtifact(pathOrId: string): Promise<ExperimentArtifact
 }
 
 export async function runSimulation(spec: SimulationSpec): Promise<SimulationBatchResult> {
-  const response = await fetch(apiUrl('/api/v1/simulations'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(spec),
-  });
+  try {
+    const response = await fetch(apiUrl('/api/v1/simulations'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(spec),
+    });
 
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(detail || `Simulation request failed with ${response.status}`);
+    if (response.ok) {
+      return (await response.json()) as SimulationBatchResult;
+    }
+
+    if (apiBase) {
+      const detail = await response.text();
+      throw new Error(detail || `Simulation request failed with ${response.status}`);
+    }
+  } catch (error) {
+    if (apiBase) {
+      throw error;
+    }
   }
 
-  return (await response.json()) as SimulationBatchResult;
+  return runStaticSimulation(spec);
 }

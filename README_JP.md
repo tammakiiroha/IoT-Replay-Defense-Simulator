@@ -9,14 +9,15 @@
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.md)
 [![日本語](https://img.shields.io/badge/lang-日本語-red.svg)](README_JP.md)
 [![中文](https://img.shields.io/badge/lang-中文-green.svg)](README_CH.md)
+[![CI](https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/actions/workflows/ci.yml/badge.svg)](https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/tammakiiroha/IoT-Replay-Defense-Simulator?label=release)](https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator/releases)
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-94-brightgreen.svg)](tests/)
-[![Monte Carlo](https://img.shields.io/badge/runs-200-orange.svg)](EXPERIMENTAL_PARAMETERS_JP.md)
+[![Citation](https://img.shields.io/badge/citation-CFF-informational.svg)](CITATION.cff)
 
 **損失・順序入れ替え・低コスト制約下の IoT リプレイ防御を評価する再現可能ベンチマーク。**
 
-[🌐 Web Demo](https://tammakiiroha.github.io/IoT-Replay-Defense-Simulator/) • [📖 クイックスタート](#クイックスタート) • [🎯 主要結果](#実験結果とデータ分析) • [📊 品質とテスト](#プロジェクト品質とテスト) • [🤝 コントリビューション](CONTRIBUTING.md) • [📚 完全ドキュメント](PRESENTATION_JP.md)
+[🌐 Web Demo](https://tammakiiroha.github.io/IoT-Replay-Defense-Simulator/) • [Project Status](docs/PROJECT_STATUS.md) • [📖 クイックスタート](#クイックスタート) • [🎯 主要結果](#実験結果とデータ分析) • [📊 品質とテスト](#プロジェクト品質とテスト) • [🤝 コントリビューション](CONTRIBUTING.md)
 
 </div>
 
@@ -742,32 +743,11 @@ _`results/ideal_p0.json` からの参照ベースライン_
 
 コントリビューションを歓迎します！開発環境のセットアップ、コードスタイルガイドライン、変更の提出方法については、[CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。
 
-## ⭐ Star 履歴
-
-<div align="center">
-
-[![Star History Chart](https://api.star-history.com/svg?repos=tammakiiroha/IoT-Replay-Defense-Simulator&type=Date)](https://star-history.com/#tammakiiroha/IoT-Replay-Defense-Simulator&Date)
-
-</div>
-
-> **このプロジェクトが気に入りましたか？** Star を付けてサポートを示し、他の人が発見できるようにしてください！
-
 ## 引用
 
-このシミュレーションツールキットを研究や論文で使用する場合は、以下のように引用してください:
+このベンチマークを研究、論文、技術レポートで使用する場合は、[CITATION.cff](CITATION.cff) を使用するか、次のように引用してください:
 
-```bibtex
-@software{iot_replay_defense_simulator_2025,
-  author    = {Romeitou (tammakiiroha)},
-  title     = {IoT Replay Attack Defense Simulator},
-  year      = {2025},
-  publisher = {GitHub},
-  url       = {https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator}
-}
-```
-
-またはプレーンテキスト形式:
-> Romeitou (tammakiiroha). (2025). IoT Replay Attack Defense Simulator. GitHub. https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator
+> Romeitou (tammakiiroha). (2026). ReplayBench-IoT: A reproducible benchmark for IoT replay-defense evaluation. v0.2.0. GitHub. https://github.com/tammakiiroha/IoT-Replay-Defense-Simulator
 
 ## 参考文献
 

@@ -41,26 +41,44 @@ Phase 4 碰接收端生命周期与跨重启 counter 空间，比 Phase 3 更易
 
 ### D4：reboot 后 pending 表清理 vs 继承？
 - **推荐（§4.6「清空 pending nonce 表 critical + resync」）**：reboot 清空 `resync_pending`、`pending_critical`、`outstanding_nonces`、`expected_nonce`，`crit_nonce_seq←0`；`last_counter←-1`、`received_mask←[]`（易失，丢失）。
-- **`committed_critical`（去重集）**：**也清空**——跨 reboot 的去重由 **epoch bump** 兜底（旧 epoch confirm 全拒，不可能 re-commit）。**这一点要在 blocker 测试里钉死**：reboot 后重放旧 critical confirm（旧 epoch）→ 被 epoch 拒，而非依赖 committed 集。
+- **`committed_critical`（去重集）**：**也清空**——跨 reboot 的去重由 **D7 的显式 epoch 守门**兜底（旧 epoch confirm：要么 `frame.epoch != state.epoch` 被守门拒，要么攻击者篡改 `frame.epoch` 使 `crit_confirm_tag` 失配；二者皆拒，不可能 re-commit）。**注意：不是靠「自动 MAC 失配」**（见 R2 更正）。**blocker 测试钉死**：reboot+recovery 后重放旧 epoch critical confirm/prepare → 被 epoch 守门拒，而非依赖 committed 集。
 - **持久态**：`epoch`（bump 后的新值）、lease 区间、`key_id`、`boot_counter`（+1）保留。
 
 ### D5：reboot 后如何恢复收帧（LOCKED_SAFE → NORMAL）？
-- **推荐（复用 Phase 2 resync）**：LOCKED_SAFE 下，第一帧若触发不可接受（H 丢失，`last_counter=-1`），接收端**不**走「初始帧直接建窗」老路（那等于洗白），而是要求一次**认证重同步**：发 RESYNC_CHALLENGE（新 epoch、当前 H 占位），发送端 RESYNC_CONFIRM 重建 (epoch, H)；`process_resync_confirm` 成功后 **`locked_safe←False`**、回 NORMAL。
-  - 关键：LOCKED_SAFE 下的 resync confirm 必须绑定 **新 epoch**；旧 epoch 的 confirm 拒绝。
+- **推荐（复用 Phase 2 resync）**：LOCKED_SAFE 下，第一帧若触发不可接受（H 丢失，`last_counter=-1`），接收端**不**走「初始帧直接建窗」老路（那等于洗白），而是要求一次**认证重同步**重建 (epoch, H)；`process_resync_confirm` 成功后 **`locked_safe←False`**、回 NORMAL。
+  - **⚠️ 缺口（已修，blocker #2）**：现有 `issue_resync_challenge` 要求 `state.resync_pending` 已存在（[receiver.py:350](src/replay/core/receiver.py)），而 LOCKED_SAFE 会在 normal/critical 入口直接 `locked_safe_reject`，**永不经 `verify_with_window` 创建 pending** → 无恢复入口。**必须新增专用入口** `begin_locked_safe_resync(self, rng, *, now_tick, ttl_ticks) -> Frame`：显式创建 `ResyncPending(nonce_r="", trigger_counter=0, epoch=state.epoch[新], h_at_challenge=-1, ttl_ticks, expire_tick=now_tick+ttl)` 再 issue R2T challenge（counter=-1 占位 old_h、epoch=新）。否则 4.3/4.5 不可实现。
+  - **发送端 epoch 同步（blocker #4 关联）**：recovery 成功后必须用**明确方法** `Sender.adopt_epoch(new_epoch)` 更新发送端自有 epoch，**不得**由 engine 每次偷读 `receiver.state.epoch`。confirm 绑定 **新 epoch**；旧 epoch 的 confirm 拒绝。
 - **备选否决**：reboot 后用普通帧的「初始帧建窗」恢复（=洗白，违背 §4.6）。
 
-### D6：counter-lease 建模深度？
-- **推荐（最小但忠实）**：`Sender` 加 `nvm_epoch/nvm_ctr_reserve_high/boot_counter` 三字段 + `reserve_size` 参数；`begin_boot()`：从 NVM 读 reserve，若 `tx_counter` 接近 `ctr_reserve_high` 则预约下一段（`ctr_reserve_high += reserve_size`，模拟一次 NVM 写）。kernel `epoch.py` 提供纯函数 `next_lease(ctr, reserve_high, reserve_size)`。**不**做真实文件 NVM I/O（用内存字段模拟），只钉**不变量**：跨 `begin_boot()` 的 `tx_counter` 严格单调、永不回退、永不复用。
-- **备选否决**：每帧写 NVM（不现实、与 §4.6 租约思想相悖）；完全省略 lease（D3 已否决）。
+### D6：counter-lease 建模深度？（**已修，blocker #3：旧算法崩溃后会复用 counter**）
+- **⚠️ 原 `next_lease(ctr, reserve_high)`「接近 high 才扩容」算法错误**：若 NVM 只存 `ctr_reserve_high`，崩溃后易失 `tx_counter` 归零，`ctr=0, reserve_high=100` 不触发扩容 → 下一帧从 1 开始**复用** 1..100。
+- **正确模型——boot 时烧掉旧 lease**：`Sender` 加 `nvm_ctr_reserve_high`（NVM 持久）+ `reserve_size` 参数 + `boot_counter`。`begin_boot(self)`：
+  1. `self.tx_counter = self.nvm_ctr_reserve_high`（**烧掉**整段旧预约——下一帧 `next_frame` 会 `+1`，从 `old_high+1` 起，必 > 崩溃前任何 ctr）；
+  2. `self.nvm_ctr_reserve_high += self.reserve_size`（预约新段，模拟一次 NVM 写）；
+  3. `self.boot_counter += 1`。
+  - 稳态运行中，当 `tx_counter` 逼近 `nvm_ctr_reserve_high` 时也写一次 NVM 扩容（`nvm_ctr_reserve_high += reserve_size`），**非每帧写**。
+- **不变量（R5，blocker 测试钉死）**：模拟「崩溃前只用到 10、NVM high=100」→ `begin_boot()` 后下一帧 ctr **必 > 100**（不是 11，不是 1）。
+- **备选否决**：每帧写 NVM；省略 lease（D3 已否决）。
 
-> **请确认 D1=接收端事件注入、D2=显式 `locked_safe` bool、D3=epoch 接收端权威 + lease 发送端权威（互补）、D4=清空含 committed_critical（epoch 兜底去重）、D5=LOCKED_SAFE 经认证 resync 重建后回 NORMAL、D6=最小内存 lease 不变量。** 确认后我把「引擎 reboot 注入接线」Task 的逐行代码定稿（kernel/state/reboot/locked-safe 闸门现在即可执行）。
+### D7：sender epoch 权威落到接口 + 接收端显式 epoch 守门（**安全核心，blocker #1+#4**）
+- **⚠️ 现状缺口（已核实）**：`Sender.next_frame` 不携带 epoch（[sender.py:25](src/replay/core/sender.py)，frame.epoch 默认 0）；critical 由 engine 把 `receiver.state.epoch` 传给 `begin_critical_intent`（[sender.py:69](src/replay/core/sender.py) 附近），**掩盖了发送端自身 epoch 状态**。接收端则完全不比 `frame.epoch == state.epoch`。
+- **推荐（发送端拥有 epoch、接收端显式守门）**：
+  - **发送端**：`Sender` 加 `current_epoch: int = 0` + `nvm_epoch: int = 0`。`next_frame`（HSW_CR normal）stamp `frame.epoch = self.current_epoch` 并把 epoch 绑进 normal MAC（见下「MAC 绑定取舍」）；`begin_critical_intent` 从 **`self.current_epoch`** 取 epoch（不再由 engine 传 receiver epoch）；recovery 经 `adopt_epoch(new)` 更新。
+  - **接收端**：`process`（HSW_CR 分支）/`process_crit_prepare`/`process_crit_confirm` 一律先 `if frame.epoch != state.epoch: return (False, "epoch_mismatch")`（不动状态），且在 LOCKED_SAFE 闸门**之后**、其它判定**之前**。
+  - **MAC 绑定取舍（请你裁决）**：
+    - (a)【推荐，改动小】normal 帧**不**改 MAC（仍 `HmacAuthenticator(counter,command)`），replay 防御靠「epoch 守门 + SW 窗口 + lease 单调 ctr」（recovery 后 H 重建到高位，旧 ctr REJECT_OLD）。critical 帧已 epoch-in-MAC，天然防篡改 epoch。
+    - (b)【更强、改动大】HSW_CR normal 帧改用 `normal_req_tag`(含 epoch)，需把 HSW_CR 低风险路径从共享 `verify_with_window` 分出独立 MAC 分支（STABLE_MODES 不受影响但 drift 风险升高）。
+    - 我**倾向 (a)**：在「lease 保证新 ctr 远高于旧 ctr」前提下，SW 窗口已挡住 normal replay，epoch 守门作纵深；(b) 留作后续硬化。
+- **测试要求**：recovery **完成后**（非仅 LOCKED_SAFE 中）重放旧 epoch 的 normal **和** critical 帧都必须拒。
+
+> **请确认 D1=接收端事件注入、D2=显式 `locked_safe` bool、D3=epoch 接收端权威 + lease 发送端权威（互补）、D4=清空含 committed_critical（靠 D7 显式 epoch 守门去重，非自动失配）、D5=LOCKED_SAFE 经 `begin_locked_safe_resync` 新入口认证重建后回 NORMAL、D6=boot 烧旧 lease 防复用、D7=发送端拥有 epoch + 接收端显式守门（含 MAC 绑定取舍 a/b）。** 确认后我把「引擎 reboot 注入接线」Task 的逐行代码定稿（kernel/state/reboot/locked-safe 闸门现在即可执行）。
 
 ---
 
 ## 硬约束（贯穿，blocker 守门）
 
 1. **(R1) reboot 不洗白**：reboot 后 `last_counter` 丢失，但**不得**用「初始帧建窗」接受任意帧；必须先认证重同步。
-2. **(R2) epoch 单调 bump**：reboot ⇒ `epoch+1`；旧 epoch 帧（normal/critical/confirm）**全拒**，不动状态。
+2. **(R2) epoch 单调 bump + 显式守门**：reboot ⇒ `epoch+1`。**⚠️ 旧 epoch 帧不会「自动 MAC 失配」**——经核实（[receiver.py:75](src/replay/core/receiver.py) window 路径用 `HmacAuthenticator(counter, command)` 不含 epoch；[receiver.py:385](src/replay/core/receiver.py) critical prepare 用 `frame.epoch` 自验自、从不比 `state.epoch`）。因此必须在 **HSW_CR 全收帧路径**（window/normal、crit prepare、crit confirm）显式加 `frame.epoch == state.epoch` 守门（不等即拒、不动状态）。replay 防御按帧型分层（见 D7）：**critical 帧**靠「epoch 守门 + crit_*_tag 已含 epoch」（攻击者篡改 frame.epoch 即 MAC 失配）；**normal 帧**靠「epoch 守门 + SW 窗口 + lease 单调 ctr」（normal MAC 不含 epoch，但 recovery 后 H 重建到高位 + lease 保证新 ctr 远高于旧 ctr，旧帧 REJECT_OLD）。
 3. **(R3) LOCKED_SAFE 闸门**：`locked_safe=True` 时拒绝 normal/critical 收帧（`locked_safe_reject`），仅接受重建用的（新 epoch）RESYNC_CONFIRM。
 4. **(R4) pending 全清**：reboot 清空 resync/critical pending + nonce 表 + committed 集；持久态（epoch/lease/key_id/boot_counter）保留。
 5. **(R5) counter 不复用**：发送端跨 `begin_boot()` 的 `tx_counter` 严格单调、不回退、不复用（lease 不变量）。
@@ -119,47 +137,61 @@ Phase 4 碰接收端生命周期与跨重启 counter 空间，比 Phase 3 更易
 
 **要点：**
 - `reboot(self) -> None`：清空易失态（last_counter←-1、received_mask←[]、resync_pending←None、pending_critical←{}、committed_critical←set()、outstanding_nonces←{}、expected_nonce←None、crit_nonce_seq←0）；`epoch ← epoch_bump(epoch)`、`nvm_epoch ← epoch`、`boot_counter += 1`、`locked_safe ← True`。
-- `process`/`process_crit_prepare`/`process_crit_confirm` 入口加 LOCKED_SAFE 闸门：`if state.locked_safe: return (False, "locked_safe_reject")`（R3；不动状态）。
+- `process`(HSW_CR 分支)/`process_crit_prepare`/`process_crit_confirm` 入口加两道闸（顺序：LOCKED_SAFE → epoch）：
+  1. `if state.locked_safe: return (False, "locked_safe_reject")`（R3；不动状态）。
+  2. `if frame.epoch != state.epoch: return (False, "epoch_mismatch")`（**R2/D7 显式 epoch 守门**；不动状态）——这是旧 epoch 帧被拒的**真正机制**（非「自动 MAC 失配」）。
 - **blocker 测试：**
   - `test_reboot_bumps_epoch_and_enters_locked_safe`（R2/R3）。
   - `test_reboot_clears_pending_tables`（R4：critical/resync/nonce/committed 全清）。
-  - `test_no_old_epoch_frame_accepted_after_reboot`（R2：旧 epoch normal/critical 帧 → 拒，状态不变）。
+  - `test_old_epoch_frame_rejected_by_explicit_gate`（R2/D7：`frame.epoch != state.epoch` 的 normal/critical 帧 → `epoch_mismatch`，状态不变）。
   - `test_locked_safe_rejects_normal_and_critical`（R3）。
-**Step 5:** 提交 `feat: receiver reboot bumps epoch, clears volatile state, enters LOCKED_SAFE`。
+**Step 5:** 提交 `feat: receiver reboot bumps epoch, clears volatile state, enters LOCKED_SAFE with explicit epoch gate`。
 
-### Task 4.3：LOCKED_SAFE 经认证 resync 重建 → 回 NORMAL（R6）
+### Task 4.3：LOCKED_SAFE 经认证 resync 重建 → 回 NORMAL（R6，含 blocker #2 修复）
 
-**Files:** Modify `src/replay/core/receiver.py`（resync 路径感知 locked_safe）；Test `tests/test_locked_safe_recovery.py`
+**Files:** Modify `src/replay/core/receiver.py`（新增 `begin_locked_safe_resync` + resync confirm 成功清 locked_safe）、`src/replay/core/sender.py`（`adopt_epoch`）；Test `tests/test_locked_safe_recovery.py`
 
 **要点：**
-- LOCKED_SAFE 下允许 `issue_resync_challenge`（用**新 epoch**）+ `process_resync_confirm`；confirm 成功（绑定新 epoch）→ 重建 (epoch, H)、`locked_safe ← False`、回 NORMAL。
-- 旧 epoch 的 resync confirm → 拒（R2），保持 LOCKED_SAFE。
+- **新增专用恢复入口（blocker #2）** `Receiver.begin_locked_safe_resync(self, rng, *, now_tick, ttl_ticks) -> Frame`：要求 `state.locked_safe`，显式创建 `ResyncPending(nonce_r="", trigger_counter=0, epoch=state.epoch[新], h_at_challenge=-1, ttl_ticks, expire_tick=now_tick+ttl_ticks)`，再调 `issue_resync_challenge` 产出 R2T challenge（counter=-1 占位 old_h、epoch=新）。**不复用** `verify_with_window` 的 resync 触发（LOCKED_SAFE 已在入口拒帧）。
+- `process_resync_confirm` 成功（绑定新 epoch、`new_h=sender.tx_counter` 高位）→ `resync_commit_same_epoch` 重建 H、`locked_safe ← False`、回 NORMAL。
+- **发送端 epoch 同步（blocker #4）** `Sender.adopt_epoch(self, new_epoch: int) -> None`：`self.current_epoch = new_epoch`（recovery 时由引擎显式调用；其后 `next_frame`/`begin_critical_intent` 用新 epoch）。
+- 旧 epoch 的 resync confirm → 拒（R2/D7），保持 LOCKED_SAFE。
 - **blocker 测试：**
-  - `test_locked_safe_recovers_via_authenticated_resync`（R6：新 epoch resync 成功 → locked_safe=False，之后正常收帧）。
+  - `test_locked_safe_recovers_via_authenticated_resync`（R6：`begin_locked_safe_resync` → 新 epoch resync 成功 → `locked_safe=False`，之后正常收帧）。
   - `test_locked_safe_not_recovered_by_old_epoch_confirm`（R2/R6）。
+  - `test_old_epoch_replay_rejected_after_recovery`（**关键**：recovery 完成回 NORMAL 后，旧 epoch normal+critical replay 仍被 epoch 守门拒——非仅 LOCKED_SAFE 中拒）。
   - `test_brownout_enters_locked_safe`（brownout=reboot 别名场景）。
-**Step 5:** 提交 `feat: recover from LOCKED_SAFE only via authenticated resync into new epoch`。
+**Step 5:** 提交 `feat: recover from LOCKED_SAFE via dedicated authenticated-resync entry into new epoch`。
 
-### Task 4.4：Sender counter-lease（R5）
+### Task 4.4：Sender epoch 权威 + counter-lease（R5，含 blocker #3+#4 修复）
 
-**Files:** Modify `src/replay/core/sender.py`、`src/replay/core/types.py`（lease 参数）；Test `tests/test_sender_lease.py`
+**Files:** Modify `src/replay/core/sender.py`、`src/replay/core/types.py`（lease 参数 / SimulationConfig `lease_reserve_size`）、`src/replay/core/experiment.py`（critical 帧改用 sender 自有 epoch，不再传 `receiver.state.epoch`）；Test `tests/test_sender_lease.py` + `tests/test_sender_epoch.py`
 
-**要点：**
-- `Sender` 加 `nvm_ctr_reserve_high/reserve_size/boot_counter`；`begin_boot(self) -> None`：`boot_counter+=1`；若 `tx_counter` 临界则 `nvm_ctr_reserve_high = next_lease(...)`；`tx_counter ← max(tx_counter, 上次 reserve 起点)`（保证不复用）。
+**要点（epoch 权威，blocker #4）：**
+- `Sender` 加 `current_epoch: int = 0`、`nvm_epoch: int = 0`。`next_frame`（HSW_CR normal）stamp `frame.epoch = self.current_epoch`。`begin_critical_intent` 从 `self.current_epoch` 取 epoch（**移除** engine 传入 receiver epoch 的 `epoch=` 实参——改默认取 sender 自有，或保留入参但默认 `self.current_epoch`；engine 两处调用点同步改为不偷读 receiver epoch）。
+- `adopt_epoch` 见 Task 4.3。
+
+**要点（counter-lease，blocker #3 正确算法）：**
+- `Sender` 加 `nvm_ctr_reserve_high: int`、`reserve_size: int`、`boot_counter: int`。`begin_boot(self) -> None`（见 D6）：①`tx_counter = nvm_ctr_reserve_high`（烧旧段）②`nvm_ctr_reserve_high += reserve_size`（写 NVM）③`boot_counter += 1`。稳态 `next_frame` 中 `tx_counter` 逼近 `nvm_ctr_reserve_high` 时也扩容一次（非每帧）。
+- kernel `epoch.py` 的 `next_lease`/`lease_ok` 作纯函数判定辅助。
+
 - **blocker 测试：**
-  - `test_counter_lease_never_reuses_across_boot`（R5：begin_boot 后下一帧 ctr > 重启前所有 ctr）。
-  - `test_lease_reserves_in_blocks_not_every_frame`（next_lease 仅临界扩容）。
-**Step 5:** 提交 `feat: add sender counter-lease to prevent counter reuse across reboot`。
+  - `test_counter_lease_never_reuses_across_boot`（R5：模拟崩溃前用到 10、NVM high=100 → `begin_boot()` 后下一帧 ctr **>100**，非 11、非 1）。
+  - `test_lease_reserves_in_blocks_not_every_frame`（稳态仅临界扩容）。
+  - `test_sender_stamps_current_epoch_on_normal_and_critical`（blocker #4：normal/critical 帧 epoch 取自 sender 自有 `current_epoch`）。
+  - `test_adopt_epoch_updates_sender_epoch`（recovery 后 stamp 新 epoch）。
+**Step 5:** 提交 `feat: add sender epoch authority and crash-safe counter-lease`。
 
 ### Task 4.5：引擎 reboot 注入接线（**D1–D6 确认后定稿**）
 
 **Files:** Modify `src/replay/core/experiment.py`（两路径在 `reboot_at_legit_index` 处调 `receiver.reboot()` + `sender.begin_boot()`，随后 legit 帧若遇 LOCKED_SAFE 触发认证 resync 重建，仿 `_resolve_resync`/`_resolve_critical`）、`src/replay/core/trace.py`（若 reboot 注入需信道决策则**末尾抽取**）；Test `tests/test_reboot_engine.py`
 
 **做法骨架（Option A，仿 Phase 2/3 子泵）：**
-1. 主循环到 `index == reboot_at_legit_index` 时注入一次 reboot：`receiver.reboot()` + `sender.begin_boot()`。
-2. 之后第一条 legit 帧到达 → LOCKED_SAFE 拒 → 引擎触发认证 resync 重建（新 epoch）→ `locked_safe=False` → 后续正常。
-3. attacker 在 reboot 后重放**旧 epoch** 帧 → 全拒（R2），`attack_success` 不增。
-4. **不动指标口径**（R7）；非 HSW_CR 模式不注入 reboot（STABLE_MODES 零漂移）。
+1. 主循环到 `index == reboot_at_legit_index` 时注入一次 reboot：`receiver.reboot()`（bump epoch、清易失态、`locked_safe=True`）+ `sender.begin_boot()`（烧旧 lease）。
+2. **恢复子泵**：reboot 后引擎调 `receiver.begin_locked_safe_resync(rng, now_tick, ttl)` 取 challenge → `sender.respond_resync_challenge` → `receiver.process_resync_confirm`；成功后 `sender.adopt_epoch(receiver.state.epoch)`（一次性显式同步，非每帧偷读）→ `locked_safe=False` → 后续 legit 正常。失败（丢包/TTL）→ 保持 LOCKED_SAFE，本轮后续帧被拒。
+3. critical 帧的 `begin_critical_intent` 用 **sender 自有 epoch**（Task 4.4），engine 不再传 `receiver.state.epoch`。
+4. attacker 在 reboot 后重放**旧 epoch** 帧 → 被 epoch 守门拒（R2/D7），`attack_success` 不增。
+5. **不动指标口径**（R7）；非 HSW_CR 模式不注入 reboot（`reboot_at_legit_index=None`）→ STABLE_MODES 零漂移。
 
 **测试规格：**
 - `test_hsw_cr_reboot_then_recover_resumes_traffic`（reboot → LOCKED_SAFE → resync 重建 → 后续 legit 正常 accept）。
@@ -169,16 +201,16 @@ Phase 4 碰接收端生命周期与跨重启 counter 空间，比 Phase 3 更易
 
 ### Task 4.6：契约/指标同步（**仅新增观测计数，不改归因口径——R7**）
 
-**Files:** Modify `src/replay/core/cost.py`（`reboots/locked_safe_rejects/epoch_recoveries` 计数）、`src/replay/core/types.py`（`SimulationRunResult` + `AggregateStats` + **`as_dict()`**）、`src/replay/core/experiment.py`（两处填充 + `_aggregate_results` 汇总）、`src/replay/contracts/models.py`（+`from_aggregate`）、`src/replay/contracts/typescript.py`、`web/scripts/check-contracts.mjs`；Test `tests/test_contract_reboot_metrics.py`（含 `as_dict` 导出面断言）。重生成 `web/lib/contracts.ts`/`web/public/data/contracts.json`。
+**Files:** Modify `src/replay/core/cost.py`（`reboots/locked_safe_rejects/epoch_recoveries` 计数）、`src/replay/core/types.py`（`SimulationRunResult` + `AggregateStats` + **`as_dict()`**）、`src/replay/core/experiment.py`（两处填充 + `_aggregate_results` 汇总）、`src/replay/contracts/models.py`（+`from_aggregate`）、`src/replay/contracts/typescript.py`、`web/scripts/check-contracts.mjs`、**`web/lib/static-simulator.ts`（blocker #5：补默认 counters，否则 web build 炸——Phase 3 已被此坑打过，见 commit `b6dc2fb`）**、必要时 `web/components/simulator-panel.tsx` 默认 spec 字段；Test `tests/test_contract_reboot_metrics.py`（含 `as_dict` 导出面断言）。重生成 `web/lib/contracts.ts`/`web/public/data/contracts.json`。
 
-**做法：** 同 Phase 3 Task 3.6 五段导出面全贯通（`SimulationRunResult → AggregateStats → as_dict() → Pydantic → TS/json`），测试必须含 `AggregateStats.as_dict()` 暴露断言。**这些是中性观测计数（发生了几次 reboot / 几次 locked_safe 拒绝 / 几次 epoch 重建），不触碰 `attack_success`/`legit_accepted` 归因（R7）。**
-**Step 5:** 提交 `feat: expose reboot/locked-safe observability counters in contracts and TS`。
+**做法：** 同 Phase 3 Task 3.6 **六段**导出面全贯通（`SimulationRunResult → AggregateStats → as_dict() → Pydantic → TS/json → web static fallback`），测试必须含 `AggregateStats.as_dict()` 暴露断言。**这些是中性观测计数（发生了几次 reboot / 几次 locked_safe 拒绝 / 几次 epoch 重建），不触碰 `attack_success`/`legit_accepted` 归因（R7）。**
+**Step 5（gate 必含 `cd web && npm run test:contracts && npm run build` 双绿）：** 提交 `feat: expose reboot/locked-safe observability counters in contracts and TS`。
 
 > **Phase 4 门（用 @superpowers:verification-before-completion 核验）：**
-> - blocker 全绿：`test_reboot_bumps_epoch_and_enters_locked_safe`、`test_reboot_clears_pending_tables`、`test_no_old_epoch_frame_accepted_after_reboot`、`test_locked_safe_rejects_normal_and_critical`、`test_locked_safe_recovers_via_authenticated_resync`、`test_counter_lease_never_reuses_across_boot`、`test_replayed_old_epoch_frame_after_reboot_does_not_commit`
-> - epoch/reboot/locked-safe/lease 单元 + 引擎集成全绿
+> - blocker 全绿：`test_reboot_bumps_epoch_and_enters_locked_safe`、`test_reboot_clears_pending_tables`、`test_old_epoch_frame_rejected_by_explicit_gate`、`test_locked_safe_rejects_normal_and_critical`、`test_locked_safe_recovers_via_authenticated_resync`、`test_old_epoch_replay_rejected_after_recovery`（recovery 后仍拒）、`test_counter_lease_never_reuses_across_boot`、`test_sender_stamps_current_epoch_on_normal_and_critical`、`test_replayed_old_epoch_frame_after_reboot_does_not_commit`
+> - epoch/reboot/locked-safe/lease/sender-epoch 单元 + 引擎集成全绿
 > - `test_engine_baseline_regression`(STABLE_MODES) 逐值相等
-> - 全量 pytest 绿 + ruff/mypy 不退化 + check-contracts 绿（含 `as_dict` 导出面测试）
+> - 全量 pytest 绿 + ruff/mypy 不退化 + **`cd web && npm run test:contracts && npm run build` 双绿（blocker #5：web static fallback 也补全）**
 > - **R7 复核**：grep 确认未改 `attack_success`/`legit_accepted` 归因逻辑；reboot 引出的任何归因疑问只作 known boundary 记录。
 
 ---

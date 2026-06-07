@@ -63,6 +63,16 @@ def test_reboot_clears_pending_tables():
     assert rcv.state.crit_nonce_seq == 0
 
 
+def test_reboot_clears_used_nonces_and_issue_tick():
+    # P3：reboot 也应清易失 challenge 状态 used_nonces，并复位 _issue_tick
+    rcv = _receiver()
+    rcv.state.used_nonces = {"a", "b"}
+    rcv._issue_tick = 7
+    rcv.reboot()
+    assert rcv.state.used_nonces == set()
+    assert rcv._issue_tick == 0
+
+
 def test_old_epoch_frame_rejected_by_explicit_gate():
     # 非 LOCKED_SAFE，但 frame.epoch != state.epoch -> epoch_mismatch（D7 显式守门），状态不变
     rcv = _receiver()  # state.epoch=0, locked_safe=False

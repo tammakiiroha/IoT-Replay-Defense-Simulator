@@ -45,7 +45,8 @@ class Sender:
 
         if nonce is not None:
             mac = auth.tag(nonce, command)
-            return Frame(command=command, nonce=nonce, mac=mac)
+            # stamp 发送端自有 epoch（P2）：否则 HSW_CR nonce 应答被 epoch 守门拒
+            return Frame(command=command, nonce=nonce, mac=mac, epoch=self.current_epoch)
 
         if self.mode is Mode.CHALLENGE:
             raise ValueError("Challenge mode requires a nonce for each frame")

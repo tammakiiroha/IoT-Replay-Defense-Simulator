@@ -530,7 +530,9 @@ class Receiver:
         state.committed_critical = set()
         state.outstanding_nonces = {}
         state.expected_nonce = None
+        state.used_nonces = set()   # P3：清易失 challenge 状态（跨 epoch 不留 stale nonce）
         state.crit_nonce_seq = 0
+        self._issue_tick = 0        # P3：复位 nonce 签发 tick 计数（易失）
         # R2：单调 bump epoch（旧 epoch 帧此后被显式守门拒）；R3：进 LOCKED_SAFE
         state.epoch = epoch_bump(state.epoch)
         state.nvm_epoch = state.epoch

@@ -4,7 +4,9 @@ Default (ind, strong) must be byte-for-byte the legacy baseline; tx/rx/weak are
 opt-in. tx/rx recording policy is unit-tested via the paired helper; weak is the
 appended attack-only extra drop that never touches the legit path.
 """
+import hashlib
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 from replay.core import (
@@ -12,8 +14,8 @@ from replay.core import (
     SimulationConfig,
     run_paired_experiments,
 )
-from replay.core.experiment import _should_record_paired
-from replay.core.trace import generate_trace
+from replay.core.experiment import _should_record_paired, simulate_one_run_with_trace
+from replay.core.trace import ScenarioTrace, generate_trace
 from replay.core.types import AttackMode
 
 _BASELINE = json.loads(Path("tests/fixtures/engine_baseline.json").read_text())
@@ -105,9 +107,9 @@ def test_rx_records_only_delivered():
 
 
 def test_weak_extra_drop_appended_no_baseline_drift():
-    cfg = _base(attack_mode=AttackMode.INLINE, num_replay=30)
+    cfg = _base(attack_mode=AttackMode.INLINE, num_replay=30, attacker_inject_strength="weak")
     trace = generate_trace(cfg, seed=SEED)
-    # new appended array exists, correct length, all bool
+    # weak appends the attack-only extra-drop array
     assert hasattr(trace, "attack_extra_dropped")
     assert len(trace.attack_extra_dropped) == cfg.num_replay
     assert all(isinstance(x, bool) for x in trace.attack_extra_dropped)
@@ -132,3 +134,66 @@ def test_weak_extra_drop_appended_no_baseline_drift():
     # extra attack-only drop can only reduce (or equal) delivered attacks
     assert weak.attack_accepted <= strong.attack_accepted
     assert weak.attack_total == strong.attack_total
+
+
+# --- (5) paired rx records at DELIVERY, not at send (delayed frame must wait) ---
+
+
+def _single_frame_trace(*, legit_delay: int) -> ScenarioTrace:
+    return ScenarioTrace(
+        commands=["PING"],
+        legit_dropped=[False],
+        legit_delay=[legit_delay],
+        attacker_record_dropped=[False],
+        inline_attempt=[True],
+        replay_pick=[0],
+        replay_dropped=[False],
+        replay_delay=[0],
+    )
+
+
+def _rx_inline_cfg() -> SimulationConfig:
+    return SimulationConfig(
+        mode=Mode.NO_DEFENSE,
+        attack_mode=AttackMode.INLINE,
+        num_legit=1,
+        num_replay=1,
+        window_size=0,
+        g_hard=16,
+        command_set=["PING"],
+        attacker_position="rx",
+    )
+
+
+def test_paired_rx_does_not_record_delayed_frame_before_delivery():
+    # delayed legit frame is not yet delivered at the inline replay -> nothing to replay
+    delayed = simulate_one_run_with_trace(_rx_inline_cfg(), _single_frame_trace(legit_delay=3))
+    assert delayed.attack_attempts == 0
+    # control: same-tick delivery -> recorded at delivery, replay can attempt
+    immediate = simulate_one_run_with_trace(_rx_inline_cfg(), _single_frame_trace(legit_delay=0))
+    assert immediate.attack_attempts == 1
+
+
+# --- (6) default/strong trace keeps legacy digest shape (no attack_extra_dropped) ---
+
+
+def test_strong_trace_digest_omits_attack_extra_drop_field():
+    tr = generate_trace(_base(attacker_inject_strength="strong"), seed=SEED)
+    assert tr.attack_extra_dropped == []
+    # digest must equal the legacy-shape digest (empty field popped from the payload)
+    data = asdict(tr)
+    data.pop("attack_extra_dropped")
+    expected = hashlib.sha256(
+        json.dumps(data, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()[:12]
+    assert tr.digest() == expected
+
+
+def test_weak_trace_has_attack_extra_drop_field():
+    cfg = _base(attacker_inject_strength="weak", num_replay=12)
+    tr = generate_trace(cfg, seed=SEED)
+    assert len(tr.attack_extra_dropped) == cfg.num_replay
+    assert all(isinstance(x, bool) for x in tr.attack_extra_dropped)
+    # weak includes the populated field, so its digest differs from the strong shape
+    strong = generate_trace(_base(attacker_inject_strength="strong", num_replay=12), seed=SEED)
+    assert tr.digest() != strong.digest()

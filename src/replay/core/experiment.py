@@ -699,6 +699,9 @@ def simulate_one_run_with_trace(
     # Paired path delegates frame selection to a strategy (P1). RandomReplay
     # reproduces the legacy pick_replay byte-for-byte; P3 swaps in adaptive ones.
     replay_strategy: AttackerStrategy = RandomReplay(target_commands=config.target_commands)
+    # rx records at DELIVERY, not at send: map engine frame id -> record decision, consumed
+    # in process_arrived when the frame is actually delivered (handles legit_delay > 0).
+    rx_pending: dict[int, bool] = {}
     legit_sent = 0
     legit_accepted = 0
     attack_attempts = 0
@@ -767,6 +770,8 @@ def simulate_one_run_with_trace(
     def process_arrived(frames: list[Frame]) -> None:
         nonlocal attack_success, legit_accepted
         for frame in frames:
+            if not frame.is_attack and rx_pending.pop(id(frame), False):
+                recorded.append(frame.clone())  # rx: record at actual delivery
             cost_stats.rx_bytes += _frame_bytes(frame, tag_bits, config.challenge_nonce_bits)
             if frame.mac is not None:
                 if authenticator.profile == "ascon":
@@ -897,7 +902,11 @@ def simulate_one_run_with_trace(
 
         record_tx(frame)
         legit_sent += 1
-        if _should_record_paired(
+        if config.attacker_position == "rx":
+            # defer: record only once the frame is actually delivered (process_arrived)
+            if not trace.legit_dropped[index]:
+                rx_pending[id(frame)] = not trace.attacker_record_dropped[index]
+        elif _should_record_paired(
             config.attacker_position,
             legit_dropped=trace.legit_dropped[index],
             record_dropped=trace.attacker_record_dropped[index],

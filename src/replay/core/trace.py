@@ -38,7 +38,12 @@ class ScenarioTrace:
     attack_extra_dropped: list[bool] = field(default_factory=list)
 
     def digest(self) -> str:
-        payload = json.dumps(asdict(self), sort_keys=True, separators=(",", ":"))
+        data = asdict(self)
+        # Legacy-shape digest: omit the weak-only field when empty so default (strong)
+        # traces keep their pre-Phase-5 trace_digest (reproducibility metadata stability).
+        if not data.get("attack_extra_dropped"):
+            data.pop("attack_extra_dropped", None)
+        payload = json.dumps(data, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
 
     @property
@@ -121,9 +126,13 @@ def generate_trace(config: SimulationConfig, seed: int) -> ScenarioTrace:
     reboot_confirm_dropped.append(_dropped(rng, config.p_loss))
     reboot_confirm_delay.append(_delay(rng, config.p_reorder))
 
-    # 攻击专属额外丢弃（weak 强度）——在所有现有抽取之后追加，保证非 weak/默认逐字节不变。
+    # 攻击专属额外丢弃（仅 weak）——只在 weak 下生成，且在所有现有抽取之后；strong/默认
+    # 不抽 RNG 且数组留空，从而逐字节与 legacy 一致（digest 也由空字段 pop 保持 legacy shape）。
     # 概率 0.5：P_deliver^A = 0.5 * (1 - p_loss)，即信道之外再叠一道 attack-only 丢弃。
-    attack_extra_dropped = [_dropped(rng, 0.5) for _ in range(config.num_replay)]
+    if config.attacker_inject_strength == "weak":
+        attack_extra_dropped = [_dropped(rng, 0.5) for _ in range(config.num_replay)]
+    else:
+        attack_extra_dropped = []
 
     return ScenarioTrace(
         commands=commands,

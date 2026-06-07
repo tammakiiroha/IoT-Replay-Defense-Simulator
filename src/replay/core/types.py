@@ -139,6 +139,9 @@ class ReceiverState:
     pending_critical: dict[int, CriticalPending] = field(default_factory=dict)  # key=pid:int
     committed_critical: set[int] = field(default_factory=set)  # 已提交 pid，去重(C2)
     crit_nonce_seq: int = 0  # nonce_id 自增源
+    locked_safe: bool = False  # reboot/brownout 后进 LOCKED_SAFE，拒收帧直到认证重建(§8.5)
+    boot_counter: int = 0  # 接收端 NVM 持久：启动次数
+    nvm_epoch: int = 0  # 接收端 NVM 持久 epoch 镜像（校验 reboot 后 bump）
 
 
 @dataclass
@@ -183,6 +186,7 @@ class SimulationConfig:
     critical_pending_capacity: int = 2   # pending_critical 表上界 N_p（C3）
     critical_ttl_ticks: int = 16         # critical challenge/confirm TTL（tick）
     tau_intent_ticks: int = 16           # 发送端用户意图有效窗口 τ_intent（§4.5）
+    reboot_at_legit_index: int | None = None   # 第 N 条 legit 后注入一次 reboot；None=不注入
 
     def effective_command_set(self) -> Sequence[str]:
         from .commands import DEFAULT_COMMANDS

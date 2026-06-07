@@ -24,7 +24,7 @@
 Phase 4 碰接收端生命周期与跨重启 counter 空间，比 Phase 3 更易引入「reboot 洗白」漏洞。六处分叉，先定再写代码。下面是**推荐方案**：
 
 ### D1：reboot 在仿真里怎么建模？谁触发？
-- **推荐**：reboot 是**接收端事件**——易失态（`last_counter`/`received_mask`/`resync_pending`/`pending_critical`/`committed_critical`/`outstanding_nonces`/`expected_nonce`/`crit_nonce_seq`）丢失，NVM 持久态（`epoch`/lease 区间/`key_id`/`boot_counter`）保留。引擎在「某 tick / 某帧序号」按 config/trace 注入一次 `receiver.reboot()`。发送端的 counter-lease 是**发送端 NVM** 关注点，独立建模。
+- **推荐**：reboot 是**接收端事件**——易失态（`last_counter`/`received_mask`/`resync_pending`/`pending_critical`/`committed_critical`/`outstanding_nonces`/`expected_nonce`/`crit_nonce_seq`）丢失，接收端 NVM 持久态（`epoch`/`key_id`/`boot_counter`）保留。引擎在「某 tick / 某帧序号」按 config/trace 注入一次 `receiver.reboot()`。**counter-lease 是发送端 NVM 权责，不进接收端 schema**，独立建模。
 - **备选否决**：把 reboot 当成普通帧（无法表达易失/持久态分离）。
 - **代价**：reboot 注入点在一次运行内有界、确定（trace 决定），不与任意帧交错。
 
@@ -34,7 +34,7 @@ Phase 4 碰接收端生命周期与跨重启 counter 空间，比 Phase 3 更易
 
 ### D3：epoch bump 与 counter lease 谁是权威？（**安全核心**）
 - **推荐（职责分离，互补非竞争）**：
-  - **epoch = 接收端权威的「新鲜域」**：reboot ⇒ `epoch ← epoch+1`（kernel `epoch_bump`），旧 epoch 帧**全拒**（MAC 域含 epoch，旧帧 tag 对不上新 epoch）。这是**抗 reboot 洗白**的主机制。
+  - **epoch = 接收端权威的「新鲜域」**：reboot ⇒ `epoch ← epoch+1`（kernel `epoch_bump`），旧 epoch 帧**全拒**——靠 **D7 显式 `frame.epoch == state.epoch` 守门**（**不是**靠 normal MAC 自动失配；normal MAC 不含 epoch，见 R2 更正）。这是**抗 reboot 洗白**的主机制。
   - **counter lease = 发送端权威的「同 epoch 内 counter 单调」**：发送端 NVM 存 `(epoch, ctr_reserve_high, key_id, boot_counter)`，启动**预约**一段 ctr 区间，仅快用完才写一次 NVM；跨自身重启不复用 ctr。
   - **裁决**：reboot 后接收端**进 LOCKED_SAFE 并 bump epoch**；发送端经认证 resync 进入新 epoch、并按 lease 取下一段 ctr。epoch 决定「哪些帧算新鲜」，lease 决定「发送端绝不复用 ctr」——二者不冲突。
 - **备选否决**：只用 lease 不 bump epoch（接收端无法独立拒绝旧 epoch 帧，依赖发送端自律，不安全）；只 bump epoch 不要 lease（发送端自身重启后可能复用同 epoch 内 ctr，与窗口语义冲突）。
@@ -42,7 +42,7 @@ Phase 4 碰接收端生命周期与跨重启 counter 空间，比 Phase 3 更易
 ### D4：reboot 后 pending 表清理 vs 继承？
 - **推荐（§4.6「清空 pending nonce 表 critical + resync」）**：reboot 清空 `resync_pending`、`pending_critical`、`outstanding_nonces`、`expected_nonce`，`crit_nonce_seq←0`；`last_counter←-1`、`received_mask←[]`（易失，丢失）。
 - **`committed_critical`（去重集）**：**也清空**——跨 reboot 的去重由 **D7 的显式 epoch 守门**兜底（旧 epoch confirm：要么 `frame.epoch != state.epoch` 被守门拒，要么攻击者篡改 `frame.epoch` 使 `crit_confirm_tag` 失配；二者皆拒，不可能 re-commit）。**注意：不是靠「自动 MAC 失配」**（见 R2 更正）。**blocker 测试钉死**：reboot+recovery 后重放旧 epoch critical confirm/prepare → 被 epoch 守门拒，而非依赖 committed 集。
-- **持久态**：`epoch`（bump 后的新值）、lease 区间、`key_id`、`boot_counter`（+1）保留。
+- **接收端持久态**：`epoch`（bump 后的新值）、`key_id`、`boot_counter`（+1）保留。（lease 区间属**发送端** NVM，不在接收端。）
 
 ### D5：reboot 后如何恢复收帧（LOCKED_SAFE → NORMAL）？
 - **推荐（复用 Phase 2 resync）**：LOCKED_SAFE 下，第一帧若触发不可接受（H 丢失，`last_counter=-1`），接收端**不**走「初始帧直接建窗」老路（那等于洗白），而是要求一次**认证重同步**重建 (epoch, H)；`process_resync_confirm` 成功后 **`locked_safe←False`**、回 NORMAL。
@@ -63,15 +63,16 @@ Phase 4 碰接收端生命周期与跨重启 counter 空间，比 Phase 3 更易
 ### D7：sender epoch 权威落到接口 + 接收端显式 epoch 守门（**安全核心，blocker #1+#4**）
 - **⚠️ 现状缺口（已核实）**：`Sender.next_frame` 不携带 epoch（[sender.py:25](src/replay/core/sender.py)，frame.epoch 默认 0）；critical 由 engine 把 `receiver.state.epoch` 传给 `begin_critical_intent`（[sender.py:69](src/replay/core/sender.py) 附近），**掩盖了发送端自身 epoch 状态**。接收端则完全不比 `frame.epoch == state.epoch`。
 - **推荐（发送端拥有 epoch、接收端显式守门）**：
-  - **发送端**：`Sender` 加 `current_epoch: int = 0` + `nvm_epoch: int = 0`。`next_frame`（HSW_CR normal）stamp `frame.epoch = self.current_epoch` 并把 epoch 绑进 normal MAC（见下「MAC 绑定取舍」）；`begin_critical_intent` 从 **`self.current_epoch`** 取 epoch（不再由 engine 传 receiver epoch）；recovery 经 `adopt_epoch(new)` 更新。
+  - **发送端**：`Sender` 加 `current_epoch: int = 0` + `nvm_epoch: int = 0`。`next_frame`（HSW_CR normal）stamp `frame.epoch = self.current_epoch`（**只 stamp 帧字段，normal MAC 不变**——D7=a）；`begin_critical_intent` 从 **`self.current_epoch`** 取 epoch（不再由 engine 传 receiver epoch）；recovery 经 `adopt_epoch(new)` 更新。
   - **接收端**：`process`（HSW_CR 分支）/`process_crit_prepare`/`process_crit_confirm` 一律先 `if frame.epoch != state.epoch: return (False, "epoch_mismatch")`（不动状态），且在 LOCKED_SAFE 闸门**之后**、其它判定**之前**。
-  - **MAC 绑定取舍（请你裁决）**：
-    - (a)【推荐，改动小】normal 帧**不**改 MAC（仍 `HmacAuthenticator(counter,command)`），replay 防御靠「epoch 守门 + SW 窗口 + lease 单调 ctr」（recovery 后 H 重建到高位，旧 ctr REJECT_OLD）。critical 帧已 epoch-in-MAC，天然防篡改 epoch。
-    - (b)【更强、改动大】HSW_CR normal 帧改用 `normal_req_tag`(含 epoch)，需把 HSW_CR 低风险路径从共享 `verify_with_window` 分出独立 MAC 分支（STABLE_MODES 不受影响但 drift 风险升高）。
-    - 我**倾向 (a)**：在「lease 保证新 ctr 远高于旧 ctr」前提下，SW 窗口已挡住 normal replay，epoch 守门作纵深；(b) 留作后续硬化。
-- **测试要求**：recovery **完成后**（非仅 LOCKED_SAFE 中）重放旧 epoch 的 normal **和** critical 帧都必须拒。
+  - **MAC 绑定（已拍板 = a）**：normal 帧**不**改 MAC（仍 `HmacAuthenticator(counter,command)`）。normal replay 防御 = `epoch 守门 + sealed/SW 窗口 + lease 单调 ctr`（recovery 后 H 重建到高位 → 旧 ctr `REJECT_OLD`）。critical 帧已 epoch-in-MAC（`crit_*_tag` 含 epoch），天然防篡改 epoch。
+    - （备选 (b) 留作**后续 hardening**，本 Phase 不做）：HSW_CR normal 改用 `normal_req_tag`(含 epoch)，需把低风险路径从共享 `verify_with_window` 分出独立 MAC 分支（drift 风险升高）。
+- **测试要求（D7=a 的关键覆盖）**：
+  - recovery **完成回 NORMAL 后**重放旧 epoch 的 normal **和** critical 帧都必须拒（`epoch_mismatch`）。
+  - **篡改-epoch 测试（必须，否则只测 epoch_mismatch 不够）**：recovery 后，攻击者把旧 normal 帧的 `frame.epoch` **改成当前 epoch**（绕过 epoch 守门）、但 `counter` 落在 sealed/old window 内 → 仍被 SW 窗口 `REJECT_OLD`（验证 a 的纵深防御真的成立，而非只靠 epoch 守门）。
 
-> **请确认 D1=接收端事件注入、D2=显式 `locked_safe` bool、D3=epoch 接收端权威 + lease 发送端权威（互补）、D4=清空含 committed_critical（靠 D7 显式 epoch 守门去重，非自动失配）、D5=LOCKED_SAFE 经 `begin_locked_safe_resync` 新入口认证重建后回 NORMAL、D6=boot 烧旧 lease 防复用、D7=发送端拥有 epoch + 接收端显式守门（含 MAC 绑定取舍 a/b）。** 确认后我把「引擎 reboot 注入接线」Task 的逐行代码定稿（kernel/state/reboot/locked-safe 闸门现在即可执行）。
+> **已拍板（2026-06-07，2 轮审查后）：** D1=接收端事件注入 · D2=显式 `locked_safe` bool · D3=epoch 接收端权威 + lease 发送端权威（互补；**不靠 normal MAC 自动失配**）· D4=清空含 committed_critical（靠 D7 显式 epoch 守门去重）· D5=LOCKED_SAFE 经 `begin_locked_safe_resync` 新入口认证重建后回 NORMAL · D6=boot 烧旧 lease 防复用 · D7=发送端拥有 epoch + 接收端显式守门，**MAC 绑定 = a（normal MAC 不改）**。
+> 4.0–4.4 待审查方给「可执行」确认后即可起步；**4.5 引擎接线**逐行代码在 4.0–4.4 落地后定稿。
 
 ---
 
@@ -97,7 +98,7 @@ Phase 4 碰接收端生命周期与跨重启 counter 空间，比 Phase 3 更易
   - `Sender` 在 `sender.py`（dataclass）：`mode/shared_key/mac_length/tx_counter/authenticator/pending_intent`。**无 lease/boot 字段。**
   - `SimulationConfig`：已含 `critical_*`/`tau_intent_ticks`/`resync_*`。**无 reboot 注入字段。**
 - `src/replay/core/kernel/`：`window_commit`/`acceptance(classify/needs_resync)`/`mac_domains`/`resync_commit`/`critical_commit`。**无 `epoch.py`。**
-  - `mac_domains`：`normal_req_tag`/`crit_prepare_tag`/`crit_confirm_tag`/`resync_confirm_tag` 均含 `epoch` 入参 → epoch bump 后旧帧 tag 自动失配（R2 的密码学基础）。
+  - `mac_domains`：`crit_prepare_tag`/`crit_confirm_tag`/`resync_confirm_tag` 含 `epoch` 入参（critical/confirm 篡改 epoch 即 MAC 失配）。**但 HSW_CR normal/window 路径用 `HmacAuthenticator(counter, command)`，MAC 不含 epoch**（见 [receiver.py:75]）——因此旧 epoch normal 帧靠 **D7 显式守门 + SW/lease** 拒，**不是**自动失配。`normal_req_tag`（含 epoch）当前未接到 normal 收帧路径（D7=a 维持现状）。
 - `src/replay/core/receiver.py`：`Receiver`（mode/window/g_hard/critical_* 属性）；`process`/`process_resync_confirm`/`issue_resync_challenge`/`time_out_resync`/`process_crit_prepare`/`issue_crit_challenge`/`process_crit_confirm`/`time_out_critical`/`reset`。**无 `reboot`、无 LOCKED_SAFE 闸门。**
 - `src/replay/core/experiment.py`：`simulate_one_run` + `simulate_one_run_with_trace`，`_resolve_resync`/`_resolve_critical` 有界子泵；两路径 `process_arrived`。
 - `src/replay/core/trace.py`：`ScenarioTrace` + `generate_trace`，resync/critical 序列**末尾抽取**（零漂移技巧范本）。
@@ -109,17 +110,20 @@ Phase 4 碰接收端生命周期与跨重启 counter 空间，比 Phase 3 更易
 
 > 门：reboot/locked-safe/lease blocker 全绿 + 单元/集成全绿 + `test_engine_baseline_regression`(STABLE_MODES) 逐值相等 + 全量 pytest 绿 + ruff/mypy 不退化 + check-contracts 绿。
 
-### Task 4.0：kernel `epoch.py`（纯函数：epoch_bump / next_lease / lease_ok）
+### Task 4.0：kernel `epoch.py`（纯函数：epoch_bump / burn_lease_on_boot / lease_ok）
 
 **Files:** Create `src/replay/core/kernel/epoch.py`；Test `tests/test_kernel_epoch.py`
 
 **要点（纯函数，无副作用）：**
 - `epoch_bump(epoch: int) -> int`：`return epoch + 1`（R2，单调）。
-- `next_lease(ctr: int, reserve_high: int, reserve_size: int) -> int`：若 `ctr >= reserve_high - 1` 返回 `reserve_high + reserve_size`，否则返回 `reserve_high`（R5；纯函数，调用方决定是否「写 NVM」）。
+- **`burn_lease_on_boot(reserve_high: int, reserve_size: int) -> tuple[int, int]`（D6 正确算法，替代旧 `next_lease`）**：boot 时**烧掉**整段旧预约，返回 `(next_tx_counter, new_reserve_high)`，其中 `next_tx_counter = reserve_high`（下一帧 `next_frame` 会 `+1` → 从 `reserve_high+1` 起）、`new_reserve_high = reserve_high + reserve_size`。**纯函数**，调用方负责把这两个值写回 sender 字段（模拟一次 NVM 写）。
 - `lease_ok(prev_ctr: int, new_ctr: int) -> bool`：`new_ctr > prev_ctr`（跨 boot 单调断言用）。
 
-**测试要点：** `epoch_bump(0)==1 且严格递增`；`next_lease` 在临界点扩容、未临界不动；`lease_ok` 拒绝回退/复用。
-**Step 5:** 提交 `feat: add epoch kernel primitives (epoch_bump/next_lease/lease_ok)`。
+**测试要点：**
+- `epoch_bump(0)==1 且严格递增`。
+- **`burn_lease_on_boot` 防复用（R5 关键）**：`burn_lease_on_boot(reserve_high=100, reserve_size=100) == (100, 200)` → 下一帧 ctr=`100+1=101 > 100`（模拟「崩溃前只用到 10、NVM high=100、boot 后下一帧必 >100」，**不是 11、不是 1**）。
+- `lease_ok` 拒绝回退/复用。
+**Step 5:** 提交 `feat: add epoch kernel primitives (epoch_bump/burn_lease_on_boot/lease_ok)`。
 
 ### Task 4.1：`ReceiverState` 加 `locked_safe` + lease/boot 持久字段；`SimulationConfig` 加 reboot 注入
 
@@ -172,8 +176,8 @@ Phase 4 碰接收端生命周期与跨重启 counter 空间，比 Phase 3 更易
 - `adopt_epoch` 见 Task 4.3。
 
 **要点（counter-lease，blocker #3 正确算法）：**
-- `Sender` 加 `nvm_ctr_reserve_high: int`、`reserve_size: int`、`boot_counter: int`。`begin_boot(self) -> None`（见 D6）：①`tx_counter = nvm_ctr_reserve_high`（烧旧段）②`nvm_ctr_reserve_high += reserve_size`（写 NVM）③`boot_counter += 1`。稳态 `next_frame` 中 `tx_counter` 逼近 `nvm_ctr_reserve_high` 时也扩容一次（非每帧）。
-- kernel `epoch.py` 的 `next_lease`/`lease_ok` 作纯函数判定辅助。
+- `Sender` 加 `nvm_ctr_reserve_high: int`、`reserve_size: int`、`boot_counter: int`。`begin_boot(self) -> None`（见 D6，调 kernel `burn_lease_on_boot`）：`self.tx_counter, self.nvm_ctr_reserve_high = burn_lease_on_boot(self.nvm_ctr_reserve_high, self.reserve_size)`（烧旧段 + 写 NVM）；`self.boot_counter += 1`。稳态 `next_frame` 中 `tx_counter` 逼近 `nvm_ctr_reserve_high` 时也扩容一次（非每帧）。
+- kernel `epoch.py` 的 `burn_lease_on_boot`/`lease_ok` 作纯函数辅助。
 
 - **blocker 测试：**
   - `test_counter_lease_never_reuses_across_boot`（R5：模拟崩溃前用到 10、NVM high=100 → `begin_boot()` 后下一帧 ctr **>100**，非 11、非 1）。
@@ -217,7 +221,7 @@ Phase 4 碰接收端生命周期与跨重启 counter 空间，比 Phase 3 更易
 
 ## 执行建议
 
-- 顺序：4.0（kernel）→ 4.1（state）→ 4.2（reboot+LOCKED_SAFE 闸门）→ 4.3（recovery）→ 4.4（lease）→ **【确认 D1–D6】** → 4.5（引擎接线）→ 4.6（契约观测计数）。
+- 顺序：4.0（kernel）→ 4.1（state）→ 4.2（reboot+LOCKED_SAFE 闸门）→ 4.3（recovery）→ 4.4（lease+sender epoch）→ **【D1–D7 已拍板，4.5 在 4.0–4.4 落地后定稿】** → 4.5（引擎接线）→ 4.6（契约观测计数）。
 - 4.0–4.4 歧义低/中，确认前即可开工；**4.5 必须等 D1–D6 拍板后再写逐行**（与 Phase 2/3 同理）。
 - 每个 Task 后跑 `test_engine_baseline_regression`(STABLE_MODES) 自查——非 HSW_CR 模式任何漂移立即停下排查。
 - **带入 Phase 2/3 三个教训**：(a) confirm/恢复路径加 epoch/counter 不变量防回退；(b) 指标 `as_dict()` 导出面别漏；(c) **不顺手改攻击归因口径（R7）**——Phase 3 known boundary 与本 Phase 的 reboot 归因都留给单独 metrics phase。

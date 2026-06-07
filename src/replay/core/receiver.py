@@ -11,6 +11,7 @@ from .kernel.epoch import epoch_bump
 from .kernel.mac_domains import crit_confirm_tag, crit_prepare_tag, resync_confirm_tag
 from .kernel.resync_commit import resync_commit_same_epoch
 from .kernel.window_commit import window_commit
+from .policy import PolicyTable
 from .rng import RandomLike
 from .security import constant_time_compare
 from .types import (
@@ -246,6 +247,9 @@ class Receiver:
         risk_high: float = 0.8,
         critical_pending_capacity: int = 2,
         critical_ttl_ticks: int = 16,
+        policy_source: str = "legacy",
+        profile: str = "standard",
+        command_impact: dict[str, tuple[int, ...]] | None = None,
     ):
         self.mode = mode
         self.shared_key = shared_key
@@ -259,6 +263,14 @@ class Receiver:
         self.risk_high = risk_high
         self.critical_pending_capacity = critical_pending_capacity
         self.critical_ttl_ticks = critical_ttl_ticks
+        # 运行时唯一分类入口（G5/G9, P1/P3）：构造时离线算好 critical 集，is_critical O(1)
+        self.policy_table = PolicyTable.from_config(
+            policy_source=policy_source,
+            profile=profile,
+            command_impact=command_impact,
+            command_risk=command_risk,
+            risk_high=risk_high,
+        )
         self._issue_tick = 0
         self.state = ReceiverState()
 

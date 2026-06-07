@@ -78,19 +78,19 @@ def test_optional_risk_sw_delta_u_reserved_interface():
 def test_policy_table_is_critical_matches_and_frozenset():
     pt = PolicyTable.from_config(
         policy_source="default_table", profile="standard", command_impact=None,
-        command_set=["SET_SPEED", "FWD", "UNLOCK", "LOCK"], command_risk=None, risk_high=0.8,
+        command_risk=None, risk_high=0.8,
     )
     assert pt.is_critical("SET_SPEED") is True
     assert pt.is_critical("FWD") is False
     assert pt.is_critical("UNLOCK") is True
-    assert pt.is_critical("UNKNOWN_CMD") is False   # 不在 command_set -> normal
+    assert pt.is_critical("UNKNOWN_CMD") is False   # 域外命令 -> normal
     assert isinstance(pt.critical, frozenset)
 
 
 def test_policy_table_legacy_matches_old_threshold():
     pt = PolicyTable.from_config(
         policy_source="legacy", profile="standard", command_impact=None,
-        command_set=["A", "B"], command_risk={"A": 0.9, "B": 0.1}, risk_high=0.8,
+        command_risk={"A": 0.9, "B": 0.1}, risk_high=0.8,
     )
     assert pt.is_critical("A") is True
     assert pt.is_critical("B") is False

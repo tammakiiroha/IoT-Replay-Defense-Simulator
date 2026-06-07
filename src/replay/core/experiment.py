@@ -98,6 +98,20 @@ def _should_challenge(config: SimulationConfig, command: str) -> bool:
     return config.mode is Mode.CHALLENGE
 
 
+def _should_record_paired(position: str, *, legit_dropped: bool, record_dropped: bool) -> bool:
+    """Paired-path attacker recording policy by capture position (Phase 5 D2).
+
+    - ind: record unless the eavesdrop draw dropped it (legacy default).
+    - tx:  P_record=1.0 — always record (sender side), even when lost/record-dropped.
+    - rx:  only frames the receiver actually got, and not eavesdrop-dropped.
+    """
+    if position == "tx":
+        return True
+    if position == "rx":
+        return (not legit_dropped) and (not record_dropped)
+    return not record_dropped
+
+
 def _is_two_phase_critical(
     config: SimulationConfig, command: str, policy_table: PolicyTable
 ) -> bool:
@@ -272,8 +286,10 @@ def simulate_one_run(
         command_impact=config.command_impact,
     )
     policy_table = _build_policy_table(config)
+    # tx: P_record=1.0 -> always record (ignore record_loss); ind/rx keep configured loss.
+    _live_record_loss = 0.0 if config.attacker_position == "tx" else config.attacker_record_loss
     attacker = Attacker(
-        record_loss=config.attacker_record_loss,
+        record_loss=_live_record_loss,
         target_commands=config.target_commands,
     )
     channel = Channel(
@@ -327,6 +343,8 @@ def simulate_one_run(
     def process_arrived(frames: list[Frame]) -> None:
         nonlocal attack_success, legit_accepted
         for frame in frames:
+            if config.attacker_position == "rx" and not frame.is_attack:
+                attacker.observe(frame, local_rng)  # rx: record only delivered legit frames
             cost_stats.rx_bytes += _frame_bytes(frame, tag_bits, config.challenge_nonce_bits)
             if frame.mac is not None:
                 if authenticator.profile == "ascon":
@@ -420,7 +438,8 @@ def simulate_one_run(
 
         record_tx(frame)
         legit_sent += 1
-        attacker.observe(frame, local_rng)
+        if config.attacker_position != "rx":
+            attacker.observe(frame, local_rng)  # ind/tx: record at send time
         process_arrived(channel.send(frame))
 
         if config.attack_mode is AttackMode.INLINE:
@@ -437,6 +456,8 @@ def simulate_one_run(
                 remaining_replays -= 1
                 attack_frame.is_attack = True
                 record_tx(attack_frame)
+                if config.attacker_inject_strength == "weak" and local_rng.random() < 0.5:
+                    continue  # weak: attack-only extra drop (transmitted, not delivered)
                 process_arrived(channel.send(attack_frame))
 
     if config.attack_mode is AttackMode.POST_RUN:
@@ -448,6 +469,8 @@ def simulate_one_run(
             attack_attempts += 1
             attack_frame.is_attack = True
             record_tx(attack_frame)
+            if config.attacker_inject_strength == "weak" and local_rng.random() < 0.5:
+                continue  # weak: attack-only extra drop (transmitted, not delivered)
             process_arrived(channel.send(attack_frame))
 
     process_arrived(channel.flush())
@@ -819,10 +842,14 @@ def simulate_one_run_with_trace(
         attack_attempts += 1
         remaining_replays -= 1
         record_tx(attack_frame)
+        extra_dropped = (
+            config.attacker_inject_strength == "weak"
+            and trace.attack_extra_dropped[replay_index]
+        )
         process_arrived(
             send_traced(
                 attack_frame,
-                dropped=trace.replay_dropped[replay_index],
+                dropped=trace.replay_dropped[replay_index] or extra_dropped,
                 delay=trace.replay_delay[replay_index],
             )
         )
@@ -870,7 +897,11 @@ def simulate_one_run_with_trace(
 
         record_tx(frame)
         legit_sent += 1
-        if not trace.attacker_record_dropped[index]:
+        if _should_record_paired(
+            config.attacker_position,
+            legit_dropped=trace.legit_dropped[index],
+            record_dropped=trace.attacker_record_dropped[index],
+        ):
             recorded.append(frame.clone())
         process_arrived(
             send_traced(

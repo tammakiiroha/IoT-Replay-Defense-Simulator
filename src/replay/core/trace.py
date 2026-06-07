@@ -34,6 +34,8 @@ class ScenarioTrace:
     reboot_challenge_delay: list[int] = field(default_factory=list)
     reboot_confirm_dropped: list[bool] = field(default_factory=list)
     reboot_confirm_delay: list[int] = field(default_factory=list)
+    # 攻击专属额外丢弃（weak 强度；按 replay 序号索引，§6 G10）——末尾追加保非 weak 零漂移
+    attack_extra_dropped: list[bool] = field(default_factory=list)
 
     def digest(self) -> str:
         payload = json.dumps(asdict(self), sort_keys=True, separators=(",", ":"))
@@ -119,6 +121,10 @@ def generate_trace(config: SimulationConfig, seed: int) -> ScenarioTrace:
     reboot_confirm_dropped.append(_dropped(rng, config.p_loss))
     reboot_confirm_delay.append(_delay(rng, config.p_reorder))
 
+    # 攻击专属额外丢弃（weak 强度）——在所有现有抽取之后追加，保证非 weak/默认逐字节不变。
+    # 概率 0.5：P_deliver^A = 0.5 * (1 - p_loss)，即信道之外再叠一道 attack-only 丢弃。
+    attack_extra_dropped = [_dropped(rng, 0.5) for _ in range(config.num_replay)]
+
     return ScenarioTrace(
         commands=commands,
         legit_dropped=legit_dropped,
@@ -140,4 +146,5 @@ def generate_trace(config: SimulationConfig, seed: int) -> ScenarioTrace:
         reboot_challenge_delay=reboot_challenge_delay,
         reboot_confirm_dropped=reboot_confirm_dropped,
         reboot_confirm_delay=reboot_confirm_delay,
+        attack_extra_dropped=attack_extra_dropped,
     )

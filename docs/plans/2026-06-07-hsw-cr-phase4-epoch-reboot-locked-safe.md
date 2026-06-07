@@ -5,7 +5,7 @@
 
 **Goal:** 让 HSW_CR 接收端在 reboot/brownout（易失态 H/M_W/pending 全丢）后**不**简单清零恢复普通接受，而是进入 **LOCKED_SAFE** —— 先 epoch bump + 认证重同步重建 (epoch, H)，再恢复收帧；发送端用 **counter lease** 保证跨重启 counter 不复用。杜绝「reboot 洗白旧帧」。
 
-**Architecture:** kernel 加 `epoch.py` 纯函数（epoch bump、lease 预约/推进、reboot-后状态判定）；`ReceiverState` 加显式 `locked_safe` 状态 + lease/boot 字段；`Sender` 加 counter-lease 持久化模型；receiver 新增 `reboot()` + LOCKED_SAFE 收帧门 + `recover_from_locked_safe`（复用 Phase 2 resync 往返重建 epoch/H）；引擎在 trace/config 注入 reboot 事件（末尾抽取，零漂移）。engine 与 protocol 共用同一 kernel。
+**Architecture:** kernel 加 `epoch.py` 纯函数（epoch bump、boot-burn lease、reboot-后状态判定）；`ReceiverState` 加显式 `locked_safe` 状态 + boot 字段（**lease 属 sender NVM，不在 receiver**）；`Sender` 加 epoch 权威 + counter-lease 持久化模型；receiver 新增 `reboot()` + LOCKED_SAFE 收帧门 + `recover_from_locked_safe`（复用 Phase 2 resync 往返重建 epoch/H）；引擎在 trace/config 注入 reboot 事件（末尾抽取，零漂移）。engine 与 protocol 共用同一 kernel。
 
 **Tech Stack:** Python 3.9+、现有 kernel（`window_commit`/`acceptance`/`mac_domains`/`resync_commit`/`critical_commit`）、Phase 2 `EventScheduler`+resync 往返、pytest。环境：`.venv/bin/python`，`PYTHONPATH=src:.`，命令前若 cwd 漂移先 `cd /Users/romeitou/Desktop/論文/Replay`。
 
@@ -186,7 +186,7 @@ Phase 4 碰接收端生命周期与跨重启 counter 空间，比 Phase 3 更易
   - `test_adopt_epoch_updates_sender_epoch`（recovery 后 stamp 新 epoch）。
 **Step 5:** 提交 `feat: add sender epoch authority and crash-safe counter-lease`。
 
-### Task 4.5：引擎 reboot 注入接线（**D1–D6 确认后定稿**）
+### Task 4.5：引擎 reboot 注入接线（**4.0–4.4 落地后定稿；D1–D7 已拍板**）
 
 **Files:** Modify `src/replay/core/experiment.py`（两路径在 `reboot_at_legit_index` 处调 `receiver.reboot()` + `sender.begin_boot()`，随后 legit 帧若遇 LOCKED_SAFE 触发认证 resync 重建，仿 `_resolve_resync`/`_resolve_critical`）、`src/replay/core/trace.py`（若 reboot 注入需信道决策则**末尾抽取**）；Test `tests/test_reboot_engine.py`
 
@@ -222,7 +222,7 @@ Phase 4 碰接收端生命周期与跨重启 counter 空间，比 Phase 3 更易
 ## 执行建议
 
 - 顺序：4.0（kernel）→ 4.1（state）→ 4.2（reboot+LOCKED_SAFE 闸门）→ 4.3（recovery）→ 4.4（lease+sender epoch）→ **【D1–D7 已拍板，4.5 在 4.0–4.4 落地后定稿】** → 4.5（引擎接线）→ 4.6（契约观测计数）。
-- 4.0–4.4 歧义低/中，确认前即可开工；**4.5 必须等 D1–D6 拍板后再写逐行**（与 Phase 2/3 同理）。
+- 4.0–4.4 歧义低/中，D1–D7 已拍板即可开工；**4.5 必须等 4.0–4.4 落地后再写逐行**（与 Phase 2/3 同理）。
 - 每个 Task 后跑 `test_engine_baseline_regression`(STABLE_MODES) 自查——非 HSW_CR 模式任何漂移立即停下排查。
 - **带入 Phase 2/3 三个教训**：(a) confirm/恢复路径加 epoch/counter 不变量防回退；(b) 指标 `as_dict()` 导出面别漏；(c) **不顺手改攻击归因口径（R7）**——Phase 3 known boundary 与本 Phase 的 reboot 归因都留给单独 metrics phase。
 - Phase 4 门绿后，单独建计划做 G5/G9（Policy Table + 三 Profile）或 Phase 5（adaptive 攻击者 + 闭式模型）。

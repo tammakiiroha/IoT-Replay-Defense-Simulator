@@ -108,6 +108,7 @@ def test_full_round_trip_honours_key_id(key_id):
         Mode.HSW_CR, shared_key=KEY, mac_length=8, window_size=8,
         command_risk={"OPEN": 0.9}, risk_high=0.8,
     )
+    rcv.state.epoch = 1   # 帧用 epoch=1；与 Phase 4 显式 epoch 守门对齐
     prep = s.begin_critical_intent("OPEN", b"data", epoch=1, key_id=key_id, now_tick=0)
     assert prep.key_id == key_id
     r1 = rcv.process_crit_prepare(prep, random.Random(1), now_tick=0)

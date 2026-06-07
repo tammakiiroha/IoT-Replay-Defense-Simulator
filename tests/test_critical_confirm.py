@@ -11,7 +11,7 @@ W = 8
 
 
 def _receiver(*, capacity: int = 2, ttl: int = 16) -> Receiver:
-    return Receiver(
+    rcv = Receiver(
         Mode.HSW_CR,
         shared_key=KEY,
         mac_length=8,
@@ -21,6 +21,8 @@ def _receiver(*, capacity: int = 2, ttl: int = 16) -> Receiver:
         critical_pending_capacity=capacity,
         critical_ttl_ticks=ttl,
     )
+    rcv.state.epoch = 1   # 帧用 epoch=1；与 Phase 4 显式 epoch 守门对齐
+    return rcv
 
 
 def _prepare_frame(*, ctr: int = 5, epoch: int = 1, payload: bytes = b"data") -> Frame:
@@ -90,7 +92,8 @@ def test_duplicate_confirm_does_not_recommit():
 def test_fake_challenge_does_not_commit():
     # blocker: pid 不在 pending（伪造/未 prepare）-> 不 commit
     rcv = _receiver()
-    fake = Frame(command="OPEN", flags=Frame.FLAG_CRIT_CONFIRM, pid=999, mac="00" * 12)
+    # epoch=1 匹配 receiver（过 epoch 守门），但 pid 不在 pending -> critical_no_pending
+    fake = Frame(command="OPEN", flags=Frame.FLAG_CRIT_CONFIRM, pid=999, epoch=1, mac="00" * 12)
     res = rcv.process_crit_confirm(fake, now_tick=1)
     assert res.accepted is False
     assert res.reason == "critical_no_pending"

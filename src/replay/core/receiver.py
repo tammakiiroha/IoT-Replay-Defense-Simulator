@@ -7,6 +7,7 @@ from .auth import Authenticator, HmacAuthenticator
 from .defaults import DEFAULT_CHALLENGE_TTL_TICKS, DEFAULT_MAX_OUTSTANDING_CHALLENGES
 from .kernel.acceptance import SwDecision, classify, needs_resync
 from .kernel.critical_commit import critical_commit, payload_digest, pid_for
+from .kernel.epoch import epoch_bump
 from .kernel.mac_domains import crit_confirm_tag, crit_prepare_tag, resync_confirm_tag
 from .kernel.resync_commit import resync_commit_same_epoch
 from .kernel.window_commit import window_commit
@@ -292,6 +293,10 @@ class Receiver:
                 authenticator=self.authenticator,
             )
         if self.mode is Mode.HSW_CR:
+            if self.state.locked_safe:   # R3：LOCKED_SAFE 拒收帧（先于 epoch 闸门）
+                return VerificationResult(False, "locked_safe_reject", self.state)
+            if frame.epoch != self.state.epoch:   # R2/D7：显式 epoch 守门（旧 epoch 帧不动状态拒）
+                return VerificationResult(False, "epoch_mismatch", self.state)
             return verify_hsw_cr(
                 frame,
                 self.state,
@@ -377,6 +382,10 @@ class Receiver:
         state = self.state
         if self.mode is not Mode.HSW_CR:
             return VerificationResult(False, "unexpected_crit_prepare", state)
+        if state.locked_safe:   # R3
+            return VerificationResult(False, "locked_safe_reject", state)
+        if frame.epoch != state.epoch:   # R2/D7 显式 epoch 守门
+            return VerificationResult(False, "epoch_mismatch", state)
         if (self.command_risk or {}).get(frame.command, 0.0) < self.risk_high:
             return VerificationResult(False, "not_critical", state)        # 策略：仅高风险走两阶段
         if frame.counter is None:
@@ -444,6 +453,10 @@ class Receiver:
         state = self.state
         if self.mode is not Mode.HSW_CR:
             return VerificationResult(False, "unexpected_crit_confirm", state)
+        if state.locked_safe:   # R3
+            return VerificationResult(False, "locked_safe_reject", state)
+        if frame.epoch != state.epoch:   # R2/D7 显式 epoch 守门
+            return VerificationResult(False, "epoch_mismatch", state)
         pid = frame.pid
         if pid in state.committed_critical:
             return VerificationResult(False, "critical_already_committed", state)   # C2
@@ -481,6 +494,25 @@ class Receiver:
         del state.pending_critical[pid]
         state.committed_critical.add(pid)
         return VerificationResult(True, "critical_committed", state)   # accepted=True = 执行一次
+
+    def reboot(self) -> None:
+        """模拟 reboot/brownout（§8.5, R1/R2/R4）：清易失态、单调 bump epoch、进 LOCKED_SAFE。
+        接收端 NVM 持久态（bump 后 epoch、key_id、boot_counter）保留；lease 属发送端 NVM。"""
+        state = self.state
+        # R4：清空易失态（H/M_W + resync/critical pending + nonce 表 + committed 去重集）
+        state.last_counter = -1
+        state.received_mask = []
+        state.resync_pending = None
+        state.pending_critical = {}
+        state.committed_critical = set()
+        state.outstanding_nonces = {}
+        state.expected_nonce = None
+        state.crit_nonce_seq = 0
+        # R2：单调 bump epoch（旧 epoch 帧此后被显式守门拒）；R3：进 LOCKED_SAFE
+        state.epoch = epoch_bump(state.epoch)
+        state.nvm_epoch = state.epoch
+        state.boot_counter += 1
+        state.locked_safe = True
 
     def reset(self) -> None:
         self.state = ReceiverState()

@@ -34,6 +34,14 @@ if (!contractsSource.includes('epoch_recoveries')) {
   throw new Error('contracts.ts is missing reboot/locked-safe observability counters');
 }
 
+if (!contractsSource.includes('critical_command_count')) {
+  throw new Error('contracts.ts is missing policy critical_command_count');
+}
+
+if (!contractsSource.includes('policy_source')) {
+  throw new Error('contracts.ts is missing policy_source spec field');
+}
+
 const manifest = JSON.parse(manifestSource);
 if (!Array.isArray(manifest.artifacts) || manifest.artifacts.length === 0) {
   throw new Error('manifest.json does not contain any artifacts');

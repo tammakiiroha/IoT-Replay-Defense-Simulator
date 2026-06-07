@@ -224,6 +224,7 @@ class SimulationRunResult:
     reboots: int = 0
     locked_safe_rejects: int = 0
     epoch_recoveries: int = 0
+    critical_command_count: int = 0
     metadata: dict[str, object] = field(default_factory=dict)
 
     @property
@@ -281,6 +282,7 @@ class AggregateStats:
     reboots: int = 0
     locked_safe_rejects: int = 0
     epoch_recoveries: int = 0
+    critical_command_count: int = 0
     mac_tag_bits: int = 80
     auth_profile: str = "hmac"
     metadata: dict[str, object] = field(default_factory=dict)
@@ -323,6 +325,7 @@ class AggregateStats:
             "reboots": self.reboots,
             "locked_safe_rejects": self.locked_safe_rejects,
             "epoch_recoveries": self.epoch_recoveries,
+            "critical_command_count": self.critical_command_count,
             "mac_tag_bits": self.mac_tag_bits,
             "auth_profile": self.auth_profile,
         }

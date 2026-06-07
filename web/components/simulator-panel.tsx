@@ -232,6 +232,8 @@ const DEFAULT_SPEC: SimulationSpec = {
   command_risk: null,
   risk_high: 0.8,
   auth_profile: 'hmac',
+  policy_source: 'legacy',
+  profile: 'standard',
 };
 
 export function SimulatorPanel() {

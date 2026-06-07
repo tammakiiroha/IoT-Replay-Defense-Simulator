@@ -400,6 +400,7 @@ def simulate_one_run(
                 cost_stats.epoch_recoveries += 1
         command = _choose_command(config, index, local_rng)
         if _is_two_phase_critical(config, command, policy_table):
+            cost_stats.critical_command_count += 1   # D6：legit 两阶段命令单点计数
             frame = sender.begin_critical_intent(
                 command,
                 command.encode("utf-8"),
@@ -480,6 +481,7 @@ def simulate_one_run(
         reboots=cost_stats.reboots,
         locked_safe_rejects=cost_stats.locked_safe_rejects,
         epoch_recoveries=cost_stats.epoch_recoveries,
+        critical_command_count=cost_stats.critical_command_count,
         metadata={
             "p_loss": config.p_loss,
             "p_reorder": config.p_reorder,
@@ -542,6 +544,7 @@ def _aggregate_results(
         reboots=sum(result.reboots for result in results),
         locked_safe_rejects=sum(result.locked_safe_rejects for result in results),
         epoch_recoveries=sum(result.epoch_recoveries for result in results),
+        critical_command_count=sum(result.critical_command_count for result in results),
         mac_tag_bits=_tag_bits(config),
         auth_profile=config.auth_profile,
         metadata=metadata,
@@ -850,6 +853,7 @@ def simulate_one_run_with_trace(
             ):
                 cost_stats.epoch_recoveries += 1
         if _is_two_phase_critical(config, command, policy_table):
+            cost_stats.critical_command_count += 1   # D6：legit 两阶段命令单点计数
             frame = sender.begin_critical_intent(
                 command,
                 command.encode("utf-8"),
@@ -927,6 +931,7 @@ def simulate_one_run_with_trace(
         reboots=cost_stats.reboots,
         locked_safe_rejects=cost_stats.locked_safe_rejects,
         epoch_recoveries=cost_stats.epoch_recoveries,
+        critical_command_count=cost_stats.critical_command_count,
         metadata={
             "p_loss": config.p_loss,
             "p_reorder": config.p_reorder,

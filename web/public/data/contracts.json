@@ -302,6 +302,25 @@
         ],
         "title": "Auth Profile",
         "type": "string"
+      },
+      "policy_source": {
+        "default": "legacy",
+        "enum": [
+          "legacy",
+          "default_table"
+        ],
+        "title": "Policy Source",
+        "type": "string"
+      },
+      "profile": {
+        "default": "standard",
+        "enum": [
+          "strict",
+          "standard",
+          "permissive"
+        ],
+        "title": "Profile",
+        "type": "string"
       }
     },
     "title": "SimulationSpec",
@@ -537,6 +556,25 @@
       "auth_profile": {
         "title": "Auth Profile",
         "type": "string"
+      },
+      "policy_source": {
+        "default": "legacy",
+        "enum": [
+          "legacy",
+          "default_table"
+        ],
+        "title": "Policy Source",
+        "type": "string"
+      },
+      "profile": {
+        "default": "standard",
+        "enum": [
+          "strict",
+          "standard",
+          "permissive"
+        ],
+        "title": "Profile",
+        "type": "string"
       }
     },
     "required": [
@@ -759,6 +797,11 @@
           "epoch_recoveries": {
             "default": 0,
             "title": "Epoch Recoveries",
+            "type": "integer"
+          },
+          "critical_command_count": {
+            "default": 0,
+            "title": "Critical Command Count",
             "type": "integer"
           },
           "mac_tag_bits": {
@@ -998,6 +1041,25 @@
           },
           "auth_profile": {
             "title": "Auth Profile",
+            "type": "string"
+          },
+          "policy_source": {
+            "default": "legacy",
+            "enum": [
+              "legacy",
+              "default_table"
+            ],
+            "title": "Policy Source",
+            "type": "string"
+          },
+          "profile": {
+            "default": "standard",
+            "enum": [
+              "strict",
+              "standard",
+              "permissive"
+            ],
+            "title": "Profile",
             "type": "string"
           }
         },
@@ -1367,6 +1429,25 @@
               "ascon"
             ],
             "title": "Auth Profile",
+            "type": "string"
+          },
+          "policy_source": {
+            "default": "legacy",
+            "enum": [
+              "legacy",
+              "default_table"
+            ],
+            "title": "Policy Source",
+            "type": "string"
+          },
+          "profile": {
+            "default": "standard",
+            "enum": [
+              "strict",
+              "standard",
+              "permissive"
+            ],
+            "title": "Profile",
             "type": "string"
           }
         },

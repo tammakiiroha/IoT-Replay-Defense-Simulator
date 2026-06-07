@@ -41,6 +41,14 @@ def test_profile_strict_upgrades_more_commands():
     assert perm.crit_committed == 0
 
 
+def test_critical_command_count_counts_only_legit_two_phase():
+    # D6 语义：只数 sender 侧合法两阶段命令；attacker replay 不计、receiver 不重复计
+    res = simulate_one_run(_cfg(command_sequence=["SET_SPEED"], num_replay=5))
+    assert res.critical_command_count == 2          # 2 个 legit SET_SPEED 走两阶段
+    res2 = simulate_one_run(_cfg(command_sequence=["FWD"], num_replay=5))
+    assert res2.critical_command_count == 0         # FWD normal -> 不计
+
+
 def test_legacy_default_matches_old_risk_threshold():
     # legacy（默认）：command_risk 阈值决定；OPEN risk 0.9>=0.8 -> 两阶段
     cfg = _cfg(

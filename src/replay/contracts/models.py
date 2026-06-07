@@ -86,6 +86,9 @@ class SimulationSpec(ReplayBaseModel):
     command_risk: dict[str, float] | None = None
     risk_high: float = Field(default=0.8, ge=0.0, le=1.0)
     auth_profile: Literal["hmac", "ascon"] = "hmac"
+    # G5/G9：命令风险分类策略（Web 不收 custom——无 command_impact，fail-fast）
+    policy_source: Literal["legacy", "default_table"] = "legacy"
+    profile: Literal["strict", "standard", "permissive"] = "standard"
 
     @model_validator(mode="after")
     def _validate_window_size(self) -> SimulationSpec:
@@ -134,6 +137,8 @@ class SimulationSpec(ReplayBaseModel):
             command_risk=self.command_risk,
             risk_high=self.risk_high,
             auth_profile=self.auth_profile,
+            policy_source=self.policy_source,
+            profile=self.profile,
         )
 
 
@@ -172,6 +177,8 @@ class SimulationSpecPublic(ReplayBaseModel):
     command_risk: dict[str, float] | None = None
     risk_high: float
     auth_profile: str
+    policy_source: Literal["legacy", "default_table"] = "legacy"
+    profile: Literal["strict", "standard", "permissive"] = "standard"
 
     @classmethod
     def from_spec(cls, spec: SimulationSpec) -> SimulationSpecPublic:
@@ -215,6 +222,7 @@ class SimulationResultRecord(ReplayBaseModel):
     reboots: int = 0
     locked_safe_rejects: int = 0
     epoch_recoveries: int = 0
+    critical_command_count: int = 0
     mac_tag_bits: int = DEFAULT_MAC_TAG_BITS
     auth_profile: str = "hmac"
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -259,6 +267,7 @@ class SimulationResultRecord(ReplayBaseModel):
             reboots=entry.reboots,
             locked_safe_rejects=entry.locked_safe_rejects,
             epoch_recoveries=entry.epoch_recoveries,
+            critical_command_count=entry.critical_command_count,
             mac_tag_bits=entry.mac_tag_bits,
             auth_profile=entry.auth_profile,
             metadata=metadata,

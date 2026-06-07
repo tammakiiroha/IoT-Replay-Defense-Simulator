@@ -130,7 +130,7 @@
 **要点：** `SimulationConfig` 加 `policy_source: str = "legacy"`、`profile: str = "standard"`、`command_impact: dict[str, tuple[int,...]] | None = None`（带默认、向后兼容）。`Receiver.__init__` 接这三者并在末尾**预构建** `self.policy_table = PolicyTable.from_config(policy_source=..., profile=..., command_impact=..., command_set=..., command_risk=..., risk_high=...)`。默认值（legacy/standard）+ policy_table 预构建钉测试。
 **Step 5:** 提交 `feat: thread policy_source/profile/command_impact and prebuild policy_table`。
 
-### Task G2：3 处分类点改接 `classify_critical`（DRY 单一真相，P1）
+### Task G2：3 处分类点改调预构建 `policy_table.is_critical`（DRY 单一真相，P1）
 
 **Files:** Modify `src/replay/core/receiver.py`（`verify_hsw_cr` is_high_risk、`process_crit_prepare` not_critical 门 → 调 policy）、`src/replay/core/experiment.py`（`_is_two_phase_critical` → 调 policy；两路径 `Receiver(...)` 透传 `profile`/`command_impact`）；Test `tests/test_policy_routing.py`
 

@@ -334,13 +334,16 @@ class Receiver:
         """引擎对 flags==FLAG_RESYNC_CONFIRM 的帧专用入口（D2：now_tick 经此注入验 TTL）。"""
         if self.mode not in {Mode.SW_RESYNC, Mode.HSW_CR}:
             return VerificationResult(False, "unexpected_resync_confirm", self.state)
-        return verify_resync_confirm(
+        result = verify_resync_confirm(
             frame,
             self.state,
             shared_key=self.shared_key,
             window_size=self.window_size,
             now_tick=now_tick,
         )
+        if result.reason == "resync_committed":
+            self.state.locked_safe = False   # R6：认证重建成功 -> 退出 LOCKED_SAFE
+        return result
 
     def time_out_resync(self) -> None:
         """清空在途 RESYNC_PENDING（challenge/confirm 丢失或 TTL 到期），回 NORMAL（§4.3 异常）。"""
@@ -372,6 +375,26 @@ class Receiver:
             counter=pending.h_at_challenge,
             ttl=pending.ttl_ticks,
         )
+
+    def begin_locked_safe_resync(
+        self, rng: RandomLike, *, now_tick: int, ttl_ticks: int
+    ) -> Frame:
+        """LOCKED_SAFE 唯一恢复入口（§8.5, R6, blocker #2）。
+        普通/critical 收帧入口在 LOCKED_SAFE 已直接拒帧，不会经 verify_with_window 建 pending，
+        故这里显式建 ResyncPending（新 epoch、H 丢失占位 -1、trigger=0）再发 R2T challenge。
+        成功 process_resync_confirm（绑新 epoch）会清 locked_safe 回 NORMAL。"""
+        if not self.state.locked_safe:
+            raise RuntimeError("begin_locked_safe_resync requires LOCKED_SAFE state")
+        if self.state.resync_pending is None:
+            self.state.resync_pending = ResyncPending(
+                nonce_r="",
+                trigger_counter=0,
+                epoch=self.state.epoch,
+                h_at_challenge=-1,
+                ttl_ticks=0,
+                expire_tick=-1,
+            )
+        return self.issue_resync_challenge(rng, now_tick=now_tick, ttl_ticks=ttl_ticks)
 
     def process_crit_prepare(
         self, frame: Frame, rng: RandomLike, *, now_tick: int

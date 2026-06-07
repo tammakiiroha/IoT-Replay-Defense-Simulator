@@ -17,6 +17,7 @@ class Sender:
     tx_counter: int = 0
     authenticator: Authenticator | None = None
     pending_intent: PendingUserIntent | None = None   # §4.5 自发 critical 意图（防洗白）
+    current_epoch: int = 0   # 发送端自有 epoch 权威（§8.5, D7）；recovery 经 adopt_epoch 更新
 
     def __post_init__(self) -> None:
         if self.authenticator is None:
@@ -130,6 +131,11 @@ class Sender:
             mac=mac,
         )
 
+    def adopt_epoch(self, new_epoch: int) -> None:
+        """recovery 后显式采用接收端新 epoch（D7：发送端拥有 epoch，不由 engine 偷读 receiver）。"""
+        self.current_epoch = new_epoch
+
     def reset(self) -> None:
         self.tx_counter = 0
         self.pending_intent = None
+        self.current_epoch = 0

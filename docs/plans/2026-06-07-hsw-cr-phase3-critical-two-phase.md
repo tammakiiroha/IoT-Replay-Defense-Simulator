@@ -402,3 +402,22 @@ class CriticalPending:
 - 每个 Task 后跑 `test_engine_baseline_regression`（STABLE_MODES）自查——非 HSW_CR 模式任何漂移立即停下排查。
 - **Phase 2 两个教训务必带入**：(a) confirm 验证里加 counter/SW 不变量防回退；(b) 指标 `as_dict()` 导出面别漏（3.6 一次写全 + 测试）。
 - Phase 3 门绿后，用 `superpowers:writing-plans` 细化 Phase 4（epoch / LOCKED_SAFE / reboot / counter-lease）。
+
+---
+
+## Phase 3 验收结论（2026-06-07）
+
+**总验收通过。** 最终门：254→298 passed, 2 skipped；`test_engine_baseline_regression`(STABLE_MODES) 逐值相等（零漂移）；ruff / mypy(39) / check-contracts 全绿；6 个 blocker 全绿。
+提交序列：`db90a27`(state) → `373c91b`(prepare) → `c3bca54`(fix pid signed-64) → `dac0bbc`(confirm) → `6eae9da`(sender intent) → `dfc033d`(fix P1 key_id 绑定) → `251549b`(引擎双路径子泵) → `afae75c`(契约/TS 指标)。kernel 原语见 `8f1957f`。
+
+两处审查修复：
+- **pid signed-64 钳制**：`pid_for` 全 64 位会触发 MAC 编码器 `to_bytes(8, signed=True)` 溢出；钳到 63 位（非负、可编码）。
+- **P1 key_id 绑定**：`CriticalPending` 增 `key_id`，`issue_crit_challenge` 回显 dev_id/key_id，`process_crit_confirm` 改用 pending 权威值算 tag；非零 key_id 现可闭合（`test_full_round_trip_honours_key_id[0,7]`）。
+
+### Known modeling boundary（指标口径，非安全失败；后续 metrics/Phase 5 处理）
+
+丢包下的攻击归因边界：若 legit critical PREPARE 被信道丢弃（`p_loss>0`，发送端 intent 未消费），攻击者重放**同一条**录制 PREPARE，且此时 intent 未过期（`now − t_intent ≤ τ_intent`）、pid 相同 → 发送端会 confirm → commit，且因 `is_attack=True` 计入 `attack_success`。
+
+- **不是 §4.5 安全失败**：pid 与当前未消费 intent 完全一致；发送端只 confirm 未消费/未过期 intent；接收端只 commit 一次（`committed_critical` 去重）；不会执行旧命令 / 不同命令 / 不同 ctr。本质是“攻击者代投递用户当前已授权的新鲜命令”，非未授权重放。被 §4.5 挡下的仍是旧 / 已消费 / 不同 pid 的洗白。
+- **仅指标口径 caveat**：当 `attack_success` 定义为“任何 is_attack 帧导致 commit”时，高丢包下 HSW_CR 的 ASR 偏保守（把授权意图的成功投递记成攻击成功）。clean channel（`p_loss=0`，论文主结论场景）不受影响。
+- **裁决（不在 Phase 3 改指标层，避免协议语义与统计口径混淆）**：作为 known boundary 记录在案；后续 metrics phase / Phase 5 adaptive attacker 再决定是否新增 `attack_assisted_current_intent` 这类分类，而非从 `attack_success` 静默剔除。

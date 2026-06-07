@@ -325,7 +325,6 @@ def simulate_one_run(
             frame = sender.begin_critical_intent(
                 command,
                 command.encode("utf-8"),
-                epoch=receiver.state.epoch,
                 key_id=0,
                 now_tick=channel.current_tick,
             )
@@ -735,7 +734,6 @@ def simulate_one_run_with_trace(
             frame = sender.begin_critical_intent(
                 command,
                 command.encode("utf-8"),
-                epoch=receiver.state.epoch,
                 key_id=0,
                 now_tick=scheduler.current_tick,
             )

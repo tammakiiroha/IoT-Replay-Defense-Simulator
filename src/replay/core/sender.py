@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from .auth import Authenticator, HmacAuthenticator
 from .kernel.critical_commit import payload_digest, pid_for
+from .kernel.epoch import burn_lease_on_boot
 from .kernel.mac_domains import crit_confirm_tag, crit_prepare_tag, resync_confirm_tag
 from .types import Frame, Mode, PendingUserIntent
 
@@ -18,10 +19,21 @@ class Sender:
     authenticator: Authenticator | None = None
     pending_intent: PendingUserIntent | None = None   # §4.5 自发 critical 意图（防洗白）
     current_epoch: int = 0   # 发送端自有 epoch 权威（§8.5, D7）；recovery 经 adopt_epoch 更新
+    nvm_ctr_reserve_high: int = 0   # 发送端 NVM：当前 lease 预约区间高水位（R5/D6）
+    reserve_size: int = 64          # 每次预约的 ctr 区间大小（块写 NVM，非每帧）
+    boot_counter: int = 0           # 发送端 NVM：启动次数
 
     def __post_init__(self) -> None:
         if self.authenticator is None:
             self.authenticator = HmacAuthenticator(self.shared_key, self.mac_length * 4)
+
+    def _next_tx_counter(self) -> int:
+        """推进 tx_counter 并维持 lease 高水位（reserve_high 始终 >= tx_counter；块预约）。"""
+        self.tx_counter += 1
+        if self.reserve_size > 0:
+            while self.tx_counter > self.nvm_ctr_reserve_high:
+                self.nvm_ctr_reserve_high += self.reserve_size   # 块预约：模拟一次 NVM 写
+        return self.tx_counter
 
     def next_frame(self, command: str, *, nonce: str | None = None) -> Frame:
         auth = self.authenticator
@@ -38,9 +50,10 @@ class Sender:
         if self.mode is Mode.CHALLENGE:
             raise ValueError("Challenge mode requires a nonce for each frame")
 
-        self.tx_counter += 1
-        mac = auth.tag(self.tx_counter, command)
-        return Frame(command=command, counter=self.tx_counter, mac=mac)
+        ctr = self._next_tx_counter()
+        mac = auth.tag(ctr, command)
+        # stamp 发送端自有 epoch（D7）；非 HSW_CR 模式 current_epoch 恒 0 -> 与既有行为一致
+        return Frame(command=command, counter=ctr, mac=mac, epoch=self.current_epoch)
 
     def respond_resync_challenge(self, challenge: Frame) -> Frame:
         """对 R2T RESYNC_CHALLENGE 应答 RESYNC_CONFIRM（§4.3 step 4）。
@@ -68,12 +81,13 @@ class Sender:
         )
 
     def begin_critical_intent(
-        self, cmd: str, payload: bytes, *, epoch: int, key_id: int, now_tick: int
+        self, cmd: str, payload: bytes, *, key_id: int, now_tick: int
     ) -> Frame:
         """发起一次 critical 命令：记录完整身份 intent（§4.5）并产出 CRIT_PREPARE。
+        epoch 取自发送端自有 current_epoch（D7：sender 拥有 epoch，不由 engine 偷读 receiver）。
         只有真发送端自发命令时才走此路径；攻击者重放 prepare 不会创建 intent。"""
-        self.tx_counter += 1
-        ctr = self.tx_counter
+        epoch = self.current_epoch
+        ctr = self._next_tx_counter()
         ph = payload_digest(payload)
         pid = pid_for(epoch=epoch, ctr=ctr, cmd=cmd, payload_hash=ph)
         self.pending_intent = PendingUserIntent(
@@ -135,7 +149,17 @@ class Sender:
         """recovery 后显式采用接收端新 epoch（D7：发送端拥有 epoch，不由 engine 偷读 receiver）。"""
         self.current_epoch = new_epoch
 
+    def begin_boot(self) -> None:
+        """模拟发送端 reboot（§8.5, R5/D6）：烧掉旧 lease 段防 counter 复用。
+        tx_counter 跳到旧预约高水位（下一帧 +1 必 > 崩溃前任何 ctr），再预约新段。"""
+        self.tx_counter, self.nvm_ctr_reserve_high = burn_lease_on_boot(
+            self.nvm_ctr_reserve_high, self.reserve_size
+        )
+        self.boot_counter += 1
+
     def reset(self) -> None:
         self.tx_counter = 0
         self.pending_intent = None
         self.current_epoch = 0
+        self.nvm_ctr_reserve_high = 0
+        self.boot_counter = 0

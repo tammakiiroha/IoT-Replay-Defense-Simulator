@@ -11,7 +11,9 @@ KEY = "k"
 
 
 def _sender() -> Sender:
-    return Sender(mode=Mode.HSW_CR, shared_key=KEY, mac_length=8)
+    s = Sender(mode=Mode.HSW_CR, shared_key=KEY, mac_length=8)
+    s.current_epoch = 1   # 帧用 epoch=1；sender 自有 epoch（D7），begin_critical_intent 取此值
+    return s
 
 
 def _challenge(
@@ -33,7 +35,7 @@ def _challenge(
 
 def test_begin_intent_emits_prepare_and_records_identity():
     s = _sender()
-    prep = s.begin_critical_intent("OPEN", b"data", epoch=1, key_id=0, now_tick=0)
+    prep = s.begin_critical_intent("OPEN", b"data", key_id=0, now_tick=0)
     assert prep.flags == Frame.FLAG_CRIT_PREPARE
     assert prep.counter == 1 and prep.command == "OPEN"
     intent = s.pending_intent
@@ -44,7 +46,7 @@ def test_begin_intent_emits_prepare_and_records_identity():
 
 def test_sender_confirms_when_intent_matches():
     s = _sender()
-    s.begin_critical_intent("OPEN", b"data", epoch=1, key_id=0, now_tick=0)
+    s.begin_critical_intent("OPEN", b"data", key_id=0, now_tick=0)
     intent = s.pending_intent
     confirm = s.confirm_critical_challenge(_challenge(intent.pid), now_tick=1, tau_intent=10)
     assert confirm is not None
@@ -61,14 +63,14 @@ def test_replayed_old_critical_req_no_sender_confirm_without_user_intent():
 
 def test_intent_expires_after_tau():
     s = _sender()
-    s.begin_critical_intent("OPEN", b"data", epoch=1, key_id=0, now_tick=0)
+    s.begin_critical_intent("OPEN", b"data", key_id=0, now_tick=0)
     intent = s.pending_intent
     assert s.confirm_critical_challenge(_challenge(intent.pid), now_tick=100, tau_intent=10) is None
 
 
 def test_intent_consumed_once():
     s = _sender()
-    s.begin_critical_intent("OPEN", b"data", epoch=1, key_id=0, now_tick=0)
+    s.begin_critical_intent("OPEN", b"data", key_id=0, now_tick=0)
     intent = s.pending_intent
     ch = _challenge(intent.pid)
     assert s.confirm_critical_challenge(ch, now_tick=1, tau_intent=10) is not None
@@ -77,7 +79,7 @@ def test_intent_consumed_once():
 
 def test_challenge_wrong_epoch_or_keyid_rejected():
     s = _sender()
-    s.begin_critical_intent("OPEN", b"data", epoch=1, key_id=0, now_tick=0)
+    s.begin_critical_intent("OPEN", b"data", key_id=0, now_tick=0)
     intent = s.pending_intent
     assert s.confirm_critical_challenge(
         _challenge(intent.pid, epoch=2), now_tick=1, tau_intent=10
@@ -91,7 +93,7 @@ def test_challenge_wrong_epoch_or_keyid_rejected():
 def test_old_prepare_same_cmd_payload_rejected_by_pid():
     # 修审查#1: 用户已发新 intent；攻击者重放旧 prepare challenge（同 cmd/payload，旧 ctr->旧 pid）
     s = _sender()
-    s.begin_critical_intent("OPEN", b"data", epoch=1, key_id=0, now_tick=0)  # ctr=1 -> new pid
+    s.begin_critical_intent("OPEN", b"data", key_id=0, now_tick=0)  # ctr=1 -> new pid
     new_intent = s.pending_intent
     old_pid = pid_for(epoch=1, ctr=999, cmd="OPEN", payload_hash=payload_digest(b"data"))
     assert old_pid != new_intent.pid
@@ -109,7 +111,8 @@ def test_full_round_trip_honours_key_id(key_id):
         command_risk={"OPEN": 0.9}, risk_high=0.8,
     )
     rcv.state.epoch = 1   # 帧用 epoch=1；与 Phase 4 显式 epoch 守门对齐
-    prep = s.begin_critical_intent("OPEN", b"data", epoch=1, key_id=key_id, now_tick=0)
+    s.current_epoch = 1
+    prep = s.begin_critical_intent("OPEN", b"data", key_id=key_id, now_tick=0)
     assert prep.key_id == key_id
     r1 = rcv.process_crit_prepare(prep, random.Random(1), now_tick=0)
     assert r1.reason == "critical_prepared"

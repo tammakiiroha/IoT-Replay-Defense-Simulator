@@ -84,6 +84,8 @@ export interface SimulationSpec {{
   command_risk?: Record<string, number> | null;
   risk_high: number;
   auth_profile: AuthProfile;
+  policy_source: 'legacy' | 'default_table';
+  profile: 'strict' | 'standard' | 'permissive';
 }}
 
 export interface SimulationSpecPublic {{
@@ -119,6 +121,8 @@ export interface SimulationSpecPublic {{
   command_risk?: Record<string, number> | null;
   risk_high: number;
   auth_profile: AuthProfile;
+  policy_source: 'legacy' | 'default_table';
+  profile: 'strict' | 'standard' | 'permissive';
 }}
 
 export interface SimulationResultRecord {{
@@ -158,6 +162,7 @@ export interface SimulationResultRecord {{
   reboots: number;
   locked_safe_rejects: number;
   epoch_recoveries: number;
+  critical_command_count: number;
   mac_tag_bits: number;
   auth_profile: string;
   metadata: Record<string, unknown>;

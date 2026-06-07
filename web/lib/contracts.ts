@@ -49,6 +49,8 @@ export interface SimulationSpec {
   command_risk?: Record<string, number> | null;
   risk_high: number;
   auth_profile: AuthProfile;
+  policy_source: 'legacy' | 'default_table';
+  profile: 'strict' | 'standard' | 'permissive';
 }
 
 export interface SimulationSpecPublic {
@@ -84,6 +86,8 @@ export interface SimulationSpecPublic {
   command_risk?: Record<string, number> | null;
   risk_high: number;
   auth_profile: AuthProfile;
+  policy_source: 'legacy' | 'default_table';
+  profile: 'strict' | 'standard' | 'permissive';
 }
 
 export interface SimulationResultRecord {
@@ -123,6 +127,7 @@ export interface SimulationResultRecord {
   reboots: number;
   locked_safe_rejects: number;
   epoch_recoveries: number;
+  critical_command_count: number;
   mac_tag_bits: number;
   auth_profile: string;
   metadata: Record<string, unknown>;
@@ -498,6 +503,25 @@ export const jsonSchemas = {
         ],
         "title": "Auth Profile",
         "type": "string"
+      },
+      "policy_source": {
+        "default": "legacy",
+        "enum": [
+          "legacy",
+          "default_table"
+        ],
+        "title": "Policy Source",
+        "type": "string"
+      },
+      "profile": {
+        "default": "standard",
+        "enum": [
+          "strict",
+          "standard",
+          "permissive"
+        ],
+        "title": "Profile",
+        "type": "string"
       }
     },
     "title": "SimulationSpec",
@@ -733,6 +757,25 @@ export const jsonSchemas = {
       "auth_profile": {
         "title": "Auth Profile",
         "type": "string"
+      },
+      "policy_source": {
+        "default": "legacy",
+        "enum": [
+          "legacy",
+          "default_table"
+        ],
+        "title": "Policy Source",
+        "type": "string"
+      },
+      "profile": {
+        "default": "standard",
+        "enum": [
+          "strict",
+          "standard",
+          "permissive"
+        ],
+        "title": "Profile",
+        "type": "string"
       }
     },
     "required": [
@@ -955,6 +998,11 @@ export const jsonSchemas = {
           "epoch_recoveries": {
             "default": 0,
             "title": "Epoch Recoveries",
+            "type": "integer"
+          },
+          "critical_command_count": {
+            "default": 0,
+            "title": "Critical Command Count",
             "type": "integer"
           },
           "mac_tag_bits": {
@@ -1194,6 +1242,25 @@ export const jsonSchemas = {
           },
           "auth_profile": {
             "title": "Auth Profile",
+            "type": "string"
+          },
+          "policy_source": {
+            "default": "legacy",
+            "enum": [
+              "legacy",
+              "default_table"
+            ],
+            "title": "Policy Source",
+            "type": "string"
+          },
+          "profile": {
+            "default": "standard",
+            "enum": [
+              "strict",
+              "standard",
+              "permissive"
+            ],
+            "title": "Profile",
             "type": "string"
           }
         },
@@ -1563,6 +1630,25 @@ export const jsonSchemas = {
               "ascon"
             ],
             "title": "Auth Profile",
+            "type": "string"
+          },
+          "policy_source": {
+            "default": "legacy",
+            "enum": [
+              "legacy",
+              "default_table"
+            ],
+            "title": "Policy Source",
+            "type": "string"
+          },
+          "profile": {
+            "default": "standard",
+            "enum": [
+              "strict",
+              "standard",
+              "permissive"
+            ],
+            "title": "Profile",
             "type": "string"
           }
         },

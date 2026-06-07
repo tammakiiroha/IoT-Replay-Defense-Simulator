@@ -182,6 +182,7 @@ function aggregateMode(spec: SimulationSpec, mode: Mode): SimulationResultRecord
     reboots: 0,
     locked_safe_rejects: 0,
     epoch_recoveries: 0,
+    critical_command_count: 0,
     mac_tag_bits: spec.mac_tag_bits,
     auth_profile: spec.auth_profile,
     metadata: {
@@ -368,6 +369,8 @@ function publicSpec(spec: SimulationSpec): SimulationSpecPublic {
     command_risk: spec.command_risk,
     risk_high: spec.risk_high,
     auth_profile: spec.auth_profile,
+    policy_source: spec.policy_source,
+    profile: spec.profile,
   };
 }
 

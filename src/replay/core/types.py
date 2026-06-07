@@ -179,6 +179,9 @@ class SimulationConfig:
     max_runs: int = 2000
     command_risk: dict[str, float] | None = None
     risk_high: float = 0.8
+    policy_source: str = "legacy"   # legacy/default_table/custom（§3b/G5；默认 legacy=旧阈值）
+    profile: str = "standard"       # strict/standard/permissive（仅 policy_source!=legacy 生效）
+    command_impact: dict[str, tuple[int, ...]] | None = None   # 每命令 6 维 H_k（custom 源）
     auth_profile: str = "hmac"
     mac_tag_bits: int = 80
     resync_ttl_ticks: int = 16   # RESYNC challenge/confirm 的 TTL（tick）
@@ -221,6 +224,7 @@ class SimulationRunResult:
     reboots: int = 0
     locked_safe_rejects: int = 0
     epoch_recoveries: int = 0
+    critical_command_count: int = 0
     metadata: dict[str, object] = field(default_factory=dict)
 
     @property
@@ -278,6 +282,7 @@ class AggregateStats:
     reboots: int = 0
     locked_safe_rejects: int = 0
     epoch_recoveries: int = 0
+    critical_command_count: int = 0
     mac_tag_bits: int = 80
     auth_profile: str = "hmac"
     metadata: dict[str, object] = field(default_factory=dict)
@@ -320,6 +325,7 @@ class AggregateStats:
             "reboots": self.reboots,
             "locked_safe_rejects": self.locked_safe_rejects,
             "epoch_recoveries": self.epoch_recoveries,
+            "critical_command_count": self.critical_command_count,
             "mac_tag_bits": self.mac_tag_bits,
             "auth_profile": self.auth_profile,
         }

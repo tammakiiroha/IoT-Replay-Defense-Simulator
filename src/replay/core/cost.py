@@ -32,6 +32,7 @@ class CostStats:
     reboots: int = 0
     locked_safe_rejects: int = 0
     epoch_recoveries: int = 0
+    critical_command_count: int = 0   # legit 两阶段命令数（G5/G9, D6 单点计数）
 
 
 def estimate_energy(stats: CostStats, model: CostModel | None = None) -> float:

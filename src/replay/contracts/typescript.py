@@ -155,6 +155,9 @@ export interface SimulationResultRecord {{
   crit_prepared: number;
   crit_committed: number;
   crit_rejected: number;
+  reboots: number;
+  locked_safe_rejects: number;
+  epoch_recoveries: number;
   mac_tag_bits: number;
   auth_profile: string;
   metadata: Record<string, unknown>;

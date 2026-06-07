@@ -30,6 +30,10 @@ if (!contractsSource.includes('crit_committed')) {
   throw new Error('contracts.ts is missing critical two-phase counters');
 }
 
+if (!contractsSource.includes('epoch_recoveries')) {
+  throw new Error('contracts.ts is missing reboot/locked-safe observability counters');
+}
+
 const manifest = JSON.parse(manifestSource);
 if (!Array.isArray(manifest.artifacts) || manifest.artifacts.length === 0) {
   throw new Error('manifest.json does not contain any artifacts');

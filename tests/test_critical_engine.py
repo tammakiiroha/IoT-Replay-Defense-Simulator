@@ -57,7 +57,7 @@ def test_resolve_critical_confirm_lost_times_out():
         command_risk={"OPEN": 1.0}, risk_high=0.8,
     )
     cost = CostStats()
-    prep = sender.begin_critical_intent("OPEN", b"OPEN", epoch=0, key_id=0, now_tick=0)
+    prep = sender.begin_critical_intent("OPEN", b"OPEN", key_id=0, now_tick=0)
     committed = _resolve_critical(
         rcv, sender, cost,
         frame=prep, rng=random.Random(1), now_tick=0,

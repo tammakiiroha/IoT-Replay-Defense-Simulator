@@ -29,6 +29,9 @@ class CostStats:
     crit_prepared: int = 0
     crit_committed: int = 0
     crit_rejected: int = 0
+    reboots: int = 0
+    locked_safe_rejects: int = 0
+    epoch_recoveries: int = 0
 
 
 def estimate_energy(stats: CostStats, model: CostModel | None = None) -> float:

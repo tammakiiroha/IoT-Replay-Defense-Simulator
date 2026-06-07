@@ -212,6 +212,9 @@ class SimulationResultRecord(ReplayBaseModel):
     crit_prepared: int = 0
     crit_committed: int = 0
     crit_rejected: int = 0
+    reboots: int = 0
+    locked_safe_rejects: int = 0
+    epoch_recoveries: int = 0
     mac_tag_bits: int = DEFAULT_MAC_TAG_BITS
     auth_profile: str = "hmac"
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -253,6 +256,9 @@ class SimulationResultRecord(ReplayBaseModel):
             crit_prepared=entry.crit_prepared,
             crit_committed=entry.crit_committed,
             crit_rejected=entry.crit_rejected,
+            reboots=entry.reboots,
+            locked_safe_rejects=entry.locked_safe_rejects,
+            epoch_recoveries=entry.epoch_recoveries,
             mac_tag_bits=entry.mac_tag_bits,
             auth_profile=entry.auth_profile,
             metadata=metadata,

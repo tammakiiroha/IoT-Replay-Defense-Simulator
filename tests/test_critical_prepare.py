@@ -10,7 +10,7 @@ RISK = {"OPEN": 0.9, "PING": 0.0}
 
 
 def _receiver(*, capacity: int = 2, ttl: int = 16) -> Receiver:
-    return Receiver(
+    rcv = Receiver(
         Mode.HSW_CR,
         shared_key=KEY,
         mac_length=8,
@@ -20,6 +20,8 @@ def _receiver(*, capacity: int = 2, ttl: int = 16) -> Receiver:
         critical_pending_capacity=capacity,
         critical_ttl_ticks=ttl,
     )
+    rcv.state.epoch = 1   # 帧用 epoch=1；与 Phase 4 显式 epoch 守门对齐（frame.epoch==state.epoch）
+    return rcv
 
 
 def _prepare_frame(

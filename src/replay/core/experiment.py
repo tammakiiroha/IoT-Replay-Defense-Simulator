@@ -165,7 +165,9 @@ def _resolve_critical(
         return False
     prep = receiver.process_crit_prepare(frame, rng, now_tick=now_tick)
     if prep.reason != "critical_prepared":
-        cost_stats.crit_rejected += 1   # not_critical/mac_mismatch/pending_full/already_committed
+        if prep.reason == "locked_safe_reject":   # 评审注记：critical 路径也计 locked_safe_rejects
+            cost_stats.locked_safe_rejects += 1
+        cost_stats.crit_rejected += 1   # not_critical/mac/full/already_committed/locked_safe
         return False
     cost_stats.crit_prepared += 1
     ph = payload_digest(frame.payload)
@@ -187,6 +189,37 @@ def _resolve_critical(
         cost_stats.crit_committed += 1
         return True
     cost_stats.crit_rejected += 1       # ttl/sw_reject（pending 已在 confirm 内清理）
+    return False
+
+
+def _resolve_reboot_recovery(
+    receiver: Receiver,
+    sender: Sender,
+    *,
+    rng: RandomLike,
+    now_tick: int,
+    ttl_ticks: int,
+    rtt_ticks: int,
+    transport: Callable[[], tuple[bool, int, bool, int]],
+) -> bool:
+    """reboot 后认证重建子泵（§8.5, R6）：LOCKED_SAFE 唯一恢复入口往返。
+    begin_locked_safe_resync -> challenge -> sender confirm(新 epoch, new_h=tx_counter) -> commit。
+    成功 -> sender.adopt_epoch + 退出 LOCKED_SAFE；失败(丢包/TTL) -> 清 pending、保持 LOCKED_SAFE。
+    返回是否恢复成功。"""
+    if not receiver.state.locked_safe:
+        return False
+    challenge = receiver.begin_locked_safe_resync(rng, now_tick=now_tick, ttl_ticks=ttl_ticks)
+    ch_dropped, ch_delay, cf_dropped, cf_delay = transport()
+    if ch_dropped or cf_dropped:
+        receiver.time_out_resync()
+        return False
+    confirm = sender.respond_resync_challenge(challenge)
+    arrival = now_tick + rtt_ticks + ch_delay + cf_delay
+    result = receiver.process_resync_confirm(confirm, now_tick=arrival)
+    if result.reason == "resync_committed":
+        sender.adopt_epoch(receiver.state.epoch)
+        return True
+    receiver.time_out_resync()
     return False
 
 
@@ -254,6 +287,11 @@ def simulate_one_run(
         cf_dropped, cf_delay = _roll_drop_delay(local_rng, config.p_loss, config.p_reorder)
         return ch_dropped, ch_delay, cf_dropped, cf_delay
 
+    def _reboot_transport() -> tuple[bool, int, bool, int]:
+        ch_dropped, ch_delay = _roll_drop_delay(local_rng, config.p_loss, config.p_reorder)
+        cf_dropped, cf_delay = _roll_drop_delay(local_rng, config.p_loss, config.p_reorder)
+        return ch_dropped, ch_delay, cf_dropped, cf_delay
+
     def record_tx(frame: Frame) -> None:
         size = _frame_bytes(frame, tag_bits, config.challenge_nonce_bits)
         cost_stats.tx_bytes += size
@@ -307,6 +345,8 @@ def simulate_one_run(
                     attack_success += 1
                 else:
                     legit_accepted += 1
+            elif result.reason == "locked_safe_reject":
+                cost_stats.locked_safe_rejects += 1
             elif result.reason == "resync_required":
                 _resolve_resync(
                     receiver,
@@ -320,12 +360,30 @@ def simulate_one_run(
                 )
 
     for index in range(config.num_legit):
+        if (
+            config.mode is Mode.HSW_CR
+            and config.reboot_at_legit_index is not None
+            and index == config.reboot_at_legit_index
+        ):
+            # §8.5 reboot 注入（仅 HSW_CR）：易失态丢失 + bump epoch + 烧 lease，随后认证重建
+            receiver.reboot()
+            sender.begin_boot()
+            cost_stats.reboots += 1
+            if _resolve_reboot_recovery(
+                receiver,
+                sender,
+                rng=local_rng,
+                now_tick=channel.current_tick,
+                ttl_ticks=config.resync_ttl_ticks,
+                rtt_ticks=config.resync_rtt_ticks,
+                transport=_reboot_transport,
+            ):
+                cost_stats.epoch_recoveries += 1
         command = _choose_command(config, index, local_rng)
         if _is_two_phase_critical(config, command):
             frame = sender.begin_critical_intent(
                 command,
                 command.encode("utf-8"),
-                epoch=receiver.state.epoch,
                 key_id=0,
                 now_tick=channel.current_tick,
             )
@@ -400,6 +458,9 @@ def simulate_one_run(
         crit_prepared=cost_stats.crit_prepared,
         crit_committed=cost_stats.crit_committed,
         crit_rejected=cost_stats.crit_rejected,
+        reboots=cost_stats.reboots,
+        locked_safe_rejects=cost_stats.locked_safe_rejects,
+        epoch_recoveries=cost_stats.epoch_recoveries,
         metadata={
             "p_loss": config.p_loss,
             "p_reorder": config.p_reorder,
@@ -459,6 +520,9 @@ def _aggregate_results(
         crit_prepared=sum(result.crit_prepared for result in results),
         crit_committed=sum(result.crit_committed for result in results),
         crit_rejected=sum(result.crit_rejected for result in results),
+        reboots=sum(result.reboots for result in results),
+        locked_safe_rejects=sum(result.locked_safe_rejects for result in results),
+        epoch_recoveries=sum(result.epoch_recoveries for result in results),
         mac_tag_bits=_tag_bits(config),
         auth_profile=config.auth_profile,
         metadata=metadata,
@@ -625,6 +689,16 @@ def simulate_one_run_with_trace(
             trace.critical_confirm_delay[i],
         )
 
+    def _reboot_transport() -> tuple[bool, int, bool, int]:
+        if not trace.reboot_challenge_dropped:
+            return False, 0, False, 0
+        return (
+            trace.reboot_challenge_dropped[0],
+            trace.reboot_challenge_delay[0],
+            trace.reboot_confirm_dropped[0],
+            trace.reboot_confirm_delay[0],
+        )
+
     def record_tx(frame: Frame) -> None:
         size = _frame_bytes(frame, tag_bits, config.challenge_nonce_bits)
         cost_stats.tx_bytes += size
@@ -678,6 +752,8 @@ def simulate_one_run_with_trace(
                     attack_success += 1
                 else:
                     legit_accepted += 1
+            elif result.reason == "locked_safe_reject":
+                cost_stats.locked_safe_rejects += 1
             elif result.reason == "resync_required":
                 _resolve_resync(
                     receiver,
@@ -731,11 +807,29 @@ def simulate_one_run_with_trace(
         return True
 
     for index, command in enumerate(trace.commands[: config.num_legit]):
+        if (
+            config.mode is Mode.HSW_CR
+            and config.reboot_at_legit_index is not None
+            and index == config.reboot_at_legit_index
+        ):
+            # §8.5 reboot 注入（仅 HSW_CR）：易失态丢失 + bump epoch + 烧 lease，随后认证重建
+            receiver.reboot()
+            sender.begin_boot()
+            cost_stats.reboots += 1
+            if _resolve_reboot_recovery(
+                receiver,
+                sender,
+                rng=nonce_rng,
+                now_tick=scheduler.current_tick,
+                ttl_ticks=config.resync_ttl_ticks,
+                rtt_ticks=config.resync_rtt_ticks,
+                transport=_reboot_transport,
+            ):
+                cost_stats.epoch_recoveries += 1
         if _is_two_phase_critical(config, command):
             frame = sender.begin_critical_intent(
                 command,
                 command.encode("utf-8"),
-                epoch=receiver.state.epoch,
                 key_id=0,
                 now_tick=scheduler.current_tick,
             )
@@ -807,6 +901,9 @@ def simulate_one_run_with_trace(
         crit_prepared=cost_stats.crit_prepared,
         crit_committed=cost_stats.crit_committed,
         crit_rejected=cost_stats.crit_rejected,
+        reboots=cost_stats.reboots,
+        locked_safe_rejects=cost_stats.locked_safe_rejects,
+        epoch_recoveries=cost_stats.epoch_recoveries,
         metadata={
             "p_loss": config.p_loss,
             "p_reorder": config.p_reorder,

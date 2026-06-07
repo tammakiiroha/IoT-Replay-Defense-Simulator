@@ -165,7 +165,9 @@ def _resolve_critical(
         return False
     prep = receiver.process_crit_prepare(frame, rng, now_tick=now_tick)
     if prep.reason != "critical_prepared":
-        cost_stats.crit_rejected += 1   # not_critical/mac_mismatch/pending_full/already_committed
+        if prep.reason == "locked_safe_reject":   # 评审注记：critical 路径也计 locked_safe_rejects
+            cost_stats.locked_safe_rejects += 1
+        cost_stats.crit_rejected += 1   # not_critical/mac/full/already_committed/locked_safe
         return False
     cost_stats.crit_prepared += 1
     ph = payload_digest(frame.payload)
@@ -343,6 +345,8 @@ def simulate_one_run(
                     attack_success += 1
                 else:
                     legit_accepted += 1
+            elif result.reason == "locked_safe_reject":
+                cost_stats.locked_safe_rejects += 1
             elif result.reason == "resync_required":
                 _resolve_resync(
                     receiver,
@@ -364,7 +368,8 @@ def simulate_one_run(
             # §8.5 reboot 注入（仅 HSW_CR）：易失态丢失 + bump epoch + 烧 lease，随后认证重建
             receiver.reboot()
             sender.begin_boot()
-            _resolve_reboot_recovery(
+            cost_stats.reboots += 1
+            if _resolve_reboot_recovery(
                 receiver,
                 sender,
                 rng=local_rng,
@@ -372,7 +377,8 @@ def simulate_one_run(
                 ttl_ticks=config.resync_ttl_ticks,
                 rtt_ticks=config.resync_rtt_ticks,
                 transport=_reboot_transport,
-            )
+            ):
+                cost_stats.epoch_recoveries += 1
         command = _choose_command(config, index, local_rng)
         if _is_two_phase_critical(config, command):
             frame = sender.begin_critical_intent(
@@ -452,6 +458,9 @@ def simulate_one_run(
         crit_prepared=cost_stats.crit_prepared,
         crit_committed=cost_stats.crit_committed,
         crit_rejected=cost_stats.crit_rejected,
+        reboots=cost_stats.reboots,
+        locked_safe_rejects=cost_stats.locked_safe_rejects,
+        epoch_recoveries=cost_stats.epoch_recoveries,
         metadata={
             "p_loss": config.p_loss,
             "p_reorder": config.p_reorder,
@@ -511,6 +520,9 @@ def _aggregate_results(
         crit_prepared=sum(result.crit_prepared for result in results),
         crit_committed=sum(result.crit_committed for result in results),
         crit_rejected=sum(result.crit_rejected for result in results),
+        reboots=sum(result.reboots for result in results),
+        locked_safe_rejects=sum(result.locked_safe_rejects for result in results),
+        epoch_recoveries=sum(result.epoch_recoveries for result in results),
         mac_tag_bits=_tag_bits(config),
         auth_profile=config.auth_profile,
         metadata=metadata,
@@ -740,6 +752,8 @@ def simulate_one_run_with_trace(
                     attack_success += 1
                 else:
                     legit_accepted += 1
+            elif result.reason == "locked_safe_reject":
+                cost_stats.locked_safe_rejects += 1
             elif result.reason == "resync_required":
                 _resolve_resync(
                     receiver,
@@ -801,7 +815,8 @@ def simulate_one_run_with_trace(
             # §8.5 reboot 注入（仅 HSW_CR）：易失态丢失 + bump epoch + 烧 lease，随后认证重建
             receiver.reboot()
             sender.begin_boot()
-            _resolve_reboot_recovery(
+            cost_stats.reboots += 1
+            if _resolve_reboot_recovery(
                 receiver,
                 sender,
                 rng=nonce_rng,
@@ -809,7 +824,8 @@ def simulate_one_run_with_trace(
                 ttl_ticks=config.resync_ttl_ticks,
                 rtt_ticks=config.resync_rtt_ticks,
                 transport=_reboot_transport,
-            )
+            ):
+                cost_stats.epoch_recoveries += 1
         if _is_two_phase_critical(config, command):
             frame = sender.begin_critical_intent(
                 command,
@@ -885,6 +901,9 @@ def simulate_one_run_with_trace(
         crit_prepared=cost_stats.crit_prepared,
         crit_committed=cost_stats.crit_committed,
         crit_rejected=cost_stats.crit_rejected,
+        reboots=cost_stats.reboots,
+        locked_safe_rejects=cost_stats.locked_safe_rejects,
+        epoch_recoveries=cost_stats.epoch_recoveries,
         metadata={
             "p_loss": config.p_loss,
             "p_reorder": config.p_reorder,

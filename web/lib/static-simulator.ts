@@ -179,6 +179,9 @@ function aggregateMode(spec: SimulationSpec, mode: Mode): SimulationResultRecord
     crit_prepared: 0,
     crit_committed: 0,
     crit_rejected: 0,
+    reboots: 0,
+    locked_safe_rejects: 0,
+    epoch_recoveries: 0,
     mac_tag_bits: spec.mac_tag_bits,
     auth_profile: spec.auth_profile,
     metadata: {

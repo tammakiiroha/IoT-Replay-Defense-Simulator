@@ -70,6 +70,9 @@ def test_hsw_cr_reboot_then_recover_resumes_traffic():
     res = simulate_one_run(_cfg(reboot_at_legit_index=3))
     assert res.legit_sent == 6
     assert res.legit_accepted == 6   # 前 3 + 恢复 + 后 3 全 accept（clean channel）
+    assert res.reboots == 1
+    assert res.epoch_recoveries == 1
+    assert res.locked_safe_rejects == 0   # clean 下恢复成功，无帧落 LOCKED_SAFE
 
 
 def test_paired_reboot_recovery_drop_blocks_post_reboot_traffic():
@@ -82,6 +85,22 @@ def test_paired_reboot_recovery_drop_blocks_post_reboot_traffic():
     res = simulate_one_run_with_trace(cfg, trace, nonce_seed=7)
     assert res.legit_sent == 6
     assert res.legit_accepted == 3   # 仅 reboot 前 3 帧
+    assert res.reboots == 1
+    assert res.epoch_recoveries == 0          # 恢复失败
+    assert res.locked_safe_rejects == 3       # 后 3 个 normal 帧落 LOCKED_SAFE（process 路径）
+
+
+def test_critical_locked_safe_rejects_counted_in_resolve_critical():
+    # 评审注记：critical 帧走 _resolve_critical，其 locked_safe_reject 也要计入
+    cfg = _cfg(command_sequence=["OPEN"], command_set=["OPEN"], reboot_at_legit_index=3)
+    trace = generate_trace(cfg, seed=7)
+    trace = dataclasses.replace(
+        trace, reboot_challenge_dropped=[True], reboot_confirm_dropped=[True],
+    )
+    res = simulate_one_run_with_trace(cfg, trace, nonce_seed=7)
+    assert res.reboots == 1
+    assert res.epoch_recoveries == 0
+    assert res.locked_safe_rejects == 3       # 后 3 个 critical prepare 落 LOCKED_SAFE
 
 
 def test_replayed_old_epoch_frame_after_reboot_does_not_commit():

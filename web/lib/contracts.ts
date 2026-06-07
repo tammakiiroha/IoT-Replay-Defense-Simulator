@@ -120,6 +120,9 @@ export interface SimulationResultRecord {
   crit_prepared: number;
   crit_committed: number;
   crit_rejected: number;
+  reboots: number;
+  locked_safe_rejects: number;
+  epoch_recoveries: number;
   mac_tag_bits: number;
   auth_profile: string;
   metadata: Record<string, unknown>;
@@ -937,6 +940,21 @@ export const jsonSchemas = {
           "crit_rejected": {
             "default": 0,
             "title": "Crit Rejected",
+            "type": "integer"
+          },
+          "reboots": {
+            "default": 0,
+            "title": "Reboots",
+            "type": "integer"
+          },
+          "locked_safe_rejects": {
+            "default": 0,
+            "title": "Locked Safe Rejects",
+            "type": "integer"
+          },
+          "epoch_recoveries": {
+            "default": 0,
+            "title": "Epoch Recoveries",
             "type": "integer"
           },
           "mac_tag_bits": {

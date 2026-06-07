@@ -746,6 +746,21 @@
             "title": "Crit Rejected",
             "type": "integer"
           },
+          "reboots": {
+            "default": 0,
+            "title": "Reboots",
+            "type": "integer"
+          },
+          "locked_safe_rejects": {
+            "default": 0,
+            "title": "Locked Safe Rejects",
+            "type": "integer"
+          },
+          "epoch_recoveries": {
+            "default": 0,
+            "title": "Epoch Recoveries",
+            "type": "integer"
+          },
           "mac_tag_bits": {
             "default": 80,
             "title": "Mac Tag Bits",

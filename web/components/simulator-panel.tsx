@@ -53,6 +53,7 @@ const DEFAULT_SPEC: SimulationSpec = {
   p_loss: 0.1,
   p_reorder: 0.05,
   window_size: 5,
+  g_hard: 16,
   num_legit: 20,
   num_replay: 50,
   attack_mode: 'post',

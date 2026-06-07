@@ -7,7 +7,7 @@ import sys
 import time
 from collections.abc import Callable, Sequence
 
-from .attacker import Attacker
+from .attacker import Attacker, AttackerStrategy, RandomReplay
 from .auth import AsconAeadAuthenticator, Authenticator, HmacAuthenticator
 from .channel import Channel
 from .channel_models import GilbertElliottLoss, IidLoss, LossModel, ReorderDelay, TraceLoss
@@ -673,6 +673,9 @@ def simulate_one_run_with_trace(
 
     scheduler = EventScheduler()
     recorded: list[Frame] = []
+    # Paired path delegates frame selection to a strategy (P1). RandomReplay
+    # reproduces the legacy pick_replay byte-for-byte; P3 swaps in adaptive ones.
+    replay_strategy: AttackerStrategy = RandomReplay(target_commands=config.target_commands)
     legit_sent = 0
     legit_accepted = 0
     attack_attempts = 0
@@ -802,14 +805,8 @@ def simulate_one_run_with_trace(
         return scheduler.flush()
 
     def pick_replay(raw_pick: int) -> Frame | None:
-        if config.target_commands:
-            targets = set(config.target_commands)
-            candidates = [frame for frame in recorded if frame.command in targets]
-        else:
-            candidates = recorded
-        if not candidates:
-            return None
-        return candidates[raw_pick % len(candidates)].clone()
+        # Delegate to the strategy (P1). RandomReplay == legacy logic byte-for-byte.
+        return replay_strategy.pick_recorded(raw_pick, recorded)
 
     def attempt_replay() -> bool:
         nonlocal attack_attempts, attack_success, remaining_replays, replay_index

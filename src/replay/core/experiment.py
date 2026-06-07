@@ -190,6 +190,37 @@ def _resolve_critical(
     return False
 
 
+def _resolve_reboot_recovery(
+    receiver: Receiver,
+    sender: Sender,
+    *,
+    rng: RandomLike,
+    now_tick: int,
+    ttl_ticks: int,
+    rtt_ticks: int,
+    transport: Callable[[], tuple[bool, int, bool, int]],
+) -> bool:
+    """reboot 后认证重建子泵（§8.5, R6）：LOCKED_SAFE 唯一恢复入口往返。
+    begin_locked_safe_resync -> challenge -> sender confirm(新 epoch, new_h=tx_counter) -> commit。
+    成功 -> sender.adopt_epoch + 退出 LOCKED_SAFE；失败(丢包/TTL) -> 清 pending、保持 LOCKED_SAFE。
+    返回是否恢复成功。"""
+    if not receiver.state.locked_safe:
+        return False
+    challenge = receiver.begin_locked_safe_resync(rng, now_tick=now_tick, ttl_ticks=ttl_ticks)
+    ch_dropped, ch_delay, cf_dropped, cf_delay = transport()
+    if ch_dropped or cf_dropped:
+        receiver.time_out_resync()
+        return False
+    confirm = sender.respond_resync_challenge(challenge)
+    arrival = now_tick + rtt_ticks + ch_delay + cf_delay
+    result = receiver.process_resync_confirm(confirm, now_tick=arrival)
+    if result.reason == "resync_committed":
+        sender.adopt_epoch(receiver.state.epoch)
+        return True
+    receiver.time_out_resync()
+    return False
+
+
 def simulate_one_run(
     config: SimulationConfig,
     rng: RandomLike | None = None,
@@ -250,6 +281,11 @@ def simulate_one_run(
         return ch_dropped, ch_delay, cf_dropped, cf_delay
 
     def _critical_transport() -> tuple[bool, int, bool, int]:
+        ch_dropped, ch_delay = _roll_drop_delay(local_rng, config.p_loss, config.p_reorder)
+        cf_dropped, cf_delay = _roll_drop_delay(local_rng, config.p_loss, config.p_reorder)
+        return ch_dropped, ch_delay, cf_dropped, cf_delay
+
+    def _reboot_transport() -> tuple[bool, int, bool, int]:
         ch_dropped, ch_delay = _roll_drop_delay(local_rng, config.p_loss, config.p_reorder)
         cf_dropped, cf_delay = _roll_drop_delay(local_rng, config.p_loss, config.p_reorder)
         return ch_dropped, ch_delay, cf_dropped, cf_delay
@@ -320,6 +356,23 @@ def simulate_one_run(
                 )
 
     for index in range(config.num_legit):
+        if (
+            config.mode is Mode.HSW_CR
+            and config.reboot_at_legit_index is not None
+            and index == config.reboot_at_legit_index
+        ):
+            # §8.5 reboot 注入（仅 HSW_CR）：易失态丢失 + bump epoch + 烧 lease，随后认证重建
+            receiver.reboot()
+            sender.begin_boot()
+            _resolve_reboot_recovery(
+                receiver,
+                sender,
+                rng=local_rng,
+                now_tick=channel.current_tick,
+                ttl_ticks=config.resync_ttl_ticks,
+                rtt_ticks=config.resync_rtt_ticks,
+                transport=_reboot_transport,
+            )
         command = _choose_command(config, index, local_rng)
         if _is_two_phase_critical(config, command):
             frame = sender.begin_critical_intent(
@@ -624,6 +677,16 @@ def simulate_one_run_with_trace(
             trace.critical_confirm_delay[i],
         )
 
+    def _reboot_transport() -> tuple[bool, int, bool, int]:
+        if not trace.reboot_challenge_dropped:
+            return False, 0, False, 0
+        return (
+            trace.reboot_challenge_dropped[0],
+            trace.reboot_challenge_delay[0],
+            trace.reboot_confirm_dropped[0],
+            trace.reboot_confirm_delay[0],
+        )
+
     def record_tx(frame: Frame) -> None:
         size = _frame_bytes(frame, tag_bits, config.challenge_nonce_bits)
         cost_stats.tx_bytes += size
@@ -730,6 +793,23 @@ def simulate_one_run_with_trace(
         return True
 
     for index, command in enumerate(trace.commands[: config.num_legit]):
+        if (
+            config.mode is Mode.HSW_CR
+            and config.reboot_at_legit_index is not None
+            and index == config.reboot_at_legit_index
+        ):
+            # §8.5 reboot 注入（仅 HSW_CR）：易失态丢失 + bump epoch + 烧 lease，随后认证重建
+            receiver.reboot()
+            sender.begin_boot()
+            _resolve_reboot_recovery(
+                receiver,
+                sender,
+                rng=nonce_rng,
+                now_tick=scheduler.current_tick,
+                ttl_ticks=config.resync_ttl_ticks,
+                rtt_ticks=config.resync_rtt_ticks,
+                transport=_reboot_transport,
+            )
         if _is_two_phase_critical(config, command):
             frame = sender.begin_critical_intent(
                 command,

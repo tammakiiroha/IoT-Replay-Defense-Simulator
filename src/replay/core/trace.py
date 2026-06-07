@@ -29,6 +29,11 @@ class ScenarioTrace:
     critical_challenge_delay: list[int] = field(default_factory=list)
     critical_confirm_dropped: list[bool] = field(default_factory=list)
     critical_confirm_delay: list[int] = field(default_factory=list)
+    # reboot 后认证重建信道决策（paired 路径；每次运行最多一次 reboot，§8.5）
+    reboot_challenge_dropped: list[bool] = field(default_factory=list)
+    reboot_challenge_delay: list[int] = field(default_factory=list)
+    reboot_confirm_dropped: list[bool] = field(default_factory=list)
+    reboot_confirm_delay: list[int] = field(default_factory=list)
 
     def digest(self) -> str:
         payload = json.dumps(asdict(self), sort_keys=True, separators=(",", ":"))
@@ -98,11 +103,21 @@ def generate_trace(config: SimulationConfig, seed: int) -> ScenarioTrace:
     critical_challenge_delay: list[int] = []
     critical_confirm_dropped: list[bool] = []
     critical_confirm_delay: list[int] = []
+    reboot_challenge_dropped: list[bool] = []
+    reboot_challenge_delay: list[int] = []
+    reboot_confirm_dropped: list[bool] = []
+    reboot_confirm_delay: list[int] = []
     for _ in range(config.num_legit):
         critical_challenge_dropped.append(_dropped(rng, config.p_loss))
         critical_challenge_delay.append(_delay(rng, config.p_reorder))
         critical_confirm_dropped.append(_dropped(rng, config.p_loss))
         critical_confirm_delay.append(_delay(rng, config.p_reorder))
+
+    # reboot 后认证重建信道决策（每次运行最多一次 reboot，故长度 1；同末尾追加技巧）
+    reboot_challenge_dropped.append(_dropped(rng, config.p_loss))
+    reboot_challenge_delay.append(_delay(rng, config.p_reorder))
+    reboot_confirm_dropped.append(_dropped(rng, config.p_loss))
+    reboot_confirm_delay.append(_delay(rng, config.p_reorder))
 
     return ScenarioTrace(
         commands=commands,
@@ -121,4 +136,8 @@ def generate_trace(config: SimulationConfig, seed: int) -> ScenarioTrace:
         critical_challenge_delay=critical_challenge_delay,
         critical_confirm_dropped=critical_confirm_dropped,
         critical_confirm_delay=critical_confirm_delay,
+        reboot_challenge_dropped=reboot_challenge_dropped,
+        reboot_challenge_delay=reboot_challenge_delay,
+        reboot_confirm_dropped=reboot_confirm_dropped,
+        reboot_confirm_delay=reboot_confirm_delay,
     )

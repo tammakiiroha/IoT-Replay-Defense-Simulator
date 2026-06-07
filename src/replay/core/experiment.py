@@ -7,7 +7,12 @@ import sys
 import time
 from collections.abc import Callable, Sequence
 
-from .attacker import Attacker, AttackerStrategy, RandomReplay
+from .attacker import (
+    AdaptiveReplay,
+    AttackContext,
+    AttackerStrategy,
+    RandomReplay,
+)
 from .auth import AsconAeadAuthenticator, Authenticator, HmacAuthenticator
 from .channel import Channel
 from .channel_models import GilbertElliottLoss, IidLoss, LossModel, ReorderDelay, TraceLoss
@@ -110,6 +115,19 @@ def _should_record_paired(position: str, *, legit_dropped: bool, record_dropped:
     if position == "rx":
         return (not legit_dropped) and (not record_dropped)
     return not record_dropped
+
+
+def _make_attacker_strategy(config: SimulationConfig) -> AttackerStrategy:
+    """Build the attacker strategy from config (Phase 5). Position governs
+    recording (tx -> always record, P_record=1.0); strategy governs selection."""
+    record_loss = 0.0 if config.attacker_position == "tx" else config.attacker_record_loss
+    if config.attacker_strategy == "random":
+        return RandomReplay(record_loss=record_loss, target_commands=config.target_commands)
+    return AdaptiveReplay(
+        config.attacker_strategy,
+        record_loss=record_loss,
+        target_commands=config.target_commands,
+    )
 
 
 def _is_two_phase_critical(
@@ -286,12 +304,7 @@ def simulate_one_run(
         command_impact=config.command_impact,
     )
     policy_table = _build_policy_table(config)
-    # tx: P_record=1.0 -> always record (ignore record_loss); ind/rx keep configured loss.
-    _live_record_loss = 0.0 if config.attacker_position == "tx" else config.attacker_record_loss
-    attacker = Attacker(
-        record_loss=_live_record_loss,
-        target_commands=config.target_commands,
-    )
+    attacker = _make_attacker_strategy(config)
     channel = Channel(
         p_loss=config.p_loss,
         p_reorder=config.p_reorder,
@@ -396,6 +409,15 @@ def simulate_one_run(
                     transport=_resync_transport,
                 )
 
+    def _attack_context() -> AttackContext:
+        return AttackContext(
+            window_size=receiver.window_size,
+            g_hard=receiver.g_hard,
+            last_counter=receiver.state.last_counter,
+            received_mask=tuple(receiver.state.received_mask),
+            policy_table=receiver.policy_table,
+        )
+
     for index in range(config.num_legit):
         if (
             config.mode is Mode.HSW_CR
@@ -448,7 +470,7 @@ def simulate_one_run(
                     break
                 if local_rng.random() >= config.inline_attack_probability:
                     break
-                attack_frame = attacker.pick_frame(local_rng)
+                attack_frame = attacker.pick_frame(local_rng, context=_attack_context())
                 if attack_frame is None:
                     break
 
@@ -698,7 +720,7 @@ def simulate_one_run_with_trace(
     recorded: list[Frame] = []
     # Paired path delegates frame selection to a strategy (P1). RandomReplay
     # reproduces the legacy pick_replay byte-for-byte; P3 swaps in adaptive ones.
-    replay_strategy: AttackerStrategy = RandomReplay(target_commands=config.target_commands)
+    replay_strategy: AttackerStrategy = _make_attacker_strategy(config)
     # rx records at DELIVERY, not at send: map engine frame id -> record decision, consumed
     # in process_arrived when the frame is actually delivered (handles legit_delay > 0).
     rx_pending: dict[int, bool] = {}
@@ -832,9 +854,21 @@ def simulate_one_run_with_trace(
     def flush_traced() -> list[Frame]:
         return scheduler.flush()
 
+    def _paired_attack_context() -> AttackContext:
+        return AttackContext(
+            window_size=receiver.window_size,
+            g_hard=receiver.g_hard,
+            last_counter=receiver.state.last_counter,
+            received_mask=tuple(receiver.state.received_mask),
+            policy_table=receiver.policy_table,
+        )
+
     def pick_replay(raw_pick: int) -> Frame | None:
-        # Delegate to the strategy (P1). RandomReplay == legacy logic byte-for-byte.
-        return replay_strategy.pick_recorded(raw_pick, recorded)
+        # Delegate to the strategy (P1/P3). RandomReplay == legacy byte-for-byte;
+        # adaptive strategies read receiver state via AttackContext.
+        return replay_strategy.pick_recorded(
+            raw_pick, recorded, context=_paired_attack_context()
+        )
 
     def attempt_replay() -> bool:
         nonlocal attack_attempts, attack_success, remaining_replays, replay_index

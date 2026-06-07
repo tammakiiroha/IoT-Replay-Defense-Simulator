@@ -167,6 +167,9 @@ class SimulationConfig:
     # == legacy behaviour (zero-drift); tx/rx/weak are opt-in.
     attacker_position: Literal["ind", "tx", "rx"] = "ind"
     attacker_inject_strength: Literal["strong", "weak"] = "strong"
+    attacker_strategy: Literal[
+        "random", "adaptive_lostframe", "adaptive_resync", "adaptive_critical"
+    ] = "random"
     inline_attack_probability: float = 0.3
     inline_attack_burst: int = 1
     challenge_nonce_bits: int = 32

@@ -17,6 +17,7 @@
           "no_def",
           "rolling",
           "window",
+          "sw_resync",
           "challenge",
           "hsw_cr",
           "oscore_like"
@@ -77,6 +78,12 @@
         "default": 5,
         "minimum": 0,
         "title": "Window Size",
+        "type": "integer"
+      },
+      "g_hard": {
+        "default": 16,
+        "minimum": 0,
+        "title": "G Hard",
         "type": "integer"
       },
       "num_legit": {
@@ -317,6 +324,7 @@
           "no_def",
           "rolling",
           "window",
+          "sw_resync",
           "challenge",
           "hsw_cr",
           "oscore_like"
@@ -366,6 +374,10 @@
       },
       "window_size": {
         "title": "Window Size",
+        "type": "integer"
+      },
+      "g_hard": {
+        "title": "G Hard",
         "type": "integer"
       },
       "num_legit": {
@@ -533,6 +545,7 @@
       "p_loss",
       "p_reorder",
       "window_size",
+      "g_hard",
       "num_legit",
       "num_replay",
       "attack_mode",
@@ -572,6 +585,7 @@
           "no_def",
           "rolling",
           "window",
+          "sw_resync",
           "challenge",
           "hsw_cr",
           "oscore_like"
@@ -702,6 +716,36 @@
             "title": "Challenge Round Trips",
             "type": "number"
           },
+          "resync_initiated": {
+            "default": 0,
+            "title": "Resync Initiated",
+            "type": "integer"
+          },
+          "resync_completed": {
+            "default": 0,
+            "title": "Resync Completed",
+            "type": "integer"
+          },
+          "resync_timeout": {
+            "default": 0,
+            "title": "Resync Timeout",
+            "type": "integer"
+          },
+          "crit_prepared": {
+            "default": 0,
+            "title": "Crit Prepared",
+            "type": "integer"
+          },
+          "crit_committed": {
+            "default": 0,
+            "title": "Crit Committed",
+            "type": "integer"
+          },
+          "crit_rejected": {
+            "default": 0,
+            "title": "Crit Rejected",
+            "type": "integer"
+          },
           "mac_tag_bits": {
             "default": 80,
             "title": "Mac Tag Bits",
@@ -777,6 +821,10 @@
           },
           "window_size": {
             "title": "Window Size",
+            "type": "integer"
+          },
+          "g_hard": {
+            "title": "G Hard",
             "type": "integer"
           },
           "num_legit": {
@@ -944,6 +992,7 @@
           "p_loss",
           "p_reorder",
           "window_size",
+          "g_hard",
           "num_legit",
           "num_replay",
           "attack_mode",
@@ -1019,6 +1068,7 @@
           "no_def",
           "rolling",
           "window",
+          "sw_resync",
           "challenge",
           "hsw_cr",
           "oscore_like"
@@ -1079,6 +1129,12 @@
             "default": 5,
             "minimum": 0,
             "title": "Window Size",
+            "type": "integer"
+          },
+          "g_hard": {
+            "default": 16,
+            "minimum": 0,
+            "title": "G Hard",
             "type": "integer"
           },
           "num_legit": {

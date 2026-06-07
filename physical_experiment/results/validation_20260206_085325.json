@@ -1,0 +1,351 @@
+{
+  "validation_time": "2026-02-06T08:53:25.066147",
+  "environment": {
+    "timestamp": "2026-02-06T08:53:25.066182",
+    "git_commit": "10c2292acd4c",
+    "os_info": {
+      "name": "unknown",
+      "version": "unknown"
+    },
+    "kernel": "25.2.0",
+    "python_version": "3.13.5",
+    "gnuradio_version": "unknown",
+    "gr_osmosdr_version": "unknown",
+    "hackrf_info": {
+      "driver_installed": true,
+      "driver_version": "2024.02.1",
+      "devices": []
+    }
+  },
+  "counting_rules": {
+    "legit_accept": "合法帧被 Receiver.process() 接受",
+    "legit_reject": "合法帧被 MAC/计数器/nonce 验证拒绝",
+    "legit_loss": "合法帧未到达 Receiver（含：信道丢失、CRC失败、同步失败、受控丢包注入）",
+    "attack_success": "攻击帧被 Receiver.process() 接受",
+    "attack_reject": "攻击帧被 MAC/计数器/nonce 验证拒绝",
+    "attack_loss": "攻击帧未到达 Receiver（同上）",
+    "note": "CRC失败、同步失败在 physical 侧计为 loss，与 sim 的 p_loss 语义对齐"
+  },
+  "conclusion_scope": {
+    "validates": [
+      "(A1) 防御逻辑与统计口径一致（loopback 可覆盖）",
+      "(A2) FSK 物理链路闭环（仅 hardware/coax 覆盖）",
+      "(B) 在人为注入的 i.i.d 丢包采样点上，统计结果与仿真一致"
+    ],
+    "does_not_validate": [
+      "模型在全参数空间有效",
+      "p_reorder 维度的有效性（本实验未覆盖）",
+      "现实无线环境下的最优窗口选择"
+    ]
+  },
+  "summary": {
+    "total_configs": 1,
+    "passed": 1,
+    "failed": 0,
+    "loss_samples_tested": [
+      0.0
+    ]
+  },
+  "results": [
+    {
+      "mode": "no_def",
+      "window_size": 1,
+      "p_loss_injected": 0.0,
+      "loss_seed": 42,
+      "physical_lar": 1.0,
+      "physical_asr": 1.0,
+      "physical_runs": 1,
+      "sim_lar": 1.0,
+      "sim_asr": 1.0,
+      "sim_runs": 1,
+      "lar_error": 0.0,
+      "asr_error": 0.0,
+      "lar_valid": true,
+      "asr_valid": true,
+      "physical_legit_accepted": 20,
+      "physical_legit_total": 20,
+      "physical_attack_success": 50,
+      "physical_attack_total": 50,
+      "sim_legit_accepted": 20,
+      "sim_legit_total": 20,
+      "sim_attack_success": 50,
+      "sim_attack_total": 50,
+      "physical_lar_ci": [
+        0.8388698745050668,
+        0.9999999999999999
+      ],
+      "physical_asr_ci": [
+        0.9286499658256813,
+        1.0
+      ],
+      "sim_lar_ci": [
+        0.8388698745050668,
+        0.9999999999999999
+      ],
+      "sim_asr_ci": [
+        0.9286499658256813,
+        1.0
+      ],
+      "lar_ci_overlap": true,
+      "asr_ci_overlap": true,
+      "loss_stats": null
+    }
+  ],
+  "config": {
+    "config_version": "1.0.0",
+    "platform": {
+      "os": "Ubuntu",
+      "os_versions": [
+        "22.04",
+        "24.04"
+      ],
+      "python_min_version": "3.9"
+    },
+    "experiment": {
+      "name": "replay_defense_hardware_validation",
+      "description": "Validate simulation results with real HackRF hardware",
+      "runs_per_config": 10,
+      "random_seed": 42
+    },
+    "hardware": {
+      "frequency_hz": 2475000000,
+      "sample_rate_hz": 2000000,
+      "bandwidth_hz": 2000000,
+      "tx": {
+        "gain_db": 20,
+        "if_gain_db": 30,
+        "device_serial": null,
+        "device_args": ""
+      },
+      "rx": {
+        "lna_gain_db": 24,
+        "vga_gain_db": 20,
+        "device_serial": null,
+        "device_args": ""
+      },
+      "modulation": {
+        "type": "FSK",
+        "samples_per_symbol": 2,
+        "bits_per_symbol": 1,
+        "deviation_hz": 101562
+      }
+    },
+    "chapter3_frame": {
+      "prefix": "20aab824caebda25da7020cf6e76b67cde28c7",
+      "commands": {
+        "light": "0636b64700",
+        "demo": "3646cd4500",
+        "left_back": "24549a2700",
+        "left_forward": "2252d85780",
+        "right_forward": "2757ff1700",
+        "right_back": "26d64d8f00",
+        "both_forward": "2353fb4780",
+        "both_back": "24d40baf00",
+        "lb_rf": "2555b93700",
+        "rb_lf": "22d249df80"
+      },
+      "xor_masks": {
+        "M_L": "0606427080",
+        "M_R": "0181b29800",
+        "M_FB": "0787f0e880",
+        "v_light": "20606a4000"
+      },
+      "synthesized_examples": {
+        "both_forward_light": "0333910780",
+        "left_forward_light": "0232b21780",
+        "right_forward_light": "0737955700"
+      }
+    },
+    "chapter5_montecarlo": {
+      "N_runs": 200,
+      "N_legit": 20,
+      "N_attack": 100,
+      "random_seed": 42
+    },
+    "chapter4_defense": {
+      "modes": [
+        "no_def",
+        "rolling",
+        "window",
+        "challenge"
+      ],
+      "window_sizes": [
+        1,
+        3,
+        5,
+        7,
+        9,
+        15,
+        20
+      ]
+    },
+    "zmq": {
+      "host": "127.0.0.1",
+      "tx_port": 5555,
+      "rx_port": 5556,
+      "attacker_rx_port": 5557,
+      "attacker_tx_port": 5558,
+      "timeout_ms": 2000,
+      "hwm": 1000
+    },
+    "traffic": {
+      "num_legit_frames": 20,
+      "num_replay_attempts": 50,
+      "frame_interval_ms": 50,
+      "commands": [
+        "FWD",
+        "BACK",
+        "LEFT",
+        "RIGHT",
+        "STOP"
+      ]
+    },
+    "modes": [
+      {
+        "name": "no_def",
+        "enabled": true,
+        "description": "无防御基线"
+      },
+      {
+        "name": "rolling",
+        "enabled": true,
+        "description": "滚动计数器 + MAC"
+      },
+      {
+        "name": "window",
+        "enabled": true,
+        "description": "滑动窗口 + MAC",
+        "window_sizes": [
+          3,
+          5,
+          8
+        ]
+      },
+      {
+        "name": "challenge",
+        "enabled": true,
+        "description": "挑战响应"
+      }
+    ],
+    "attack": {
+      "mode": "post",
+      "target_commands": null,
+      "delay_before_replay_s": 2.0,
+      "inline_probability": 0.3,
+      "inline_burst": 1
+    },
+    "attacker": {
+      "record_loss": 0.0,
+      "target_commands": null
+    },
+    "protocol": {
+      "shared_key": "hardware_experiment_key_2024",
+      "mac_length": 16,
+      "nonce_bits": 32,
+      "frame_format": {
+        "preamble": "A5A5A5A5",
+        "crc_type": "CRC16"
+      }
+    },
+    "calibration": {
+      "enabled": true,
+      "packets": 1000,
+      "interval_ms": 50,
+      "distances_m": [
+        1,
+        5,
+        10
+      ]
+    },
+    "channel": {
+      "p_loss": 0.0,
+      "p_reorder": 0.0
+    },
+    "simulation_baseline": {
+      "enabled": true,
+      "runs": 200,
+      "p_loss_values": [
+        0.0,
+        0.05,
+        0.1,
+        0.15,
+        0.2,
+        0.25,
+        0.3
+      ],
+      "p_reorder_values": [
+        0.0,
+        0.05,
+        0.1,
+        0.15,
+        0.2,
+        0.25,
+        0.3
+      ]
+    },
+    "phases": {
+      "calibration": {
+        "enabled": true,
+        "packets": 1000,
+        "distances": [
+          "1m",
+          "5m",
+          "10m"
+        ]
+      },
+      "defense_comparison": {
+        "enabled": true,
+        "modes": [
+          "no_def",
+          "rolling",
+          "window",
+          "challenge"
+        ],
+        "runs_per_mode": 10
+      },
+      "window_sweep": {
+        "enabled": true,
+        "window_sizes": [
+          3,
+          5,
+          8,
+          10,
+          15
+        ],
+        "runs_per_size": 5
+      },
+      "analysis": {
+        "enabled": true,
+        "generate_figures": true,
+        "generate_latex": true
+      }
+    },
+    "output": {
+      "results_dir": "physical_experiment/results",
+      "logs_dir": "physical_experiment/logs",
+      "figures_dir": "figures",
+      "reports_dir": "physical_experiment/reports",
+      "formats": [
+        "json",
+        "csv"
+      ],
+      "generate_figures": true,
+      "figure_formats": [
+        "png",
+        "pdf"
+      ],
+      "figure_dpi": 300
+    },
+    "flowgraph": {
+      "auto_start": true,
+      "startup_timeout_s": 10,
+      "shutdown_timeout_s": 5,
+      "tx_script": "physical_experiment/flowgraphs/tx_flowgraph.py",
+      "rx_script": "physical_experiment/flowgraphs/rx_flowgraph.py"
+    },
+    "doctor": {
+      "run_before_experiment": true,
+      "fail_on_warning": false
+    }
+  }
+}

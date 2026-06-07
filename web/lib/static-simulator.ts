@@ -173,6 +173,12 @@ function aggregateMode(spec: SimulationSpec, mode: Mode): SimulationResultRecord
     latency_ticks: cost.latency,
     crypto_ops: cost.cryptoOps,
     challenge_round_trips: mean(runs.map((run) => run.challengeRoundTrips)),
+    resync_initiated: 0,
+    resync_completed: 0,
+    resync_timeout: 0,
+    crit_prepared: 0,
+    crit_committed: 0,
+    crit_rejected: 0,
     mac_tag_bits: spec.mac_tag_bits,
     auth_profile: spec.auth_profile,
     metadata: {
@@ -334,6 +340,7 @@ function publicSpec(spec: SimulationSpec): SimulationSpecPublic {
     p_loss: spec.p_loss,
     p_reorder: spec.p_reorder,
     window_size: spec.window_size,
+    g_hard: spec.g_hard,
     num_legit: spec.num_legit,
     num_replay: spec.num_replay,
     attack_mode: spec.attack_mode,
@@ -368,6 +375,7 @@ function costProfile(spec: SimulationSpec, mode: Mode): CostProfile {
     no_def: { bytes: 0, state: 0, latency: 1, cryptoOps: 0, challengeRtt: 0 },
     rolling: { bytes: 4 + tagBytes, state: 8, latency: 1.1, cryptoOps: 2, challengeRtt: 0 },
     window: { bytes: 4 + tagBytes, state: 8 + windowBytes, latency: 1.15, cryptoOps: 2, challengeRtt: 0 },
+    sw_resync: { bytes: 4 + tagBytes, state: 8 + windowBytes, latency: 1.2, cryptoOps: 2, challengeRtt: 0 },
     challenge: {
       bytes: 4 + tagBytes + spec.challenge_nonce_bits / 8,
       state: 64,
@@ -388,7 +396,7 @@ function costProfile(spec: SimulationSpec, mode: Mode): CostProfile {
 }
 
 function isWindowMode(mode: Mode): boolean {
-  return mode === 'window' || mode === 'hsw_cr' || mode === 'oscore_like';
+  return mode === 'window' || mode === 'sw_resync' || mode === 'hsw_cr' || mode === 'oscore_like';
 }
 
 function wilsonCi(successes: number, total: number): { low: number; high: number } {

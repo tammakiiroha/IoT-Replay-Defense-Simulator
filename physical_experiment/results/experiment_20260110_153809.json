@@ -1,0 +1,63 @@
+{
+  "timestamp": "20260110_153809",
+  "config": {
+    "experiment": {
+      "runs_per_config": 5,
+      "random_seed": 42
+    },
+    "zmq": {
+      "host": "127.0.0.1",
+      "tx_port": 5555,
+      "rx_port": 5556,
+      "timeout_ms": 2000
+    },
+    "traffic": {
+      "num_legit_frames": 20,
+      "num_replay_attempts": 100,
+      "frame_interval_ms": 50,
+      "commands": [
+        "FWD",
+        "BACK",
+        "LEFT",
+        "RIGHT",
+        "STOP"
+      ]
+    },
+    "attack": {
+      "mode": "post"
+    },
+    "protocol": {
+      "shared_key": "sim_shared_key",
+      "mac_length": 8,
+      "nonce_bits": 32
+    },
+    "output": {
+      "results_dir": "physical_experiment/results",
+      "logs_dir": "physical_experiment/logs"
+    }
+  },
+  "results": [
+    {
+      "config_name": "window_w5",
+      "mode": "window",
+      "window_size": 5,
+      "num_runs": 2,
+      "avg_legit_accept_rate": 1.0,
+      "std_legit_accept_rate": 0.0,
+      "avg_attack_success_rate": 0.0,
+      "std_attack_success_rate": 0.0,
+      "total_timeouts": 0
+    },
+    {
+      "config_name": "rolling_w0",
+      "mode": "rolling",
+      "window_size": 0,
+      "num_runs": 2,
+      "avg_legit_accept_rate": 1.0,
+      "std_legit_accept_rate": 0.0,
+      "avg_attack_success_rate": 0.0,
+      "std_attack_success_rate": 0.0,
+      "total_timeouts": 0
+    }
+  ]
+}

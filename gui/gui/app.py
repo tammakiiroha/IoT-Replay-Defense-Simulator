@@ -6,8 +6,10 @@ Main simulation GUI application - Web-style modern design with ALL original feat
 import os
 import platform
 import queue
+import shlex
 import signal
 import subprocess
+import sys
 import threading
 import tkinter as tk
 from datetime import datetime
@@ -704,6 +706,16 @@ class SimulationGUI:
         
         cmd = " ".join(cmd_parts)
         self.run_command(cmd, self.t("custom_exp"))
+
+    def _project_python(self) -> str:
+        """Resolve the project-local Python interpreter when available."""
+        if platform.system() == "Windows":
+            candidate = os.path.join(os.getcwd(), ".venv", "Scripts", "python.exe")
+        else:
+            candidate = os.path.join(os.getcwd(), ".venv", "bin", "python")
+        if os.path.isfile(candidate):
+            return candidate
+        return sys.executable or "python3"
     
     def run_command(self, args, description):
         """执行仿真命令"""
@@ -720,7 +732,7 @@ class SimulationGUI:
         
         def run_thread():
             try:
-                cmd = f"source .venv/bin/activate && python main.py {args}"
+                cmd = [self._project_python(), "main.py", *shlex.split(args)]
 
                 # Prepare environment to avoid CoreFoundation fork issues on macOS
                 env = os.environ.copy()
@@ -728,13 +740,12 @@ class SimulationGUI:
 
                 self.current_process = subprocess.Popen(
                     cmd,
-                    shell=True,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
                     bufsize=1,
-                    executable='/bin/bash',
                     start_new_session=platform.system() != "Windows",
+                    cwd=os.getcwd(),
                     env=env
                 )
                 for line in self.current_process.stdout:
@@ -757,7 +768,7 @@ class SimulationGUI:
                 self.set_status(False)
                 try:
                     self.stop_button.pack_forget()
-                except:
+                except Exception:
                     pass
         
         threading.Thread(target=run_thread, daemon=True).start()
@@ -782,11 +793,10 @@ class SimulationGUI:
                 env["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = "YES"
 
                 result = subprocess.run(
-                    "source .venv/bin/activate && python scripts/plot_results.py",
-                    shell=True,
-                    executable='/bin/bash',
+                    [self._project_python(), "scripts/plot_results.py"],
                     capture_output=True,
                     text=True,
+                    cwd=os.getcwd(),
                     env=env
                 )
                 if result.returncode == 0:
@@ -817,11 +827,10 @@ class SimulationGUI:
         def run():
             try:
                 result = subprocess.run(
-                    "source .venv/bin/activate && python scripts/export_tables.py",
-                    shell=True,
-                    executable='/bin/bash',
+                    [self._project_python(), "scripts/export_tables.py"],
                     capture_output=True,
-                    text=True
+                    text=True,
+                    cwd=os.getcwd()
                 )
                 if result.returncode == 0:
                     self.output_queue.put(f"✓ {self.t('export_tables')} {self.t('done')}\n")

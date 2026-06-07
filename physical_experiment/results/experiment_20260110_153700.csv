@@ -1,0 +1,4 @@
+mode,window_size,num_runs,avg_legit_rate,std_legit_rate,avg_attack_rate,std_attack_rate,total_timeouts
+window,5,2,1.0000,0.0000,0.0000,0.0000,0
+rolling,0,2,1.0000,0.0000,0.0000,0.0000,0
+challenge,0,2,1.0000,0.0000,0.0000,0.0000,0

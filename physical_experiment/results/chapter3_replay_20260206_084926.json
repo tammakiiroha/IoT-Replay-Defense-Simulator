@@ -1,0 +1,123 @@
+{
+  "experiment_info": {
+    "paper_reference": "22AJ603",
+    "chapter": "3.5",
+    "title": "リプレイ攻撃実験",
+    "date": "2026-02-06T08:49:26.937477",
+    "dry_run": true
+  },
+  "frame_structure": {
+    "prefix": "20aab824caebda25da7020cf6e76b67cde28c7",
+    "prefix_length_bytes": 19
+  },
+  "command_tests": [
+    {
+      "command": "light",
+      "tail": "0636b64700",
+      "frame": "20aab824caebda25da7020cf6e76b67cde28c70636b64700",
+      "expected_response": "LED 点灯/消灯",
+      "transmitted": false,
+      "success": null,
+      "notes": "Dry run - not transmitted"
+    },
+    {
+      "command": "demo",
+      "tail": "3646cd4500",
+      "frame": "20aab824caebda25da7020cf6e76b67cde28c73646cd4500",
+      "expected_response": "デモ走行モード開始",
+      "transmitted": false,
+      "success": null,
+      "notes": "Dry run - not transmitted"
+    },
+    {
+      "command": "left_back",
+      "tail": "24549a2700",
+      "frame": "20aab824caebda25da7020cf6e76b67cde28c724549a2700",
+      "expected_response": "左輪後退",
+      "transmitted": false,
+      "success": null,
+      "notes": "Dry run - not transmitted"
+    },
+    {
+      "command": "left_forward",
+      "tail": "2252d85780",
+      "frame": "20aab824caebda25da7020cf6e76b67cde28c72252d85780",
+      "expected_response": "左輪前進",
+      "transmitted": false,
+      "success": null,
+      "notes": "Dry run - not transmitted"
+    },
+    {
+      "command": "right_forward",
+      "tail": "2757ff1700",
+      "frame": "20aab824caebda25da7020cf6e76b67cde28c72757ff1700",
+      "expected_response": "右輪前進",
+      "transmitted": false,
+      "success": null,
+      "notes": "Dry run - not transmitted"
+    },
+    {
+      "command": "right_back",
+      "tail": "26d64d8f00",
+      "frame": "20aab824caebda25da7020cf6e76b67cde28c726d64d8f00",
+      "expected_response": "右輪後退",
+      "transmitted": false,
+      "success": null,
+      "notes": "Dry run - not transmitted"
+    },
+    {
+      "command": "both_forward",
+      "tail": "2353fb4780",
+      "frame": "20aab824caebda25da7020cf6e76b67cde28c72353fb4780",
+      "expected_response": "両輪前進 (車体前進)",
+      "transmitted": false,
+      "success": null,
+      "notes": "Dry run - not transmitted"
+    },
+    {
+      "command": "both_back",
+      "tail": "24d40baf00",
+      "frame": "20aab824caebda25da7020cf6e76b67cde28c724d40baf00",
+      "expected_response": "両輪後退 (車体後退)",
+      "transmitted": false,
+      "success": null,
+      "notes": "Dry run - not transmitted"
+    },
+    {
+      "command": "lb_rf",
+      "tail": "2555b93700",
+      "frame": "20aab824caebda25da7020cf6e76b67cde28c72555b93700",
+      "expected_response": "逆時針旋回 (左後+右前)",
+      "transmitted": false,
+      "success": null,
+      "notes": "Dry run - not transmitted"
+    },
+    {
+      "command": "rb_lf",
+      "tail": "22d249df80",
+      "frame": "20aab824caebda25da7020cf6e76b67cde28c722d249df80",
+      "expected_response": "順時針旋回 (右後+左前)",
+      "transmitted": false,
+      "success": null,
+      "notes": "Dry run - not transmitted"
+    }
+  ],
+  "synthesis_tests": [],
+  "summary": {
+    "basic_commands": {
+      "total": 10,
+      "transmitted": 0,
+      "success": 0
+    },
+    "synthesis_commands": {
+      "total": 0,
+      "transmitted": 0,
+      "success": 0
+    },
+    "xor_verifications": {
+      "total": 0,
+      "verified": 0
+    },
+    "conclusion": "Dry run completed - no actual transmissions"
+  }
+}

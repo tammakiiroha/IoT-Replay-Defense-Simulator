@@ -127,7 +127,8 @@ def test_window_mask_clamped():
     for counter in range(1, 10):
         res = receiver.process(create_frame(counter))
         assert res.accepted
-        assert receiver.state.received_mask < (1 << 3)
+        assert len(receiver.state.received_mask) == 3        # 现在是 list[int]
+        assert all(b in (0, 1) for b in receiver.state.received_mask)
 
 
 def test_challenge_nonce_hex_length_rounds_up():

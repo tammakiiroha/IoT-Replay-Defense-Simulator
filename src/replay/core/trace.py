@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 
 from .rng import DeterministicRNG, RandomLike
 from .types import SimulationConfig
@@ -19,6 +19,16 @@ class ScenarioTrace:
     replay_pick: list[int]
     replay_dropped: list[bool]
     replay_delay: list[int]
+    # 反向 resync 信道决策（paired 路径确定性来源；按 resync 尝试序号索引，§4.3）
+    resync_challenge_dropped: list[bool] = field(default_factory=list)
+    resync_challenge_delay: list[int] = field(default_factory=list)
+    resync_confirm_dropped: list[bool] = field(default_factory=list)
+    resync_confirm_delay: list[int] = field(default_factory=list)
+    # 反向 critical 两阶段信道决策（paired 路径；按 critical 尝试序号索引，§4.4）
+    critical_challenge_dropped: list[bool] = field(default_factory=list)
+    critical_challenge_delay: list[int] = field(default_factory=list)
+    critical_confirm_dropped: list[bool] = field(default_factory=list)
+    critical_confirm_delay: list[int] = field(default_factory=list)
 
     def digest(self) -> str:
         payload = json.dumps(asdict(self), sort_keys=True, separators=(",", ":"))
@@ -70,6 +80,30 @@ def generate_trace(config: SimulationConfig, seed: int) -> ScenarioTrace:
         replay_dropped.append(_dropped(rng, config.p_loss))
         replay_delay.append(_delay(rng, config.p_reorder))
 
+    # 反向 resync 信道决策——必须在所有现有抽取之后（末尾），以免改动既有数组的抽取顺序，
+    # 从而保证非 resync 模式 paired 数值逐字节不变（§Phase 1.5 append 技巧）。
+    resync_challenge_dropped: list[bool] = []
+    resync_challenge_delay: list[int] = []
+    resync_confirm_dropped: list[bool] = []
+    resync_confirm_delay: list[int] = []
+    for _ in range(config.num_legit):
+        resync_challenge_dropped.append(_dropped(rng, config.p_loss))
+        resync_challenge_delay.append(_delay(rng, config.p_reorder))
+        resync_confirm_dropped.append(_dropped(rng, config.p_loss))
+        resync_confirm_delay.append(_delay(rng, config.p_reorder))
+
+    # 反向 critical 信道决策——同样追加在所有现有抽取之后（末尾），保持非 critical 模式
+    # paired 数值逐字节不变（与 resync 同一 append 技巧，§Phase 3）。
+    critical_challenge_dropped: list[bool] = []
+    critical_challenge_delay: list[int] = []
+    critical_confirm_dropped: list[bool] = []
+    critical_confirm_delay: list[int] = []
+    for _ in range(config.num_legit):
+        critical_challenge_dropped.append(_dropped(rng, config.p_loss))
+        critical_challenge_delay.append(_delay(rng, config.p_reorder))
+        critical_confirm_dropped.append(_dropped(rng, config.p_loss))
+        critical_confirm_delay.append(_delay(rng, config.p_reorder))
+
     return ScenarioTrace(
         commands=commands,
         legit_dropped=legit_dropped,
@@ -79,4 +113,12 @@ def generate_trace(config: SimulationConfig, seed: int) -> ScenarioTrace:
         replay_pick=replay_pick,
         replay_dropped=replay_dropped,
         replay_delay=replay_delay,
+        resync_challenge_dropped=resync_challenge_dropped,
+        resync_challenge_delay=resync_challenge_delay,
+        resync_confirm_dropped=resync_confirm_dropped,
+        resync_confirm_delay=resync_confirm_delay,
+        critical_challenge_dropped=critical_challenge_dropped,
+        critical_challenge_delay=critical_challenge_delay,
+        critical_confirm_dropped=critical_confirm_dropped,
+        critical_confirm_delay=critical_confirm_delay,
     )

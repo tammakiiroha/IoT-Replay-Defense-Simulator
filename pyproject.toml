@@ -50,7 +50,6 @@ extend-exclude = [
   ".serena",
   ".venv",
   "gui",
-  "gui_legacy",
   "physical_experiment",
   "scripts",
   "web/node_modules",

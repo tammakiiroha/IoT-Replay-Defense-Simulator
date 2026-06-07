@@ -12,6 +12,7 @@ from replay.core import (
     DEFAULT_ATTACKER_RECORD_LOSS,
     DEFAULT_CHALLENGE_NONCE_BITS,
     DEFAULT_COMMANDS,
+    DEFAULT_G_HARD,
     DEFAULT_INLINE_ATTACK_BURST,
     DEFAULT_INLINE_ATTACK_PROBABILITY,
     DEFAULT_MAC_LENGTH,
@@ -23,6 +24,7 @@ from replay.core import (
     DEFAULT_RUNS,
     DEFAULT_SHARED_KEY,
     DEFAULT_WINDOW_SIZE,
+    WINDOW_SIZED_MODES,
     AggregateStats,
     AttackMode,
     Mode,
@@ -50,6 +52,7 @@ class SimulationSpec(ReplayBaseModel):
     p_loss: float = Field(default=DEFAULT_P_LOSS, ge=0.0, le=1.0)
     p_reorder: float = Field(default=DEFAULT_P_REORDER, ge=0.0, le=1.0)
     window_size: int = Field(default=DEFAULT_WINDOW_SIZE, ge=0)
+    g_hard: int = Field(default=DEFAULT_G_HARD, ge=0)
     num_legit: int = Field(default=DEFAULT_NUM_LEGIT, ge=0, le=10_000)
     num_replay: int = Field(default=DEFAULT_NUM_REPLAY, ge=0, le=10_000)
     attack_mode: AttackMode = DEFAULT_ATTACK_MODE
@@ -86,8 +89,7 @@ class SimulationSpec(ReplayBaseModel):
 
     @model_validator(mode="after")
     def _validate_window_size(self) -> SimulationSpec:
-        window_modes = {Mode.WINDOW, Mode.HSW_CR, Mode.OSCORE_LIKE}
-        if any(Mode(mode) in window_modes for mode in self.modes) and self.window_size <= 0:
+        if any(Mode(mode) in WINDOW_SIZED_MODES for mode in self.modes) and self.window_size <= 0:
             raise ValueError("window_size must be >= 1 when window mode is enabled")
         run_bound = (
             max(self.runs, self.max_runs)
@@ -108,6 +110,7 @@ class SimulationSpec(ReplayBaseModel):
             p_loss=self.p_loss,
             p_reorder=self.p_reorder,
             window_size=self.window_size,
+            g_hard=self.g_hard,
             command_sequence=self.command_sequence,
             command_set=self.command_set,
             target_commands=self.target_commands,
@@ -144,6 +147,7 @@ class SimulationSpecPublic(ReplayBaseModel):
     p_loss: float
     p_reorder: float
     window_size: int
+    g_hard: int
     num_legit: int
     num_replay: int
     attack_mode: AttackMode
@@ -202,6 +206,12 @@ class SimulationResultRecord(ReplayBaseModel):
     latency_ticks: float = 0.0
     crypto_ops: float = 0.0
     challenge_round_trips: float = 0.0
+    resync_initiated: int = 0
+    resync_completed: int = 0
+    resync_timeout: int = 0
+    crit_prepared: int = 0
+    crit_committed: int = 0
+    crit_rejected: int = 0
     mac_tag_bits: int = DEFAULT_MAC_TAG_BITS
     auth_profile: str = "hmac"
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -237,6 +247,12 @@ class SimulationResultRecord(ReplayBaseModel):
             latency_ticks=entry.latency_ticks,
             crypto_ops=entry.crypto_ops,
             challenge_round_trips=entry.challenge_round_trips,
+            resync_initiated=entry.resync_initiated,
+            resync_completed=entry.resync_completed,
+            resync_timeout=entry.resync_timeout,
+            crit_prepared=entry.crit_prepared,
+            crit_committed=entry.crit_committed,
+            crit_rejected=entry.crit_rejected,
             mac_tag_bits=entry.mac_tag_bits,
             auth_profile=entry.auth_profile,
             metadata=metadata,

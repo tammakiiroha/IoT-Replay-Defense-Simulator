@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import ClassVar
 
 
 class Mode(str, Enum):
@@ -12,9 +13,16 @@ class Mode(str, Enum):
     NO_DEFENSE = "no_def"
     ROLLING_MAC = "rolling"
     WINDOW = "window"
+    SW_RESYNC = "sw_resync"
     CHALLENGE = "challenge"
     HSW_CR = "hsw_cr"
     OSCORE_LIKE = "oscore_like"
+
+
+# 走 window 验证路径（classify + window_commit）的 mode；SW_RESYNC 仅在此基础上加 resync 闸门。
+WINDOW_VERIFY_MODES = frozenset({Mode.WINDOW, Mode.SW_RESYNC, Mode.OSCORE_LIKE})
+# 需要 window_size 的 mode（含自带 resync 的 HSW_CR）；用于契约校验与结果聚合，避免散落集合漏项。
+WINDOW_SIZED_MODES = WINDOW_VERIFY_MODES | {Mode.HSW_CR}
 
 
 class AttackMode(str, Enum):
@@ -28,11 +36,31 @@ class AttackMode(str, Enum):
 class Frame:
     """Simplified abstraction of an RF control frame."""
 
+    # 帧类型（flags 语义，研究计划 §3.3）。0=NORMAL, 3/4=RESYNC challenge/confirm；
+    # critical 两阶段（Phase 3）：1=PREPARE, 2=CONFIRM, 5=R2T CHALLENGE。
+    FLAG_NORMAL_REQ: ClassVar[int] = 0
+    FLAG_CRIT_PREPARE: ClassVar[int] = 1
+    FLAG_CRIT_CONFIRM: ClassVar[int] = 2
+    FLAG_RESYNC_CHALLENGE: ClassVar[int] = 3
+    FLAG_RESYNC_CONFIRM: ClassVar[int] = 4
+    FLAG_CRIT_CHALLENGE: ClassVar[int] = 5
+
     command: str
     counter: int | None = None
     mac: str | None = None
     nonce: str | None = None
     is_attack: bool = False
+    # HSW-CR 扩展（研究计划 §3.3）
+    dev_id: int = 0
+    key_id: int = 0
+    epoch: int = 0
+    flags: int = 0
+    payload: bytes = b""
+    ttl: int = 0   # challenge/confirm 携带的 TTL（绑进 resync_confirm_tag，两侧一致）
+    # critical 两阶段载体（Phase 3）：pid=请求标识、nonce_id=R 端挑战序号、payload_hash=定长摘要
+    pid: int = 0
+    nonce_id: int = 0
+    payload_hash: bytes = b""
 
     def clone(self) -> Frame:
         return Frame(
@@ -41,7 +69,60 @@ class Frame:
             mac=self.mac,
             nonce=self.nonce,
             is_attack=self.is_attack,
+            dev_id=self.dev_id,
+            key_id=self.key_id,
+            epoch=self.epoch,
+            flags=self.flags,
+            payload=self.payload,
+            ttl=self.ttl,
+            pid=self.pid,
+            nonce_id=self.nonce_id,
+            payload_hash=self.payload_hash,
         )
+
+
+@dataclass
+class ResyncPending:
+    """RESYNC_PENDING 期间的挑战上下文（§4.3 step 2-3）。"""
+
+    nonce_r: str
+    trigger_counter: int      # 触发 resync 的 ctr（供 step-6 / 指标）
+    epoch: int                # 发挑战时的 epoch
+    h_at_challenge: int       # 发挑战时的 H（confirm tag 的 old_h）
+    ttl_ticks: int            # TTL（绑进 resync_confirm_tag，两侧必须一致）
+    expire_tick: int          # TTL 截止 tick = issued_tick + ttl_ticks
+
+
+@dataclass
+class PendingUserIntent:
+    """发送端自发 critical 命令时记录的用户意图（§4.5 防 challenge 洗白）。
+    绑定完整身份（含 pid=epoch/ctr/cmd/payload_hash 派生），而非仅 (cmd, payload)，
+    使攻击者重放旧 prepare（旧 epoch/ctr）即便同 cmd/payload 也无法借真发送端 confirm。"""
+
+    epoch: int
+    ctr: int
+    cmd: str
+    payload_hash: bytes
+    pid: int
+    key_id: int
+    t_intent: int
+    consumed: bool = False
+
+
+@dataclass
+class CriticalPending:
+    """pending_critical[pid] 表项（§4.4 阶段1）。confirm 绑定字段全在此固化。"""
+
+    epoch: int
+    ctr: int
+    cmd: str
+    payload_hash: bytes       # 与 crit_*_tag 的 payload_hash: bytes 对齐
+    nonce_id: int
+    nonce_r: str
+    ttl_ticks: int
+    expire_tick: int
+    sender_id: int
+    key_id: int               # prepare 的 key_id；challenge 回显、confirm 用此权威值绑定（§4.5）
 
 
 @dataclass
@@ -50,9 +131,14 @@ class ReceiverState:
 
     last_counter: int = -1
     expected_nonce: str | None = None
-    received_mask: int = 0
+    received_mask: list[int] = field(default_factory=list)
     outstanding_nonces: dict[str, int] = field(default_factory=dict)
     used_nonces: set[str] = field(default_factory=set)
+    epoch: int = 0
+    resync_pending: ResyncPending | None = None
+    pending_critical: dict[int, CriticalPending] = field(default_factory=dict)  # key=pid:int
+    committed_critical: set[int] = field(default_factory=set)  # 已提交 pid，去重(C2)
+    crit_nonce_seq: int = 0  # nonce_id 自增源
 
 
 @dataclass
@@ -66,6 +152,7 @@ class SimulationConfig:
     p_loss: float = 0.0
     p_reorder: float = 0.0
     window_size: int = 0
+    g_hard: int = 16
     command_sequence: Sequence[str] | None = None
     command_set: Sequence[str] | None = None
     target_commands: Sequence[str] | None = None
@@ -91,6 +178,11 @@ class SimulationConfig:
     risk_high: float = 0.8
     auth_profile: str = "hmac"
     mac_tag_bits: int = 80
+    resync_ttl_ticks: int = 16   # RESYNC challenge/confirm 的 TTL（tick）
+    resync_rtt_ticks: int = 1    # 反向往返基础 RTT（tick）
+    critical_pending_capacity: int = 2   # pending_critical 表上界 N_p（C3）
+    critical_ttl_ticks: int = 16         # critical challenge/confirm TTL（tick）
+    tau_intent_ticks: int = 16           # 发送端用户意图有效窗口 τ_intent（§4.5）
 
     def effective_command_set(self) -> Sequence[str]:
         from .commands import DEFAULT_COMMANDS
@@ -116,6 +208,12 @@ class SimulationRunResult:
     latency_ticks: float = 0.0
     crypto_ops: float = 0.0
     challenge_round_trips: float = 0.0
+    resync_initiated: int = 0
+    resync_completed: int = 0
+    resync_timeout: int = 0
+    crit_prepared: int = 0
+    crit_committed: int = 0
+    crit_rejected: int = 0
     metadata: dict[str, object] = field(default_factory=dict)
 
     @property
@@ -164,6 +262,12 @@ class AggregateStats:
     latency_ticks: float = 0.0
     crypto_ops: float = 0.0
     challenge_round_trips: float = 0.0
+    resync_initiated: int = 0
+    resync_completed: int = 0
+    resync_timeout: int = 0
+    crit_prepared: int = 0
+    crit_committed: int = 0
+    crit_rejected: int = 0
     mac_tag_bits: int = 80
     auth_profile: str = "hmac"
     metadata: dict[str, object] = field(default_factory=dict)
@@ -197,6 +301,12 @@ class AggregateStats:
             "latency_ticks": self.latency_ticks,
             "crypto_ops": self.crypto_ops,
             "challenge_round_trips": self.challenge_round_trips,
+            "resync_initiated": self.resync_initiated,
+            "resync_completed": self.resync_completed,
+            "resync_timeout": self.resync_timeout,
+            "crit_prepared": self.crit_prepared,
+            "crit_committed": self.crit_committed,
+            "crit_rejected": self.crit_rejected,
             "mac_tag_bits": self.mac_tag_bits,
             "auth_profile": self.auth_profile,
         }

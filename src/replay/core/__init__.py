@@ -12,6 +12,7 @@ from .defaults import (
     DEFAULT_ATTACKER_RECORD_LOSS,
     DEFAULT_CHALLENGE_NONCE_BITS,
     DEFAULT_CHALLENGE_TTL_TICKS,
+    DEFAULT_G_HARD,
     DEFAULT_INLINE_ATTACK_BURST,
     DEFAULT_INLINE_ATTACK_PROBABILITY,
     DEFAULT_MAC_LENGTH,
@@ -38,6 +39,8 @@ from .security import compute_mac, compute_mac_bits, constant_time_compare
 from .sender import Sender
 from .trace import ScenarioTrace, generate_trace
 from .types import (
+    WINDOW_SIZED_MODES,
+    WINDOW_VERIFY_MODES,
     AggregateStats,
     AttackMode,
     Frame,
@@ -61,6 +64,7 @@ __all__ = [
     "DEFAULT_CHALLENGE_NONCE_BITS",
     "DEFAULT_CHALLENGE_TTL_TICKS",
     "DEFAULT_COMMANDS",
+    "DEFAULT_G_HARD",
     "DEFAULT_INLINE_ATTACK_BURST",
     "DEFAULT_INLINE_ATTACK_PROBABILITY",
     "DEFAULT_MAC_LENGTH",
@@ -88,6 +92,8 @@ __all__ = [
     "SimulationConfig",
     "SimulationRunResult",
     "VerificationResult",
+    "WINDOW_SIZED_MODES",
+    "WINDOW_VERIFY_MODES",
     "compute_mac",
     "compute_mac_bits",
     "constant_time_compare",

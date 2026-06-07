@@ -1,0 +1,3 @@
+mode,window_size,num_runs,avg_legit_rate,std_legit_rate,avg_attack_rate,std_attack_rate,total_timeouts
+no_def,0,1,1.0000,0.0000,1.0000,0.0000,0
+rolling,0,1,1.0000,0.0000,0.0000,0.0000,0

@@ -1,0 +1,66 @@
+{
+  "validation_time": "2026-01-11T15:56:35.180824",
+  "summary": {
+    "total_configs": 4,
+    "passed": 4,
+    "failed": 0
+  },
+  "results": [
+    {
+      "mode": "no_def",
+      "window_size": 1,
+      "physical_lar": 1.0,
+      "physical_asr": 1.0,
+      "physical_runs": 3,
+      "sim_lar": 1.0,
+      "sim_asr": 1.0,
+      "sim_runs": 3,
+      "lar_error": 0.0,
+      "asr_error": 0.0,
+      "lar_valid": true,
+      "asr_valid": true
+    },
+    {
+      "mode": "rolling",
+      "window_size": 1,
+      "physical_lar": 1.0,
+      "physical_asr": 0.0,
+      "physical_runs": 3,
+      "sim_lar": 1.0,
+      "sim_asr": 0.0,
+      "sim_runs": 3,
+      "lar_error": 0.0,
+      "asr_error": 0,
+      "lar_valid": true,
+      "asr_valid": true
+    },
+    {
+      "mode": "window",
+      "window_size": 5,
+      "physical_lar": 1.0,
+      "physical_asr": 0.0,
+      "physical_runs": 3,
+      "sim_lar": 1.0,
+      "sim_asr": 0.0,
+      "sim_runs": 3,
+      "lar_error": 0.0,
+      "asr_error": 0,
+      "lar_valid": true,
+      "asr_valid": true
+    },
+    {
+      "mode": "challenge",
+      "window_size": 1,
+      "physical_lar": 1.0,
+      "physical_asr": 0.0,
+      "physical_runs": 3,
+      "sim_lar": 1.0,
+      "sim_asr": 0.0,
+      "sim_runs": 3,
+      "lar_error": 0.0,
+      "asr_error": 0,
+      "lar_valid": true,
+      "asr_valid": true
+    }
+  ]
+}

@@ -38,7 +38,14 @@ def render_typescript_contracts() -> str:
 
 export const SCHEMA_VERSION = "{SCHEMA_VERSION}" as const;
 
-export type Mode = 'no_def' | 'rolling' | 'window' | 'challenge' | 'hsw_cr' | 'oscore_like';
+export type Mode =
+  | 'no_def'
+  | 'rolling'
+  | 'window'
+  | 'sw_resync'
+  | 'challenge'
+  | 'hsw_cr'
+  | 'oscore_like';
 export type AttackMode = 'post' | 'inline';
 export type ChannelModel = 'iid' | 'gilbert_elliott' | 'trace';
 export type AuthProfile = 'hmac' | 'ascon';
@@ -51,6 +58,7 @@ export interface SimulationSpec {{
   p_loss: number;
   p_reorder: number;
   window_size: number;
+  g_hard: number;
   num_legit: number;
   num_replay: number;
   attack_mode: AttackMode;
@@ -86,6 +94,7 @@ export interface SimulationSpecPublic {{
   p_loss: number;
   p_reorder: number;
   window_size: number;
+  g_hard: number;
   num_legit: number;
   num_replay: number;
   attack_mode: AttackMode;
@@ -140,6 +149,12 @@ export interface SimulationResultRecord {{
   latency_ticks: number;
   crypto_ops: number;
   challenge_round_trips: number;
+  resync_initiated: number;
+  resync_completed: number;
+  resync_timeout: number;
+  crit_prepared: number;
+  crit_committed: number;
+  crit_rejected: number;
   mac_tag_bits: number;
   auth_profile: string;
   metadata: Record<string, unknown>;

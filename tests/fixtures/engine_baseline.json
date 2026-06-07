@@ -1,0 +1,182 @@
+{
+  "cases": {
+    "normal/inline": {
+      "Mode.CHALLENGE": {
+        "attack_accepted": 1,
+        "attack_total": 41,
+        "legit_accepted": 152,
+        "legit_total": 160
+      },
+      "Mode.HSW_CR": {
+        "attack_accepted": 4,
+        "attack_total": 48,
+        "legit_accepted": 141,
+        "legit_total": 160
+      },
+      "Mode.NO_DEFENSE": {
+        "attack_accepted": 42,
+        "attack_total": 50,
+        "legit_accepted": 141,
+        "legit_total": 160
+      },
+      "Mode.OSCORE_LIKE": {
+        "attack_accepted": 4,
+        "attack_total": 50,
+        "legit_accepted": 140,
+        "legit_total": 160
+      },
+      "Mode.ROLLING_MAC": {
+        "attack_accepted": 2,
+        "attack_total": 50,
+        "legit_accepted": 136,
+        "legit_total": 160
+      },
+      "Mode.SW_RESYNC": {
+        "attack_accepted": 4,
+        "attack_total": 50,
+        "legit_accepted": 140,
+        "legit_total": 160
+      },
+      "Mode.WINDOW": {
+        "attack_accepted": 4,
+        "attack_total": 50,
+        "legit_accepted": 140,
+        "legit_total": 160
+      }
+    },
+    "normal/post": {
+      "Mode.CHALLENGE": {
+        "attack_accepted": 10,
+        "attack_total": 240,
+        "legit_accepted": 146,
+        "legit_total": 160
+      },
+      "Mode.HSW_CR": {
+        "attack_accepted": 3,
+        "attack_total": 240,
+        "legit_accepted": 150,
+        "legit_total": 160
+      },
+      "Mode.NO_DEFENSE": {
+        "attack_accepted": 216,
+        "attack_total": 240,
+        "legit_accepted": 139,
+        "legit_total": 160
+      },
+      "Mode.OSCORE_LIKE": {
+        "attack_accepted": 5,
+        "attack_total": 240,
+        "legit_accepted": 139,
+        "legit_total": 160
+      },
+      "Mode.ROLLING_MAC": {
+        "attack_accepted": 0,
+        "attack_total": 240,
+        "legit_accepted": 138,
+        "legit_total": 160
+      },
+      "Mode.SW_RESYNC": {
+        "attack_accepted": 5,
+        "attack_total": 240,
+        "legit_accepted": 139,
+        "legit_total": 160
+      },
+      "Mode.WINDOW": {
+        "attack_accepted": 5,
+        "attack_total": 240,
+        "legit_accepted": 139,
+        "legit_total": 160
+      }
+    },
+    "paired/inline": {
+      "Mode.CHALLENGE": {
+        "attack_accepted": 3,
+        "attack_total": 44,
+        "legit_accepted": 141,
+        "legit_total": 160
+      },
+      "Mode.HSW_CR": {
+        "attack_accepted": 2,
+        "attack_total": 44,
+        "legit_accepted": 141,
+        "legit_total": 160
+      },
+      "Mode.NO_DEFENSE": {
+        "attack_accepted": 40,
+        "attack_total": 44,
+        "legit_accepted": 141,
+        "legit_total": 160
+      },
+      "Mode.OSCORE_LIKE": {
+        "attack_accepted": 2,
+        "attack_total": 44,
+        "legit_accepted": 141,
+        "legit_total": 160
+      },
+      "Mode.ROLLING_MAC": {
+        "attack_accepted": 0,
+        "attack_total": 44,
+        "legit_accepted": 138,
+        "legit_total": 160
+      },
+      "Mode.SW_RESYNC": {
+        "attack_accepted": 2,
+        "attack_total": 44,
+        "legit_accepted": 141,
+        "legit_total": 160
+      },
+      "Mode.WINDOW": {
+        "attack_accepted": 2,
+        "attack_total": 44,
+        "legit_accepted": 141,
+        "legit_total": 160
+      }
+    },
+    "paired/post": {
+      "Mode.CHALLENGE": {
+        "attack_accepted": 16,
+        "attack_total": 240,
+        "legit_accepted": 141,
+        "legit_total": 160
+      },
+      "Mode.HSW_CR": {
+        "attack_accepted": 9,
+        "attack_total": 240,
+        "legit_accepted": 141,
+        "legit_total": 160
+      },
+      "Mode.NO_DEFENSE": {
+        "attack_accepted": 218,
+        "attack_total": 240,
+        "legit_accepted": 141,
+        "legit_total": 160
+      },
+      "Mode.OSCORE_LIKE": {
+        "attack_accepted": 5,
+        "attack_total": 240,
+        "legit_accepted": 141,
+        "legit_total": 160
+      },
+      "Mode.ROLLING_MAC": {
+        "attack_accepted": 1,
+        "attack_total": 240,
+        "legit_accepted": 137,
+        "legit_total": 160
+      },
+      "Mode.SW_RESYNC": {
+        "attack_accepted": 5,
+        "attack_total": 240,
+        "legit_accepted": 141,
+        "legit_total": 160
+      },
+      "Mode.WINDOW": {
+        "attack_accepted": 5,
+        "attack_total": 240,
+        "legit_accepted": 141,
+        "legit_total": 160
+      }
+    }
+  },
+  "runs": 8,
+  "seed": 42
+}

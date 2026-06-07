@@ -157,6 +157,7 @@
 
 **要点（D1+D4b）：** `AttackerStrategy` 协议双挑选入口——`pick_frame(rng, *, context=None)`（live）+ `pick_recorded(raw_pick, recorded, *, context=None)`（paired）+ `observe(frame, rng)`；**`context: AttackContext | None = None` 可选默认（finding #5）**，让 `Attacker` 薄壳兼容现有 `pick_frame(rng)` 调用（`attacker.py:21`）。`RandomReplay`：忽略 `context`，`pick_frame` 复刻现 `Attacker.pick_frame`（`rng.choice`）、`pick_recorded` 复刻现 paired `pick_replay`（`target_commands` 过滤 + `candidates[raw_pick % len]`），**两入口都逐字节等价**。`Attacker` 保留为 `RandomReplay` 别名或薄壳，**现有引擎构造与所有 attacker 测试零改动通过**（A1）。`AttackContext`（W/`g_hard`/`received_mask`/`last_counter`/`policy_table` 等）在 P3 引入并由引擎注入；P1 只需把它作为可选形参占位。
 - **blocker：** `test_random_replay_matches_legacy_attacker`（live：同 seed/同录制 → pick 序列逐值相同）、`test_random_replay_matches_legacy_paired`（paired：同 `trace.replay_pick` → `candidates[raw_pick % len]` 逐值相同）。
+- **⚠️ 验证范围（review 提醒）：** P1 把 `pick_recorded` 接进 paired 路径会**改 `experiment.py`**，已非纯 `attacker.py` 重构 → P1 验证**必须同时跑 `test_engine_baseline_regression`(STABLE_MODES) 逐值相等**，不能只跑 attacker 单测；默认 `random` 下 live+paired 两路径都要证零漂移后才算 P1 绿。
 **Step 5:** 提交 `feat: extract AttackerStrategy with RandomReplay baseline (byte-identical, live+paired)`。
 
 ### Task P2：位置×强度映射（默认=现状，A1）

@@ -13,6 +13,7 @@ from .channel import Channel
 from .channel_models import GilbertElliottLoss, IidLoss, LossModel, ReorderDelay, TraceLoss
 from .cost import CostModel, CostStats, estimate_energy
 from .kernel.critical_commit import payload_digest, pid_for
+from .policy import PolicyTable
 from .receiver import Receiver
 from .rng import DeterministicRNG, RandomLike
 from .scheduler import EventScheduler
@@ -97,11 +98,25 @@ def _should_challenge(config: SimulationConfig, command: str) -> bool:
     return config.mode is Mode.CHALLENGE
 
 
-def _is_two_phase_critical(config: SimulationConfig, command: str) -> bool:
-    """HSW_CR 高风险命令走两阶段 critical commit（§4.4，D5）；其余走 window/单阶段。"""
+def _is_two_phase_critical(
+    config: SimulationConfig, command: str, policy_table: PolicyTable
+) -> bool:
+    """HSW_CR critical 命令走两阶段 commit（§4.4，D5）；其余走 window/单阶段。
+    分类经预构建 policy_table（G5/G9, P1/P3：运行时 O(1)，不逐帧调 classify_critical）。"""
     if config.mode is not Mode.HSW_CR:
         return False
-    return (config.command_risk or {}).get(command, 0.0) >= config.risk_high
+    return policy_table.is_critical(command)
+
+
+def _build_policy_table(config: SimulationConfig) -> PolicyTable:
+    """每次运行预构建一次 policy_table（与 Receiver 内的同源同构）。"""
+    return PolicyTable.from_config(
+        policy_source=config.policy_source,
+        profile=config.profile,
+        command_impact=config.command_impact,
+        command_risk=config.command_risk,
+        risk_high=config.risk_high,
+    )
 
 
 def _roll_drop_delay(rng: RandomLike, p_loss: float, p_reorder: float) -> tuple[bool, int]:
@@ -252,7 +267,11 @@ def simulate_one_run(
         risk_high=config.risk_high,
         critical_pending_capacity=config.critical_pending_capacity,
         critical_ttl_ticks=config.critical_ttl_ticks,
+        policy_source=config.policy_source,
+        profile=config.profile,
+        command_impact=config.command_impact,
     )
+    policy_table = _build_policy_table(config)
     attacker = Attacker(
         record_loss=config.attacker_record_loss,
         target_commands=config.target_commands,
@@ -380,7 +399,7 @@ def simulate_one_run(
             ):
                 cost_stats.epoch_recoveries += 1
         command = _choose_command(config, index, local_rng)
-        if _is_two_phase_critical(config, command):
+        if _is_two_phase_critical(config, command, policy_table):
             frame = sender.begin_critical_intent(
                 command,
                 command.encode("utf-8"),
@@ -643,7 +662,11 @@ def simulate_one_run_with_trace(
         risk_high=config.risk_high,
         critical_pending_capacity=config.critical_pending_capacity,
         critical_ttl_ticks=config.critical_ttl_ticks,
+        policy_source=config.policy_source,
+        profile=config.profile,
+        command_impact=config.command_impact,
     )
+    policy_table = _build_policy_table(config)
 
     scheduler = EventScheduler()
     recorded: list[Frame] = []
@@ -826,7 +849,7 @@ def simulate_one_run_with_trace(
                 transport=_reboot_transport,
             ):
                 cost_stats.epoch_recoveries += 1
-        if _is_two_phase_critical(config, command):
+        if _is_two_phase_critical(config, command, policy_table):
             frame = sender.begin_critical_intent(
                 command,
                 command.encode("utf-8"),

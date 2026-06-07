@@ -160,13 +160,12 @@ def verify_hsw_cr(
     shared_key: str,
     mac_length: int,
     window_size: int,
-    command_risk: dict[str, float] | None,
-    risk_high: float,
+    is_critical: bool,
     g_hard: int = 0,
     authenticator: Authenticator | None = None,
 ) -> VerificationResult:
-    is_high_risk = (command_risk or {}).get(frame.command, 0.0) >= risk_high
-    if is_high_risk or frame.nonce is not None:
+    # is_critical 由调用方经预构建 policy_table.is_critical(cmd) 算好传入（G5/G9, P1）
+    if is_critical or frame.nonce is not None:
         return verify_challenge_response(
             frame,
             state,
@@ -315,8 +314,7 @@ class Receiver:
                 shared_key=self.shared_key,
                 mac_length=self.mac_length,
                 window_size=self.window_size,
-                command_risk=self.command_risk,
-                risk_high=self.risk_high,
+                is_critical=self.policy_table.is_critical(frame.command),
                 g_hard=self.g_hard,
                 authenticator=self.authenticator,
             )
@@ -421,8 +419,8 @@ class Receiver:
             return VerificationResult(False, "locked_safe_reject", state)
         if frame.epoch != state.epoch:   # R2/D7 显式 epoch 守门
             return VerificationResult(False, "epoch_mismatch", state)
-        if (self.command_risk or {}).get(frame.command, 0.0) < self.risk_high:
-            return VerificationResult(False, "not_critical", state)        # 策略：仅高风险走两阶段
+        if not self.policy_table.is_critical(frame.command):   # 策略：仅 critical 走两阶段
+            return VerificationResult(False, "not_critical", state)
         if frame.counter is None:
             return VerificationResult(False, "crit_missing_counter", state)
         ph = payload_digest(frame.payload)

@@ -130,6 +130,36 @@
         "title": "Attacker Record Loss",
         "type": "number"
       },
+      "attacker_position": {
+        "default": "ind",
+        "enum": [
+          "ind",
+          "tx",
+          "rx"
+        ],
+        "title": "Attacker Position",
+        "type": "string"
+      },
+      "attacker_inject_strength": {
+        "default": "strong",
+        "enum": [
+          "strong",
+          "weak"
+        ],
+        "title": "Attacker Inject Strength",
+        "type": "string"
+      },
+      "attacker_strategy": {
+        "default": "random",
+        "enum": [
+          "random",
+          "adaptive_lostframe",
+          "adaptive_resync",
+          "adaptive_critical"
+        ],
+        "title": "Attacker Strategy",
+        "type": "string"
+      },
       "inline_attack_probability": {
         "default": 0.3,
         "maximum": 1.0,
@@ -421,6 +451,36 @@
       "attacker_record_loss": {
         "title": "Attacker Record Loss",
         "type": "number"
+      },
+      "attacker_position": {
+        "default": "ind",
+        "enum": [
+          "ind",
+          "tx",
+          "rx"
+        ],
+        "title": "Attacker Position",
+        "type": "string"
+      },
+      "attacker_inject_strength": {
+        "default": "strong",
+        "enum": [
+          "strong",
+          "weak"
+        ],
+        "title": "Attacker Inject Strength",
+        "type": "string"
+      },
+      "attacker_strategy": {
+        "default": "random",
+        "enum": [
+          "random",
+          "adaptive_lostframe",
+          "adaptive_resync",
+          "adaptive_critical"
+        ],
+        "title": "Attacker Strategy",
+        "type": "string"
       },
       "inline_attack_probability": {
         "title": "Inline Attack Probability",
@@ -908,6 +968,36 @@
             "title": "Attacker Record Loss",
             "type": "number"
           },
+          "attacker_position": {
+            "default": "ind",
+            "enum": [
+              "ind",
+              "tx",
+              "rx"
+            ],
+            "title": "Attacker Position",
+            "type": "string"
+          },
+          "attacker_inject_strength": {
+            "default": "strong",
+            "enum": [
+              "strong",
+              "weak"
+            ],
+            "title": "Attacker Inject Strength",
+            "type": "string"
+          },
+          "attacker_strategy": {
+            "default": "random",
+            "enum": [
+              "random",
+              "adaptive_lostframe",
+              "adaptive_resync",
+              "adaptive_critical"
+            ],
+            "title": "Attacker Strategy",
+            "type": "string"
+          },
           "inline_attack_probability": {
             "title": "Inline Attack Probability",
             "type": "number"
@@ -1257,6 +1347,36 @@
             "minimum": 0.0,
             "title": "Attacker Record Loss",
             "type": "number"
+          },
+          "attacker_position": {
+            "default": "ind",
+            "enum": [
+              "ind",
+              "tx",
+              "rx"
+            ],
+            "title": "Attacker Position",
+            "type": "string"
+          },
+          "attacker_inject_strength": {
+            "default": "strong",
+            "enum": [
+              "strong",
+              "weak"
+            ],
+            "title": "Attacker Inject Strength",
+            "type": "string"
+          },
+          "attacker_strategy": {
+            "default": "random",
+            "enum": [
+              "random",
+              "adaptive_lostframe",
+              "adaptive_resync",
+              "adaptive_critical"
+            ],
+            "title": "Attacker Strategy",
+            "type": "string"
           },
           "inline_attack_probability": {
             "default": 0.3,

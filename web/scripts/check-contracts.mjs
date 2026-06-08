@@ -42,6 +42,10 @@ if (!contractsSource.includes('policy_source')) {
   throw new Error('contracts.ts is missing policy_source spec field');
 }
 
+if (!contractsSource.includes('attacker_strategy')) {
+  throw new Error('contracts.ts is missing attacker_strategy spec field');
+}
+
 const manifest = JSON.parse(manifestSource);
 if (!Array.isArray(manifest.artifacts) || manifest.artifacts.length === 0) {
   throw new Error('manifest.json does not contain any artifacts');

@@ -49,6 +49,13 @@ export type Mode =
 export type AttackMode = 'post' | 'inline';
 export type ChannelModel = 'iid' | 'gilbert_elliott' | 'trace';
 export type AuthProfile = 'hmac' | 'ascon';
+export type AttackerPosition = 'ind' | 'tx' | 'rx';
+export type AttackerStrength = 'strong' | 'weak';
+export type AttackerStrategy =
+  | 'random'
+  | 'adaptive_lostframe'
+  | 'adaptive_resync'
+  | 'adaptive_critical';
 
 export interface SimulationSpec {{
   schema_version: typeof SCHEMA_VERSION;
@@ -66,6 +73,9 @@ export interface SimulationSpec {{
   mac_tag_bits: number;
   shared_key: string;
   attacker_record_loss: number;
+  attacker_position: AttackerPosition;
+  attacker_inject_strength: AttackerStrength;
+  attacker_strategy: AttackerStrategy;
   inline_attack_probability: number;
   inline_attack_burst: number;
   challenge_nonce_bits: number;
@@ -103,6 +113,9 @@ export interface SimulationSpecPublic {{
   mac_length: number;
   mac_tag_bits: number;
   attacker_record_loss: number;
+  attacker_position: AttackerPosition;
+  attacker_inject_strength: AttackerStrength;
+  attacker_strategy: AttackerStrategy;
   inline_attack_probability: number;
   inline_attack_burst: number;
   challenge_nonce_bits: number;

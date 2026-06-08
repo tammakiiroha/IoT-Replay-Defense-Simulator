@@ -101,8 +101,8 @@
   - 由 `classify` 推导：重放 `c` 接受 ⇔ 当前 `h' < c+W` ⇔ `{c+W, …, c+r}` 这 `(r-W+1)` 帧**全部丢失**（任一送达则 `h' ≥ c+W` → `c` 落 `REJECT_OLD`）。故 MC 估到的接受率 = `p_loss^(r-W+1)`（`r<W` 时该集合为空 → 恒接受 = 1.0），**与解析 `a_W(r,p_loss,W)` 是同一条件概率**。既测「`Receiver` 实现正确」又测「闭式模型正确」。
   - **不用全 `SimulationConfig` 跑**（会混入 reorder/challenge/critical 等 confound）；信道丢弃用 `iid`（与 `a_W` 的 iid 假设一致，见 D2 非-iid 说明）。
 - 产出：每个 `(W,r,p_loss)` 的 ASR 散点 + 95% CI（`wilson_ci`），叠加解析 `a_W` 曲线；PNG/SVG + JSON（解析值、MC 均值、CI、n_trials）。
-- **验收断言（blocker，A4）**：`tests/test_dual_verification.py`——**对 `R_GRID×W_GRID` 全部扫描点，解析 `a_W(r,p_loss,W)` 落入该点 MC 95% CI**（不是事后凑阈值）。
-- 脚本用 matplotlib（仅脚本依赖，不进 core/ 运行时）。
+- **验收口径（A4，已校正为统计正确口径，P4-fix）**：每点 `within_ci`（解析 ∈ 该点 95% CI）是**诊断字段**；**grid 门 = 经验 95%-CI 覆盖率 `within_ci_fraction >= 0.90`**（脚本 `verified` 字段，亦是 CLI gate）。理由：正确的 95% CI 本就**预期 miss ~5% 点**（实测默认网格 163/168=0.970），要求"全扫描点落入"统计上必假；`all_within_ci` 仅作诊断、**不是 gate**。测试 `tests/test_analytic_mc.py`。
+- 脚本用 matplotlib（仅脚本依赖，不进 core/ 运行时）；matplotlib 缺失时只产 JSON。
 
 ### D6：契约面到哪？
 - **推荐**：`SimulationSpec` 加 `attacker_strategy`/`attacker_position`/`attacker_inject_strength`（Literal，默认 random/ind/strong）+ to_config 透传 + TS/static fallback。**可选观测计数**：`attack_attempts_by_strategy` 较重，**先不加**；本 Phase 复用现有 `attack_success/attack_attempts`（不改归因，仅新增攻击者选择维度）。
@@ -119,7 +119,7 @@
 1. **(A1) baseline 零漂移**：`attacker_strategy="random"` + `(ind,strong)` 默认 → **live 与 paired 两条路径都**逐值等于现状（rng 抽取顺序、`raw_pick % len` 逻辑、trace 数组长度字节一致）；`STABLE_MODES` 与所有现有 attacker 测试零改动通过。
 2. **(A2) 攻击者能力边界**：AdaptiveReplay 只能挑/重排**已录制的合法帧**，不能伪造 MAC/猜 nonce/绕状态机（§6）。**特别地 `adaptive_resync` 不得凭空造 far-future counter**——只能选已录制且 `frame.counter - h > g_hard` 的帧，否则 `pick` 返回 `None`。测试钉死。
 3. **(A3) 闭式纯函数**：`analytic/models.py` 零引擎/状态耦合，纯数学；与攻击者解耦先做。
-4. **(A4) 双重验证可证伪**：MC 与解析必须是**同一个量**——`a_W(r,p_loss,w)` 固定 `r`，MC 必须**录 `c`→模拟 `c+1..c+r` 随机送达→重放 `c`**（不是固定 h 注入 offset=r，否则 `r>=W` 恒 `REJECT_OLD`→MC=0）；`R_GRID×W_GRID` 全扫描点（含 `r>=W`）解析值落入该点 MC CI（不是事后凑），blocker 钉死。
+4. **(A4) 双重验证可证伪**：MC 与解析必须是**同一个量**——`a_W(r,p_loss,w)` 固定 `r`，MC 必须**录 `c`→模拟 `c+1..c+r` 随机送达→重放 `c`**（不是固定 h 注入 offset=r，否则 `r>=W` 恒 `REJECT_OLD`→MC=0）。**grid 门 = 经验 95%-CI 覆盖率 ≥ 0.90**（`verified`）；per-point `within_ci` 与 `all_within_ci` 仅诊断（正确 95% CI 预期 miss ~5%，**不要求全点落入**）。blocker 钉死。
 5. **(A5) 不动归因/指标体系**：不改 `attack_success/legit_accepted` 语义；完整 metrics/实验矩阵留 Phase 6。
 6. **回归零影响**：`test_engine_baseline_regression`(STABLE_MODES) 逐值相等。
 > 引用 @superpowers:test-driven-development、@superpowers:verification-before-completion。
@@ -184,10 +184,10 @@
 
 ### Task P4：双重验证图 + 验收（增量1/3）
 
-**Files:** Create `scripts/plot_analytic_vs_mc.py`；Test `tests/test_dual_verification.py`
+**Files:** Create `src/replay/core/analytic/mc.py`（受控 MC + `verify_point`/`dual_verification`）、`scripts/plot_analytic_vs_mc.py`；Test `tests/test_analytic_mc.py`
 
-**要点（D5，方案 A 固定 `r` 逐点）：** 定义 `R_GRID`（如 `{0,1,2,3,4,6,8}`）、`W_GRID`（如 `{1,2,3,4,5,6,8,12}`）；**受控 MC 复用真实 `Receiver` 窗口逻辑**，按 D5 修正建模——**录原始帧 `c`（receiver 丢失，mask 槽留 0）→ 模拟 `c+1..c+r` 各按 `p_loss` 送达/丢失并喂 receiver → 重放 `c` 记是否接受**（不能"固定 h 注入 offset=r"，否则 `r>=W` 恒 `REJECT_OLD`→MC=0 测不出公式）。每个 `(W,r,p_loss)`：MC ASR ± `wilson_ci` 95% CI，叠解析 `a_W(r,p_loss,W)`；信道用 `iid`；产 PNG/SVG + JSON（解析值/MC 均值/CI/n_trials）。
-- **blocker（A4）：** `test_analytic_within_mc_ci`——`R_GRID×W_GRID` **全扫描点**（含 `r>=W`）解析 `a_W` 落入该点 MC 95% CI（同一条件概率，非事后凑阈值）；`test_mc_harness_nonzero_for_r_ge_W`（钉死 `r>=W` 时 MC 非 0，防回退到固定-h 错误建模）。
+**要点（D5，方案 A 固定 `r` 逐点）：** 定义 `R_GRID`（如 `{0,1,2,3,4,6,8}`）、`W_GRID`（如 `{1,2,3,4,5,6,8,12}`）；**受控 MC 复用真实 `Receiver` 窗口逻辑**（`kernel.classify` + `kernel.window_commit`），按 D5 修正建模——**录原始帧 `c`（receiver 丢失，mask 槽留 0）→ 模拟 `c+1..c+r` 各按 `p_loss` 送达/丢失推进窗口 → 重放 `c` 记是否接受**（不能"固定 h 注入 offset=r"，否则 `r>=W` 恒 `REJECT_OLD`→MC=0 测不出公式）。每个 `(W,r,p_loss)`：MC ASR ± `wilson_ci` 95% CI，叠解析 `a_W(r,p_loss,W)`；信道用 `iid`；产 PNG/SVG + JSON（解析值/MC 均值/CI/n_trials/within_ci/within_ci_fraction/verified）。入口校验 `r>=0`/`W>=1`/`p_loss∈[0,1]`。
+- **门（A4，覆盖率口径，非"全点落入"）：** `test_mc_harness_matches_a_w_within_95ci`（curated 点解析∈95% CI / 确定性点精确相等）、`test_mc_harness_nonzero_for_r_ge_W`（钉死 `r>=W` 时 MC 非 0，防回退固定-h 错误建模）、`test_mc_harness_rejects_invalid_parameters`（入口校验）、`test_plot_analytic_vs_mc_smoke_outputs_file`（脚本产 JSON）、`test_default_grid_verified_by_coverage_not_all_points`（grid 门 = `within_ci_fraction>=0.90` → `verified`，`all_within_ci` 仅诊断、默认网格为 `False`）。
 **Step 5:** 提交 `feat: add analytic-vs-MC dual-verification plot and acceptance test`。
 
 ### Task P5：契约同步（attacker 三字段，D6 已定稿）
@@ -198,7 +198,7 @@
 **Step 5:** 提交 `feat: expose attacker strategy/position/strength in contracts and TS`。
 
 > **Phase 5 门（用 @superpowers:verification-before-completion 核验）：**
-> - blocker 全绿：`test_random_replay_matches_legacy_attacker`、`test_random_replay_matches_legacy_paired`、`test_default_position_strength_zero_drift`、`test_adaptive_cannot_forge_mac`、`test_adaptive_lostframe_targets_unaccepted_window_slot`、`test_adaptive_resync_only_picks_recorded_gap_frames`、`test_adaptive_resync_skips_critical_frames`、`test_adaptive_works_in_paired_path`、`test_analytic_within_mc_ci`、`test_mc_harness_nonzero_for_r_ge_W`
+> - blocker 全绿：`test_random_replay_matches_legacy_attacker`、`test_random_replay_matches_legacy_paired`、`test_default_position_strength_zero_drift`、`test_adaptive_cannot_forge_mac`、`test_adaptive_lostframe_targets_unaccepted_window_slot`、`test_adaptive_resync_only_picks_recorded_gap_frames`、`test_adaptive_resync_skips_critical_frames`、`test_adaptive_works_in_paired_path`、`test_mc_harness_matches_a_w_within_95ci`、`test_mc_harness_nonzero_for_r_ge_W`、`test_default_grid_verified_by_coverage_not_all_points`（grid 门=覆盖率≥0.90，`all_within_ci` 非 gate）
 > - analytic 单元 + attacker 策略 + 双重验证 + 契约 全绿
 > - `test_engine_baseline_regression`(STABLE_MODES) 逐值相等
 > - 全量 pytest 绿 + ruff/mypy 不退化 + check-contracts + `npm run build` 双绿

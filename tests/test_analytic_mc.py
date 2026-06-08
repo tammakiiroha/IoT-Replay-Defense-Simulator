@@ -77,3 +77,24 @@ def test_plot_analytic_vs_mc_smoke_outputs_file(tmp_path):
     data = json.loads(json_path.read_text())
     assert data["points"]
     assert data["all_within_ci"] is True
+
+
+def _load_plot_script():
+    spec = importlib.util.spec_from_file_location(
+        "plot_analytic_vs_mc", "scripts/plot_analytic_vs_mc.py"
+    )
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_default_grid_verified_by_coverage_not_all_points(tmp_path):
+    # gate is empirical 95%-CI coverage (verified), NOT all-points-within-CI.
+    mod = _load_plot_script()
+    data = json.loads(Path(mod.run(tmp_path)).read_text())  # default grid, seed, n_trials
+    assert data["verified"] is True
+    assert data["within_ci_fraction"] >= 0.90
+    # a correct 95% CI is EXPECTED to miss ~5% of points; lock that all_within_ci
+    # is a diagnostic and is False on the fixed default grid/seed.
+    assert data["all_within_ci"] is False

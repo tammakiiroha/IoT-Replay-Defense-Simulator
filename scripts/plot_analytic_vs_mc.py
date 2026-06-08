@@ -2,8 +2,13 @@
 """Dual-verification artifact: analytic a_W vs controlled Monte-Carlo (Phase 5 P4).
 
 Writes a machine-checkable JSON (always) and, when matplotlib is available, an
-overlay plot (analytic curve vs MC scatter with 95% Wilson CI). The JSON's
-``all_within_ci`` flag is the falsifiable acceptance signal.
+overlay plot (analytic curve vs MC scatter with 95% Wilson CI).
+
+Acceptance gate: ``verified`` — the empirical 95%-CI coverage over the grid
+(``within_ci_fraction``) is >= 0.90. A correct 95% CI is EXPECTED to miss ~5% of
+points, so ``all_within_ci`` is a DIAGNOSTIC field only (typically False on the
+default grid), NOT the acceptance signal. Per-point ``within_ci`` is likewise
+diagnostic. The CLI prints PASS/FAIL from ``verified``.
 
 Run: PYTHONPATH=src:. python scripts/plot_analytic_vs_mc.py --out artifacts/analytic_vs_mc
 """
@@ -49,6 +54,8 @@ def run(
         "w_grid": list(w_grid),
         "p_loss_values": list(p_loss_values),
         "points": [asdict(p) for p in points],
+        # all_within_ci: DIAGNOSTIC ONLY (not the gate) — a correct 95% CI is
+        # expected to miss ~5% of points, so this is typically False on a large grid.
         "all_within_ci": n_within == n_points,
         "within_ci_count": n_within,
         "within_ci_fraction": n_within / n_points if n_points else 1.0,

@@ -485,7 +485,7 @@ def simulate_one_run(
     if config.attack_mode is AttackMode.POST_RUN:
         process_arrived(channel.flush())
         for _ in range(remaining_replays):
-            attack_frame = attacker.pick_frame(local_rng)
+            attack_frame = attacker.pick_frame(local_rng, context=_attack_context())
             if attack_frame is None:
                 break
             attack_attempts += 1

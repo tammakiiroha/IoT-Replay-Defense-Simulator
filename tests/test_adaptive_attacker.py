@@ -10,6 +10,7 @@ from pathlib import Path
 
 from replay.core import Mode, SimulationConfig, run_paired_experiments
 from replay.core.attacker import AdaptiveReplay, AttackContext
+from replay.core.experiment import simulate_one_run
 from replay.core.types import AttackMode, Frame
 
 _BASELINE = json.loads(Path("tests/fixtures/engine_baseline.json").read_text())
@@ -169,3 +170,30 @@ def test_random_default_still_matches_baseline_after_adaptive_added():
     expected = {m: _BASELINE["cases"]["paired/post"][m] for m in got}
     assert got == expected
     assert SimulationConfig(mode=Mode.NO_DEFENSE).attacker_strategy == "random"
+
+
+# --- live POST_RUN must also inject AttackContext into adaptive strategies ---
+
+
+def test_live_post_run_adaptive_critical_receives_context():
+    cfg = SimulationConfig(
+        mode=Mode.HSW_CR,
+        attack_mode=AttackMode.POST_RUN,
+        num_legit=10,
+        num_replay=5,
+        p_loss=0.0,
+        p_reorder=0.0,
+        window_size=5,
+        g_hard=16,
+        rng_seed=123,
+        command_set=["UNLOCK"],
+        command_risk={"UNLOCK": 1.0},
+        risk_high=0.8,
+        attacker_strategy="adaptive_critical",
+    )
+    result = simulate_one_run(cfg)
+    # live post-run must pass AttackContext so adaptive_critical can select recorded
+    # critical-prepare frames (was a silent no-op when context was missing).
+    assert result.attack_attempts > 0
+    # replaying an old critical REQ must not commit (two-phase defense holds)
+    assert result.attack_success == 0

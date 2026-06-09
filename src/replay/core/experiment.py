@@ -7,7 +7,12 @@ import sys
 import time
 from collections.abc import Callable, Sequence
 
-from .attacker import Attacker
+from .attacker import (
+    AdaptiveReplay,
+    AttackContext,
+    AttackerStrategy,
+    RandomReplay,
+)
 from .auth import AsconAeadAuthenticator, Authenticator, HmacAuthenticator
 from .channel import Channel
 from .channel_models import GilbertElliottLoss, IidLoss, LossModel, ReorderDelay, TraceLoss
@@ -96,6 +101,33 @@ def _state_bytes(config: SimulationConfig, receiver: Receiver) -> int:
 def _should_challenge(config: SimulationConfig, command: str) -> bool:
     # 单阶段 challenge 仅用于 CHALLENGE baseline；HSW_CR 高风险改走两阶段 critical（D5）。
     return config.mode is Mode.CHALLENGE
+
+
+def _should_record_paired(position: str, *, legit_dropped: bool, record_dropped: bool) -> bool:
+    """Paired-path attacker recording policy by capture position (Phase 5 D2).
+
+    - ind: record unless the eavesdrop draw dropped it (legacy default).
+    - tx:  P_record=1.0 — always record (sender side), even when lost/record-dropped.
+    - rx:  only frames the receiver actually got, and not eavesdrop-dropped.
+    """
+    if position == "tx":
+        return True
+    if position == "rx":
+        return (not legit_dropped) and (not record_dropped)
+    return not record_dropped
+
+
+def _make_attacker_strategy(config: SimulationConfig) -> AttackerStrategy:
+    """Build the attacker strategy from config (Phase 5). Position governs
+    recording (tx -> always record, P_record=1.0); strategy governs selection."""
+    record_loss = 0.0 if config.attacker_position == "tx" else config.attacker_record_loss
+    if config.attacker_strategy == "random":
+        return RandomReplay(record_loss=record_loss, target_commands=config.target_commands)
+    return AdaptiveReplay(
+        config.attacker_strategy,
+        record_loss=record_loss,
+        target_commands=config.target_commands,
+    )
 
 
 def _is_two_phase_critical(
@@ -272,10 +304,7 @@ def simulate_one_run(
         command_impact=config.command_impact,
     )
     policy_table = _build_policy_table(config)
-    attacker = Attacker(
-        record_loss=config.attacker_record_loss,
-        target_commands=config.target_commands,
-    )
+    attacker = _make_attacker_strategy(config)
     channel = Channel(
         p_loss=config.p_loss,
         p_reorder=config.p_reorder,
@@ -327,6 +356,8 @@ def simulate_one_run(
     def process_arrived(frames: list[Frame]) -> None:
         nonlocal attack_success, legit_accepted
         for frame in frames:
+            if config.attacker_position == "rx" and not frame.is_attack:
+                attacker.observe(frame, local_rng)  # rx: record only delivered legit frames
             cost_stats.rx_bytes += _frame_bytes(frame, tag_bits, config.challenge_nonce_bits)
             if frame.mac is not None:
                 if authenticator.profile == "ascon":
@@ -378,6 +409,15 @@ def simulate_one_run(
                     transport=_resync_transport,
                 )
 
+    def _attack_context() -> AttackContext:
+        return AttackContext(
+            window_size=receiver.window_size,
+            g_hard=receiver.g_hard,
+            last_counter=receiver.state.last_counter,
+            received_mask=tuple(receiver.state.received_mask),
+            policy_table=receiver.policy_table,
+        )
+
     for index in range(config.num_legit):
         if (
             config.mode is Mode.HSW_CR
@@ -420,7 +460,8 @@ def simulate_one_run(
 
         record_tx(frame)
         legit_sent += 1
-        attacker.observe(frame, local_rng)
+        if config.attacker_position != "rx":
+            attacker.observe(frame, local_rng)  # ind/tx: record at send time
         process_arrived(channel.send(frame))
 
         if config.attack_mode is AttackMode.INLINE:
@@ -429,7 +470,7 @@ def simulate_one_run(
                     break
                 if local_rng.random() >= config.inline_attack_probability:
                     break
-                attack_frame = attacker.pick_frame(local_rng)
+                attack_frame = attacker.pick_frame(local_rng, context=_attack_context())
                 if attack_frame is None:
                     break
 
@@ -437,17 +478,21 @@ def simulate_one_run(
                 remaining_replays -= 1
                 attack_frame.is_attack = True
                 record_tx(attack_frame)
+                if config.attacker_inject_strength == "weak" and local_rng.random() < 0.5:
+                    continue  # weak: attack-only extra drop (transmitted, not delivered)
                 process_arrived(channel.send(attack_frame))
 
     if config.attack_mode is AttackMode.POST_RUN:
         process_arrived(channel.flush())
         for _ in range(remaining_replays):
-            attack_frame = attacker.pick_frame(local_rng)
+            attack_frame = attacker.pick_frame(local_rng, context=_attack_context())
             if attack_frame is None:
                 break
             attack_attempts += 1
             attack_frame.is_attack = True
             record_tx(attack_frame)
+            if config.attacker_inject_strength == "weak" and local_rng.random() < 0.5:
+                continue  # weak: attack-only extra drop (transmitted, not delivered)
             process_arrived(channel.send(attack_frame))
 
     process_arrived(channel.flush())
@@ -673,6 +718,12 @@ def simulate_one_run_with_trace(
 
     scheduler = EventScheduler()
     recorded: list[Frame] = []
+    # Paired path delegates frame selection to a strategy (P1). RandomReplay
+    # reproduces the legacy pick_replay byte-for-byte; P3 swaps in adaptive ones.
+    replay_strategy: AttackerStrategy = _make_attacker_strategy(config)
+    # rx records at DELIVERY, not at send: map engine frame id -> record decision, consumed
+    # in process_arrived when the frame is actually delivered (handles legit_delay > 0).
+    rx_pending: dict[int, bool] = {}
     legit_sent = 0
     legit_accepted = 0
     attack_attempts = 0
@@ -741,6 +792,8 @@ def simulate_one_run_with_trace(
     def process_arrived(frames: list[Frame]) -> None:
         nonlocal attack_success, legit_accepted
         for frame in frames:
+            if not frame.is_attack and rx_pending.pop(id(frame), False):
+                recorded.append(frame.clone())  # rx: record at actual delivery
             cost_stats.rx_bytes += _frame_bytes(frame, tag_bits, config.challenge_nonce_bits)
             if frame.mac is not None:
                 if authenticator.profile == "ascon":
@@ -801,15 +854,21 @@ def simulate_one_run_with_trace(
     def flush_traced() -> list[Frame]:
         return scheduler.flush()
 
+    def _paired_attack_context() -> AttackContext:
+        return AttackContext(
+            window_size=receiver.window_size,
+            g_hard=receiver.g_hard,
+            last_counter=receiver.state.last_counter,
+            received_mask=tuple(receiver.state.received_mask),
+            policy_table=receiver.policy_table,
+        )
+
     def pick_replay(raw_pick: int) -> Frame | None:
-        if config.target_commands:
-            targets = set(config.target_commands)
-            candidates = [frame for frame in recorded if frame.command in targets]
-        else:
-            candidates = recorded
-        if not candidates:
-            return None
-        return candidates[raw_pick % len(candidates)].clone()
+        # Delegate to the strategy (P1/P3). RandomReplay == legacy byte-for-byte;
+        # adaptive strategies read receiver state via AttackContext.
+        return replay_strategy.pick_recorded(
+            raw_pick, recorded, context=_paired_attack_context()
+        )
 
     def attempt_replay() -> bool:
         nonlocal attack_attempts, attack_success, remaining_replays, replay_index
@@ -822,10 +881,14 @@ def simulate_one_run_with_trace(
         attack_attempts += 1
         remaining_replays -= 1
         record_tx(attack_frame)
+        extra_dropped = (
+            config.attacker_inject_strength == "weak"
+            and trace.attack_extra_dropped[replay_index]
+        )
         process_arrived(
             send_traced(
                 attack_frame,
-                dropped=trace.replay_dropped[replay_index],
+                dropped=trace.replay_dropped[replay_index] or extra_dropped,
                 delay=trace.replay_delay[replay_index],
             )
         )
@@ -873,7 +936,15 @@ def simulate_one_run_with_trace(
 
         record_tx(frame)
         legit_sent += 1
-        if not trace.attacker_record_dropped[index]:
+        if config.attacker_position == "rx":
+            # defer: record only once the frame is actually delivered (process_arrived)
+            if not trace.legit_dropped[index]:
+                rx_pending[id(frame)] = not trace.attacker_record_dropped[index]
+        elif _should_record_paired(
+            config.attacker_position,
+            legit_dropped=trace.legit_dropped[index],
+            record_dropped=trace.attacker_record_dropped[index],
+        ):
             recorded.append(frame.clone())
         process_arrived(
             send_traced(

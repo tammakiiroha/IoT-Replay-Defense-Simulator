@@ -64,6 +64,11 @@ class SimulationSpec(ReplayBaseModel):
         ge=0.0,
         le=1.0,
     )
+    attacker_position: Literal["ind", "tx", "rx"] = "ind"
+    attacker_inject_strength: Literal["strong", "weak"] = "strong"
+    attacker_strategy: Literal[
+        "random", "adaptive_lostframe", "adaptive_resync", "adaptive_critical"
+    ] = "random"
     inline_attack_probability: float = Field(
         default=DEFAULT_INLINE_ATTACK_PROBABILITY,
         ge=0.0,
@@ -122,6 +127,9 @@ class SimulationSpec(ReplayBaseModel):
             mac_tag_bits=self.mac_tag_bits,
             shared_key=self.shared_key,
             attacker_record_loss=self.attacker_record_loss,
+            attacker_position=self.attacker_position,
+            attacker_inject_strength=self.attacker_inject_strength,
+            attacker_strategy=self.attacker_strategy,
             inline_attack_probability=self.inline_attack_probability,
             inline_attack_burst=self.inline_attack_burst,
             challenge_nonce_bits=self.challenge_nonce_bits,
@@ -159,6 +167,11 @@ class SimulationSpecPublic(ReplayBaseModel):
     mac_length: int
     mac_tag_bits: int
     attacker_record_loss: float
+    attacker_position: Literal["ind", "tx", "rx"] = "ind"
+    attacker_inject_strength: Literal["strong", "weak"] = "strong"
+    attacker_strategy: Literal[
+        "random", "adaptive_lostframe", "adaptive_resync", "adaptive_critical"
+    ] = "random"
     inline_attack_probability: float
     inline_attack_burst: int
     challenge_nonce_bits: int

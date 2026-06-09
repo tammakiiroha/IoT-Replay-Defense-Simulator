@@ -14,6 +14,13 @@ export type Mode =
 export type AttackMode = 'post' | 'inline';
 export type ChannelModel = 'iid' | 'gilbert_elliott' | 'trace';
 export type AuthProfile = 'hmac' | 'ascon';
+export type AttackerPosition = 'ind' | 'tx' | 'rx';
+export type AttackerStrength = 'strong' | 'weak';
+export type AttackerStrategy =
+  | 'random'
+  | 'adaptive_lostframe'
+  | 'adaptive_resync'
+  | 'adaptive_critical';
 
 export interface SimulationSpec {
   schema_version: typeof SCHEMA_VERSION;
@@ -31,6 +38,9 @@ export interface SimulationSpec {
   mac_tag_bits: number;
   shared_key: string;
   attacker_record_loss: number;
+  attacker_position: AttackerPosition;
+  attacker_inject_strength: AttackerStrength;
+  attacker_strategy: AttackerStrategy;
   inline_attack_probability: number;
   inline_attack_burst: number;
   challenge_nonce_bits: number;
@@ -68,6 +78,9 @@ export interface SimulationSpecPublic {
   mac_length: number;
   mac_tag_bits: number;
   attacker_record_loss: number;
+  attacker_position: AttackerPosition;
+  attacker_inject_strength: AttackerStrength;
+  attacker_strategy: AttackerStrategy;
   inline_attack_probability: number;
   inline_attack_burst: number;
   challenge_nonce_bits: number;
@@ -330,6 +343,36 @@ export const jsonSchemas = {
         "minimum": 0.0,
         "title": "Attacker Record Loss",
         "type": "number"
+      },
+      "attacker_position": {
+        "default": "ind",
+        "enum": [
+          "ind",
+          "tx",
+          "rx"
+        ],
+        "title": "Attacker Position",
+        "type": "string"
+      },
+      "attacker_inject_strength": {
+        "default": "strong",
+        "enum": [
+          "strong",
+          "weak"
+        ],
+        "title": "Attacker Inject Strength",
+        "type": "string"
+      },
+      "attacker_strategy": {
+        "default": "random",
+        "enum": [
+          "random",
+          "adaptive_lostframe",
+          "adaptive_resync",
+          "adaptive_critical"
+        ],
+        "title": "Attacker Strategy",
+        "type": "string"
       },
       "inline_attack_probability": {
         "default": 0.3,
@@ -622,6 +665,36 @@ export const jsonSchemas = {
       "attacker_record_loss": {
         "title": "Attacker Record Loss",
         "type": "number"
+      },
+      "attacker_position": {
+        "default": "ind",
+        "enum": [
+          "ind",
+          "tx",
+          "rx"
+        ],
+        "title": "Attacker Position",
+        "type": "string"
+      },
+      "attacker_inject_strength": {
+        "default": "strong",
+        "enum": [
+          "strong",
+          "weak"
+        ],
+        "title": "Attacker Inject Strength",
+        "type": "string"
+      },
+      "attacker_strategy": {
+        "default": "random",
+        "enum": [
+          "random",
+          "adaptive_lostframe",
+          "adaptive_resync",
+          "adaptive_critical"
+        ],
+        "title": "Attacker Strategy",
+        "type": "string"
       },
       "inline_attack_probability": {
         "title": "Inline Attack Probability",
@@ -1109,6 +1182,36 @@ export const jsonSchemas = {
             "title": "Attacker Record Loss",
             "type": "number"
           },
+          "attacker_position": {
+            "default": "ind",
+            "enum": [
+              "ind",
+              "tx",
+              "rx"
+            ],
+            "title": "Attacker Position",
+            "type": "string"
+          },
+          "attacker_inject_strength": {
+            "default": "strong",
+            "enum": [
+              "strong",
+              "weak"
+            ],
+            "title": "Attacker Inject Strength",
+            "type": "string"
+          },
+          "attacker_strategy": {
+            "default": "random",
+            "enum": [
+              "random",
+              "adaptive_lostframe",
+              "adaptive_resync",
+              "adaptive_critical"
+            ],
+            "title": "Attacker Strategy",
+            "type": "string"
+          },
           "inline_attack_probability": {
             "title": "Inline Attack Probability",
             "type": "number"
@@ -1458,6 +1561,36 @@ export const jsonSchemas = {
             "minimum": 0.0,
             "title": "Attacker Record Loss",
             "type": "number"
+          },
+          "attacker_position": {
+            "default": "ind",
+            "enum": [
+              "ind",
+              "tx",
+              "rx"
+            ],
+            "title": "Attacker Position",
+            "type": "string"
+          },
+          "attacker_inject_strength": {
+            "default": "strong",
+            "enum": [
+              "strong",
+              "weak"
+            ],
+            "title": "Attacker Inject Strength",
+            "type": "string"
+          },
+          "attacker_strategy": {
+            "default": "random",
+            "enum": [
+              "random",
+              "adaptive_lostframe",
+              "adaptive_resync",
+              "adaptive_critical"
+            ],
+            "title": "Attacker Strategy",
+            "type": "string"
           },
           "inline_attack_probability": {
             "default": 0.3,
